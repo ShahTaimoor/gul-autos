@@ -20,6 +20,8 @@ const Checkout = () => {
   const [error, setError] = useState(null);
   const { cartItems, totalPrice } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
+  console.log(user);
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -87,8 +89,7 @@ const Checkout = () => {
               <Label htmlFor="name" className="text-sm">Full Name</Label>
               <Input id='name' value={user?.name} disabled placeholder='John Doe' />
 
-              <Label htmlFor="email" className="text-sm">Email Address</Label>
-              <Input id='email' value={user?.email} disabled placeholder='john@example.com' />
+             
 
               <Label htmlFor="address" className="text-sm">Shipping Address</Label>
               <Textarea

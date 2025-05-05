@@ -5,8 +5,9 @@ import LogoutToggle from "./LogoutToggle";
 import { useSelector } from "react-redux";
 
 const Navbar = () => {
-    const user = useSelector((state) => state.auth.user?.user);
-  
+    const user = useSelector((state) => state.auth.user);
+    console.log(user);
+
     return (
         <nav className="flex justify-between items-center px-8 py-5 border-b">
             {/* Icons */}

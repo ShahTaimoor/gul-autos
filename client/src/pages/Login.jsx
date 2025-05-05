@@ -1,46 +1,54 @@
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Loader2 } from 'lucide-react'
-import React, { useState } from 'react'
-import { useDispatch } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
-import { login } from '@/redux/slices/auth/authSlice'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { login } from '@/redux/slices/auth/authSlice';
 
 const Login = () => {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
-  const navigate = useNavigate()
-
-  const [inputValue, setInputValues] = useState({})
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [inputValue, setInputValues] = useState({
+    name: '',
+    password: ''
+  });
 
   const handleChange = (e) => {
-    const name = e.target.name;
-    const value = e.target.value;
-    setInputValues((values) => ({ ...values, [name]: value }));
-  }
+    const { name, value } = e.target;
+    setInputValues((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');  // Reset error message before starting the request
 
     dispatch(login(inputValue))
       .unwrap()
       .then((response) => {
-        if (response?.success === true) {
-          toast.success(response?.message);
-          setInputValues({});
-          navigate('/')
+        if (response?.user) {  // Ensure the user object is in the response
+          toast.success('Login successful');
+          setInputValues({ name: '', password: '' });
+          navigate('/');
         } else {
-          toast.error(response?.message || 'Failed to user login');
+          setErrorMsg('Invalid credentials');
+          toast.error('Invalid credentials');
         }
-        setLoading(false);
       })
       .catch((error) => {
-        toast.error(error || 'Failed to user login');
+        // Add more logging here for debugging purposes
+        console.log('Login error:', error);
+        const errorText = error?.message || 'Something went wrong during login';
+        setErrorMsg(errorText);
+        toast.error(errorText);
+      })
+      .finally(() => {
         setLoading(false);
       });
   };
@@ -51,36 +59,44 @@ const Login = () => {
         <div className='flex justify-center mb-6'>
           <h2 className='text-xl font-medium'>Zaryab Auto</h2>
         </div>
-        <h2 className='text-2xl font-bold text-center mb-6'>Hey There!</h2>
-        <p className='text-center mb-6'>
-          Enter your details to Login
-        </p>
+        <h2 className='text-2xl font-bold text-center mb-2'>Hey There!</h2>
+        <p className='text-center mb-6'>Enter your details to Login</p>
 
-        {/* Show Error Message if any */}
         {errorMsg && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant='destructive' className='mb-4'>
             <AlertTitle>Login Error</AlertTitle>
             <AlertDescription>{errorMsg}</AlertDescription>
           </Alert>
         )}
 
         <div className='mb-4'>
-          <label className='block text-sm font-semibold mb-2'>Name</label> {/* Changed label to 'Name' */}
-          <Input placeholder='Enter Your Name' type='text' name='name' value={inputValue.name} onChange={handleChange} /> {/* Changed 'email' to 'name' */}
-        </div>
-        <div className='mb-4'>
-          <label className='block text-sm font-semibold mb-2'>Password</label>
-          <Input placeholder='Enter Your Password' type='password' name='password' value={inputValue.password} onChange={handleChange} />
+          <label className='block text-sm font-semibold mb-2'>Name</label>
+          <Input
+            type='text'
+            name='name'
+            placeholder='Enter your name'
+            value={inputValue.name}
+            onChange={handleChange}
+            required
+          />
         </div>
 
-        <Button
-          className="w-full mt-4"
-          disabled={loading}
-          type="submit"
-        >
+        <div className='mb-4'>
+          <label className='block text-sm font-semibold mb-2'>Password</label>
+          <Input
+            type='password'
+            name='password'
+            placeholder='Enter your password'
+            value={inputValue.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <Button className='w-full mt-4' disabled={loading} type='submit'>
           {loading ? (
             <>
-              <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              <Loader2 className='animate-spin mr-2 h-4 w-4' />
               Logging in...
             </>
           ) : (
@@ -89,12 +105,12 @@ const Login = () => {
         </Button>
 
         <p className='mt-6 text-center text-sm'>
-          I don't have an account?
-          <Link to={`/signup`} className='text-blue-500'> Sign Up</Link>
+          Don't have an account?
+          <Link to='/signup' className='text-blue-500 ml-1'>Sign Up</Link>
         </p>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default Login
+export default Login;
