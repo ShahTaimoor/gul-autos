@@ -150,7 +150,7 @@ const ProductList = () => {
       )}
 
       {/* No Products Found Message */}
-      { products.length === 0 && (
+      {products.length === 0 && (
         <p className="text-center text-lg text-gray-500 mb-10">
           {category === 'all' && searchTerm === ''
             ? 'No products found.'
@@ -161,9 +161,9 @@ const ProductList = () => {
       )}
 
       {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {products.map(product => (
-          <div key={product._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+          <div key={product._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
             <img
               width={1600}
               height={1600}
@@ -171,26 +171,27 @@ const ProductList = () => {
               alt={product.title}
               className="w-full object-cover"
             />
-            <div className="p-4">
-              <h3 className="font-semibold text-lg">{product.title}</h3>
-              <p className="text-sm text-gray-600 mb-2">{product.category?.name}</p>
-              <div className="flex justify-between items-center mb-2">
-                <span className={`text-sm ${product.stock === 0 ? 'text-red-500' : 'text-gray-600'}`}>
-                  {product.stock === 0 ? 'Out of Stock' : `Stock: ${product.stock}`}
-                </span>
+            <div className="p-4 flex flex-col flex-grow">
+              <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3> {/* Updated Title */}
+              <div className="flex gap-2">
+                <p className="text-sm text-gray-600 mb-2">Category:</p>
+                <p className="text-sm text-black mb-2">{product.category?.name}</p>
               </div>
 
               {/* Quantity and Add to Cart */}
               <div className="mt-4">
-                <input
-                  type="number"
-                  min="0"
-                  max={product.stock}
-                  value={quantities[product._id] || 0}
-                  onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
-                  className={`w-full text-center border rounded-md text-sm p-1 mb-2 ${product.stock === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  disabled={product.stock === 0}
-                />
+                <div className="flex gap-7">
+                  <p>Quantity</p>
+                  <input
+                    type="number"
+                    min="0"
+                    max={product.stock}
+                    value={quantities[product._id] || 0}
+                    onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
+                    className={`w-full text-center border rounded-md text-sm p-1 mb-2 ${product.stock === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    disabled={product.stock === 0}
+                  />
+                </div>
 
                 <button
                   onClick={() => handleAddToCart(product)}

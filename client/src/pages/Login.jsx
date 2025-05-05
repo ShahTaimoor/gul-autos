@@ -37,8 +37,8 @@ const Login = () => {
           setInputValues({ name: '', password: '' });
           navigate('/');
         } else {
-          setErrorMsg('Invalid credentials');
-          toast.error('Invalid credentials');
+          setErrorMsg('USER ALREADY EXIST');
+          toast.error('USER ALREADY EXIST');
         }
       })
       .catch((error) => {

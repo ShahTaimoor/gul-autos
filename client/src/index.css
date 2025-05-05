@@ -134,3 +134,11 @@ body {
   overflow-x: hidden;
 
 }
+.product-title {
+  white-space: normal; /* Allows wrapping */
+  overflow: hidden;    /* Hides overflowed text */
+  text-overflow: ellipsis; /* Adds ellipsis (...) for overflowed text */
+  display: -webkit-box;  /* Needed for line clamping */
+  -webkit-line-clamp: 2; /* Limits the title to 2 lines */
+  -webkit-box-orient: vertical; /* Ensures the text is wrapped */
+}

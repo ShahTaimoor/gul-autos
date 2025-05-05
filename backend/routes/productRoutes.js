@@ -16,7 +16,7 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
         const picturePath = req.file?.path;
 
         // Input validation
-        if (!title || !description || !price || !category || !stock || !picture) {
+        if (!title  || !price || !category || !stock || !picture) {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
 
