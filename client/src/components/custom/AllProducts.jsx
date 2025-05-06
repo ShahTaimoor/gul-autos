@@ -52,7 +52,7 @@ const AllProducts = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <h1 className='text-2xl mb-5'>All Products</h1>
 
-      {/* Filte */}
+      {/* Filter */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
