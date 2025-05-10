@@ -97,29 +97,28 @@ router.put('/update-product/:id', isAuthorized, isAdmin, upload.single('picture'
 // @route DELETE /api/products/delete-product/:id
 // @desc Delete a product by ID
 // @access Private/Admin
-router.delete('/delete-product/:id', isAuthorized, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const product = await Product.findById(id);
+router.delete('/delete-product/:id', isAuthorized, isAdmin,  async (req, res) => {
 
-    if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+    try {
+        const { id } = req.params;
+        const product = await Product.findByIdAndDelete(id);
+        
+        if (!product) {
+            return res.status(404).json({ success: false, message: 'Product Not Found' });
+        }
+
+        // delete cloudinary image 
+
+        if (product.picture && product.picture.public_id) {
+            await deleteImageOnCloudinary(product.picture.public_id)
+        }
+
+        return res.status(200).json({ success: true, message: 'Product Deleted Successfully', data: product });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Server error in delete Product' });
     }
-
-    // Delete Cloudinary image
-    if (product.picture?.public_id) {
-      await deleteImageOnCloudinary(product.picture.public_id);
-    }
-
-    await product.remove();
-
-    return res.status(200).json({ success: true, message: 'Product deleted successfully', data: product });
-  } catch (error) {
-    console.error('Delete product error:', error);
-    return res.status(500).json({ success: false, message: 'Server error in delete product' });
-  }
 });
-
 
 // @route GET /api/products/get-products
 // @desc Get all products with optional query filters
