@@ -7,7 +7,7 @@ const { uploadImageOnCloudinary, deleteImageOnCloudinary } = require('../utils/c
 
 const router = express.Router();
 
-// Create categor
+// Create category
 router.post('/create-category', upload.single('picture'), isAuthorized, isAdmin, async (req, res) => {
     try {
         const { name } = req.body;
