@@ -5,7 +5,6 @@ const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
 const categoryRoute = require('./routes/categoryRoutes')
 const cookirParser = require('cookie-parser')
 dotenv.config();
@@ -27,7 +26,6 @@ connectDB();
 app.use('/api', userRoutes);
 app.use('/api', productRoutes);
 app.use('/api', orderRoutes);
-app.use('/api/upload', uploadRoutes);
 app.use('/api', categoryRoute);
 
 
