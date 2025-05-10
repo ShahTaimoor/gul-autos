@@ -1,43 +1,40 @@
-const cloudinary = require('cloudinary').v2
-const fs = require('fs')
+const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
+
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAMES,
-    api_key: process.env.CLOUDINARY_API_KEYS,
-    api_secret: process.env.CLOUDINARY_API_SECRETS
-})
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAMES,
+  api_key: process.env.CLOUDINARY_API_KEYS,
+  api_secret: process.env.CLOUDINARY_API_SECRETS
+});
 
+const uploadImageOnCloudinary = async (buffer, folderName) => {
+  try {
+    const base64String = `data:image/jpeg;base64,${buffer.toString('base64')}`;
 
-const uploadImageOnCloudinary = async (filePath, folderName) => {
-    try {
-        const result = await cloudinary.uploader.upload(filePath, { folder: folderName })
+    const result = await cloudinary.uploader.upload(base64String, {
+      folder: folderName
+    });
 
-        try {
-            fs.unlinkSync(filePath)
-            return {
-                secure_url: result.secure_url,
-                public_id: result.public_id
-            }
-        } catch (error) {
-            console.log('failed to delete server');
-
-        }
-
-    } catch (error) {
-        throw new Error(error)
-    }
-}
+    return {
+      secure_url: result.secure_url,
+      public_id: result.public_id
+    };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw new Error('Cloudinary upload failed');
+  }
+};
 
 const deleteImageOnCloudinary = async (public_id) => {
-    try {
-        const result = await cloudinary.uploader.destroy(public_id)
-        return result
-    } catch (error) {
-        throw new Error(error)
-    }
-}
+  try {
+    return await cloudinary.uploader.destroy(public_id);
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    throw new Error('Cloudinary deletion failed');
+  }
+};
 
 module.exports = {
-    uploadImageOnCloudinary,
-    deleteImageOnCloudinary,
+  uploadImageOnCloudinary,
+  deleteImageOnCloudinary
 };
