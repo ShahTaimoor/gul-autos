@@ -11,7 +11,8 @@ const router = express.Router();
 router.post('/create-category', upload.single('picture'), isAuthorized, isAdmin, async (req, res) => {
     try {
         const { name } = req.body;
-        const picturePath = req.file?.path;
+
+
         if (!name) {
             return res.status(400).json({ success: false, message: 'Category name is required' });
         }
@@ -21,12 +22,12 @@ router.post('/create-category', upload.single('picture'), isAuthorized, isAdmin,
             return res.status(400).json({ success: false, message: 'Category already exists' });
         }
 
-        const { secure_url, public_id } = await uploadImageOnCloudinary(picturePath, "products");
+        const { secure_url, public_id } = await uploadImageOnCloudinary(req.file.buffer, 'products');
+
         if (!secure_url || !public_id) {
             return res.status(500).json({
                 success: false,
-                message: 'Error while uploading image',
-                error: 'Cloudinary upload failed'
+                message: 'Cloudinary upload failed'
             });
         }
 
@@ -52,7 +53,7 @@ router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isA
     try {
         const { name } = req.body;
         const { slug } = req.params;
-        const picturePath = req.file?.path;
+
         if (!name) {
             return res.status(400).json({ success: false, message: 'Category name is required' });
         }
@@ -69,13 +70,18 @@ router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isA
             return res.status(404).json({ success: false, message: 'Category not found' });
         }
 
-        if (picturePath) {
-            const { secure_url, public_id } = await uploadImageOnCloudinary(picturePath, 'products');
+        // Handle image update
+        if (req.file) {
+            const { secure_url, public_id } = await uploadImageOnCloudinary(req.file.buffer, 'products');
+
+            // Delete old image from Cloudinary if exists
             if (updatedCategory.picture && updatedCategory.picture.public_id) {
                 await deleteImageOnCloudinary(updatedCategory.picture.public_id);
             }
+
             updatedCategory.picture = { secure_url, public_id };
         }
+
 
         updatedCategory = await updatedCategory.save();
         return res.status(200).json({
