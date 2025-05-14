@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post('/order', isAuthorized, async (req, res) => {
   try {
-    const { products, address, amount } = req.body;
+    const { products, address, amount,phone,city } = req.body;
 
     if (!products || products.length === 0) {
       return res.status(400).json({ success: false, message: 'No products provided' });
@@ -39,6 +39,7 @@ router.post('/order', isAuthorized, async (req, res) => {
       products,
       userId: req.user.id,
       address,
+      phone,city,
       amount,
       paymentMethod: 'COD',
       status: 'Pending'

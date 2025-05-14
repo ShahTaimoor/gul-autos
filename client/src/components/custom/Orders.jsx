@@ -88,6 +88,14 @@ const Orders = () => {
                                 <p className="text-gray-500 text-sm">Shipping Address</p>
                                 <p className="text-gray-700 text-sm font-medium mt-1">{order.address}</p>
                             </div>
+                            <div className="mt-4">
+                                <p className="text-gray-500 text-sm">Shipping Address</p>
+                                <p className="text-gray-700 text-sm font-medium mt-1">{order.city}</p>
+                            </div>
+                            <div className="mt-4">
+                                <p className="text-gray-500 text-sm">Shipping Address</p>
+                                <p className="text-gray-700 text-sm font-medium mt-1">{order.phone}</p>
+                            </div>
 
                             {/* Actions */}
                             <div className="mt-6">
@@ -114,6 +122,8 @@ const Orders = () => {
                                             <OrderData
                                                 price={selectedOrder.amount}
                                                 address={selectedOrder.address}
+                                                phone={selectedOrder.phone}
+                                                city={selectedOrder.city}
                                                 createdAt={selectedOrder.createdAt}
                                                 products={selectedOrder.products}
                                                 paymentMethod={selectedOrder.paymentMethod || 'COD'}

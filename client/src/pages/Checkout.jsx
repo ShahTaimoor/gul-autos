@@ -13,21 +13,21 @@ import { toast } from 'sonner';
 import { addOrder } from '@/redux/slices/order/orderSlice';
 import { emptyCart } from '@/redux/slices/cartSlice';
 
-
 const Checkout = () => {
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [city, setCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { cartItems, totalPrice } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
-  console.log(user);
-  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleCheckout = async () => {
-    if (address.trim() === '') {
-      return toast('Please enter your address');
+    if (address.trim() === '' || phone.trim() === '' || city.trim() === '') {
+      return toast('Please fill out all fields');
     }
 
     const productArray = cartItems.map((item) => ({
@@ -41,11 +41,12 @@ const Checkout = () => {
         products: productArray,
         amount: totalPrice.toFixed(2),
         address: address,
+        phone: phone,  // Add phone to the order
+        city: city,    // Add city to the order
       };
 
       const res = await dispatch(addOrder(orderData)).unwrap();
 
-     
       if (res.success) {
         dispatch(emptyCart());
         navigate('/success');
@@ -64,15 +65,13 @@ const Checkout = () => {
   return (
     <div className='mx-auto max-w-6xl px-4 sm:px-8 py-12'>
       <div className='flex flex-col sm:flex-row gap-10'>
-
-        {/* LEFT: Order Summar */}
+        {/* LEFT: Order Summary */}
         <div className='sm:w-2/3 space-y-6'>
           <h2 className='text-2xl font-semibold text-gray-800'>Order Summary</h2>
           <Card className="p-6 space-y-4">
             {cartItems.map((item) => (
               <CheckoutProduct key={item._id} {...item} />
             ))}
-            
           </Card>
         </div>
 
@@ -85,8 +84,6 @@ const Checkout = () => {
               <Label htmlFor="name" className="text-sm">Full Name</Label>
               <Input id='name' value={user?.name} disabled placeholder='John Doe' />
 
-             
-
               <Label htmlFor="address" className="text-sm">Shipping Address</Label>
               <Textarea
                 id='address'
@@ -95,11 +92,27 @@ const Checkout = () => {
                 placeholder='Enter your full address'
                 rows={4}
               />
+
+              <Label htmlFor="phone" className="text-sm">Phone Number</Label>
+              <Input
+                id='phone'
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder='Enter your phone number'
+              />
+
+              <Label htmlFor="city" className="text-sm">City</Label>
+              <Input
+                id='city'
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder='Enter your city'
+              />
             </div>
 
             <Button
               onClick={handleCheckout}
-              disabled={loading || address.trim() === ''}
+              disabled={loading || address.trim() === '' || phone.trim() === '' || city.trim() === ''}
               className='w-full mt-4'
             >
               {loading ? <Loader2 className="animate-spin text-white mr-2" size={20} /> : 'Place Order'}

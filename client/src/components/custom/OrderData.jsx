@@ -6,6 +6,8 @@ import { PDFDocument, rgb } from "pdf-lib";
 const OrderData = ({
   price,
   address,
+  phone,
+  city,
   createdAt,
   products,
   paymentMethod = "COD",
@@ -13,7 +15,7 @@ const OrderData = ({
 }) => {
 
 
- const handleDownloadInvoice = async () => {
+  const handleDownloadInvoice = async () => {
     try {
       const pdfDoc = await PDFDocument.create();
       const page = pdfDoc.addPage([600, 800]);
@@ -26,7 +28,7 @@ const OrderData = ({
         height: 80,
         color: rgb(0, 0.53, 0.71),
       });
-      
+
       // Header Text
       page.drawText("INVOICE", {
         x: 50,
@@ -34,7 +36,7 @@ const OrderData = ({
         size: 28,
         color: rgb(1, 1, 1),
       });
-      
+
       // Company Info (right aligned)
       const rightAlignX = 400;
       page.drawText("GUL", {
@@ -43,21 +45,21 @@ const OrderData = ({
         size: 12,
         color: rgb(1, 1, 1),
       });
-      page.drawText("GUL AUTOS", { 
-        x: rightAlignX, 
-        y: 735, 
+      page.drawText("GUL AUTOS", {
+        x: rightAlignX,
+        y: 735,
         size: 10,
         color: rgb(1, 1, 1)
       });
-      page.drawText("Email: support@company.com", { 
-        x: rightAlignX, 
-        y: 705, 
+      page.drawText("Email: support@company.com", {
+        x: rightAlignX,
+        y: 705,
         size: 10,
         color: rgb(1, 1, 1)
       });
-      page.drawText("Phone: +11111111111", { 
-        x: rightAlignX, 
-        y: 690, 
+      page.drawText("Phone: +11111111111", {
+        x: rightAlignX,
+        y: 690,
         size: 10,
         color: rgb(1, 1, 1)
       });
@@ -68,16 +70,21 @@ const OrderData = ({
       const valueX = 200;
       const lineHeight = 20;
 
+      
       // Customer Info - using dynamic data where available
       const customerInfo = [
         { label: "Order Date", value: new Date(createdAt).toLocaleDateString() },
         { label: "Order Status", value: status },
         { label: "Payment Method", value: paymentMethod },
-        { label: "Delivery Address", value: address || "Not specified", multiLine: true }
+        { label: "Delivery Address", value: address || "Not specified", multiLine: true },
+        { label: "City", value: city || "Not specified", multiLine: true },
+        { label: "Mobile Number", value: phone ? String(phone) : "Not specified", multiLine: true },
       ];
 
+
+
       let currentY = customerInfoYStart;
-      
+
       customerInfo.forEach(info => {
         // Draw label
         page.drawText(info.label, {
@@ -133,7 +140,7 @@ const OrderData = ({
         height: 20,
         color: rgb(0.85, 0.85, 0.85),
       });
-      
+
       page.drawText("Item", { x: columnPositions.item, y: tableStartY + 5, size: 12 });
       page.drawText("Quantity", { x: columnPositions.quantity, y: tableStartY + 5, size: 12 });
       page.drawText("Price", { x: columnPositions.price, y: tableStartY + 5, size: 12 });
@@ -142,7 +149,7 @@ const OrderData = ({
       // Table Rows - using the actual products prop
       let rowY = tableStartY - 20;
       let grandTotal = 0;
-      
+
       products.forEach(product => {
         const productName = product?.id?.title || "Product";
         const quantity = product?.quantity || 0;
@@ -157,28 +164,28 @@ const OrderData = ({
           size: 12,
           maxWidth: 180
         });
-        
+
         // Quantity (centered)
         page.drawText(`${quantity}`, {
           x: columnPositions.quantity + 20,
           y: rowY,
           size: 12
         });
-        
+
         // Price (right aligned)
         page.drawText(`Rs. ${price.toLocaleString()}`, {
           x: columnPositions.price + 30,
           y: rowY,
           size: 12
         });
-        
+
         // Total (right aligned)
         page.drawText(`Rs. ${total.toLocaleString()}`, {
           x: columnPositions.total + 30,
           y: rowY,
           size: 12
         });
-        
+
         rowY -= 20;
       });
 
@@ -268,6 +275,12 @@ const OrderData = ({
       <hr />
       <span>
         Delivery Address: <strong>{address}</strong>
+      </span>
+      <span>
+        City: <strong>{city}</strong>
+      </span>
+      <span>
+        Mobile Number: <strong>{phone}</strong>
       </span>
       <Button onClick={handleDownloadInvoice}>Download Invoice</Button>
     </Card>
