@@ -195,7 +195,7 @@ const Category = () => {
             </div>
             <div className="flex flex-col space-y-1.5">
               <div className="space-y-4">
-                {/* File Upload Area */}
+                {/* File Upload Are*/}
                 <div className="space-y-2">
                   <Label htmlFor="picture" className="block text-sm font-medium text-gray-700">
                     Upload Image
