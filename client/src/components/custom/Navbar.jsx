@@ -22,7 +22,7 @@ const Navbar = () => {
                 )}
             </div>
 
-            <Link to='/' className="text-2xl font-bold">Zaryab Auto</Link>
+            <Link to='/' className="text-2xl font-bold">Gul Auto</Link>
         </nav>
     );
 }

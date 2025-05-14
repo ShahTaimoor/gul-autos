@@ -42,20 +42,61 @@ const cartSlice = createSlice({
       const newItem = action.payload;
       const existingIndex = state.cartItems.findIndex(item => item._id === newItem._id);
 
+      // Check if the new item quantity is greater than available stock
+      if (newItem.quantity > newItem.stock) {
+        return;
+      }
+
       if (existingIndex === -1) {
         state.cartItems.push({
           ...newItem,
           quantity: newItem.quantity,
-          totalItemPrice: newItem.quantity * newItem.price
+          totalItemPrice: newItem.quantity * newItem.price,
         });
       } else {
         const existingItem = state.cartItems[existingIndex];
-        existingItem.quantity += newItem.quantity;
-        existingItem.totalItemPrice += newItem.quantity * newItem.price;
+        const newQuantity = existingItem.quantity + newItem.quantity;
+
+        // Ensure the quantity does not exceed stock
+        if (newQuantity > newItem.stock) {
+          return;
+        }
+
+        existingItem.quantity = newQuantity;
+        existingItem.totalItemPrice = existingItem.quantity * existingItem.price;
       }
 
       state.totalQuantity += newItem.quantity;
-      state.totalPrice = Number((state.totalPrice + newItem.price * newItem.quantity).toFixed(2));
+      state.totalPrice = state.cartItems.reduce(
+        (total, item) => total + item.totalItemPrice,
+        0
+      );
+
+      saveStateIntoLocalStorage(state);
+    },
+    updateCartQuantity: (state, action) => {
+      const { _id, quantity } = action.payload;
+      const itemIndex = state.cartItems.findIndex(item => item._id === _id);
+
+      if (itemIndex === -1) return;
+
+      const item = state.cartItems[itemIndex];
+
+      // Stock check (optional safety)
+      if (quantity > item.stock) return;
+
+      // Update totalQuantity and totalPrice
+      const quantityDifference = quantity - item.quantity;
+      state.totalQuantity += quantityDifference;
+
+      item.quantity = quantity;
+      item.totalItemPrice = quantity * item.price;
+
+      // Recalculate total price
+      state.totalPrice = state.cartItems.reduce(
+        (sum, i) => sum + i.totalItemPrice,
+        0
+      );
 
       saveStateIntoLocalStorage(state);
     },
@@ -81,5 +122,5 @@ const cartSlice = createSlice({
   }
 });
 
-export const { addToCart, removeFromCart, emptyCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, emptyCart, updateCartQuantity } = cartSlice.actions;
 export default cartSlice.reducer;

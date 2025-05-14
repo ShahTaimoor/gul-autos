@@ -44,7 +44,7 @@ const Checkout = () => {
       };
 
       const res = await dispatch(addOrder(orderData)).unwrap();
-     console.log(orderData);
+
      
       if (res.success) {
         dispatch(emptyCart());
@@ -72,11 +72,7 @@ const Checkout = () => {
             {cartItems.map((item) => (
               <CheckoutProduct key={item._id} {...item} />
             ))}
-            <hr />
-            <div className='flex justify-between text-lg font-semibold'>
-              <span>Total Price:</span>
-              <span>${totalPrice.toFixed(2)}</span>
-            </div>
+            
           </Card>
         </div>
 

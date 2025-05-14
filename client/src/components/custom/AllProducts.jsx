@@ -22,6 +22,13 @@ import {
   deleteSingleProduct,
 } from '@/redux/slices/products/productSlice';
 
+const capitalizeAllWords = (str) => {
+  if (!str) return '';
+  return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
 const AllProducts = () => {
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,12 +166,14 @@ const AllProducts = () => {
                       {p.title}
                     </h3>
                     <Badge variant="outline" className="font-medium">
-                      ${p.price}
+                      Rs {p.price}
                     </Badge>
                   </div>
 
-                  {p.category?.name && (
-                    <p className="text-sm text-muted-foreground">{p.category.name}</p>
+                   {p.category?.name && (
+                    <p className="text-sm text-muted-foreground">
+                      {capitalizeAllWords(p.category.name)}
+                    </p>
                   )}
 
                   <div className="flex items-center gap-2 text-sm">
