@@ -130,7 +130,8 @@ const AllProducts = () => {
       {!loading && products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((p) => (
-            <Card key={p._id} className="group overflow-hidden transition-shadow hover:shadow-lg">
+            <Card key={p._id} className="group overflow-hidden transition-shadow hover:shadow-lg flex flex-col h-full">
+              {/* Image Section */}
               <div className="relative aspect-square overflow-hidden">
                 <img
                   src={p.image || '/placeholder-product.jpg'}
@@ -149,35 +150,40 @@ const AllProducts = () => {
                 )}
               </div>
 
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between items-start gap-2">
-                  <h3 className="font-medium line-clamp-2" title={p.title}>
-                    {p.title}
-                  </h3>
-                  <Badge variant="outline" className="font-medium">
-                    ${p.price}
-                  </Badge>
-                </div>
+              {/* Content Section with sticky bottom buttons */}
+              <div className="p-4 flex flex-col flex-grow justify-between">
+                {/* Top Content */}
+                <div className="space-y-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="font-medium line-clamp-2" title={p.title}>
+                      {p.title}
+                    </h3>
+                    <Badge variant="outline" className="font-medium">
+                      ${p.price}
+                    </Badge>
+                  </div>
 
-                {p.category?.name && (
-                  <p className="text-sm text-muted-foreground">{p.category.name}</p>
-                )}
+                  {p.category?.name && (
+                    <p className="text-sm text-muted-foreground">{p.category.name}</p>
+                  )}
 
-                <div className="flex items-center gap-2 text-sm">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${p.stock > 10
+                  <div className="flex items-center gap-2 text-sm">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${p.stock > 10
                         ? 'bg-green-500'
                         : p.stock > 0
                           ? 'bg-amber-500'
                           : 'bg-red-500'
-                      }`}
-                  />
-                  <span className="text-muted-foreground">
-                    {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-                  </span>
+                        }`}
+                    />
+                    <span className="text-muted-foreground">
+                      {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                {/* Fixed Bottom Buttons */}
+                <div className="flex gap-2 pt-4 mt-4">
                   <Button
                     onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
                     variant="outline"
@@ -199,6 +205,7 @@ const AllProducts = () => {
                 </div>
               </div>
             </Card>
+
           ))}
         </div>
       )}

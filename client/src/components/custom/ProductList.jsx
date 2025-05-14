@@ -160,54 +160,58 @@ const ProductList = () => {
         </p>
       )}
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {products.map(product => (
-          <div key={product._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
-            <img
-              width={1600}
-              height={1600}
-              src={product.image || '/fallback.jpg'}
-              alt={product.title}
-              className="w-full object-cover"
+     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+  {products.map(product => (
+    <div key={product._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
+      <img
+        width={1600}
+        height={1600}
+        src={product.image || '/fallback.jpg'}
+        alt={product.title}
+        className="w-full object-cover"
+      />
+      <div className="p-4 flex flex-col flex-grow">
+        <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3>
+        <div className="flex gap-2 mt-1">
+          <p className="text-sm text-gray-600">Category:</p>
+          <p className="text-sm text-black">{product.category?.name}</p>
+        </div>
+
+        {/* Spacer to push content below */}
+        <div className="flex-grow" />
+
+        {/* Quantity and Add to Cart */}
+        <div className="mt-4">
+          <div className="flex gap-4 items-center">
+            <p className="text-sm font-medium">Quantity</p>
+            <input
+              type="number"
+              min="0"
+              max={product.stock}
+              value={quantities[product._id] || 0}
+              onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
+              className={`w-20 text-center border rounded-md text-sm p-1 ${product.stock === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              disabled={product.stock === 0}
             />
-            <div className="p-4 flex flex-col flex-grow">
-              <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3> {/* Updated Title */}
-              <div className="flex gap-2">
-                <p className="text-sm text-gray-600 mb-2">Category:</p>
-                <p className="text-sm text-black mb-2">{product.category?.name}</p>
-              </div>
-
-              {/* Quantity and Add to Cart */}
-              <div className="mt-4">
-                <div className="flex gap-7">
-                  <p>Quantity</p>
-                  <input
-                    type="number"
-                    min="0"
-                    max={product.stock}
-                    value={quantities[product._id] || 0}
-                    onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
-                    className={`w-full text-center border rounded-md text-sm p-1 mb-2 ${product.stock === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    disabled={product.stock === 0}
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleAddToCart(product)}
-                  disabled={loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0}
-                  className={`w-full px-4 py-2 text-sm rounded-lg transition-colors ${loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-black hover:bg-gray-800'
-                    } text-white`}
-                >
-                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
-                </button>
-              </div>
-            </div>
           </div>
-        ))}
+
+          <button
+            onClick={() => handleAddToCart(product)}
+            disabled={loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0}
+            className={`w-full mt-3 px-4 py-2 text-sm rounded-lg transition-colors ${
+              loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-black hover:bg-gray-800'
+            } text-white`}
+          >
+            {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+          </button>
+        </div>
       </div>
+    </div>
+  ))}
+</div>
+
     </div>
   );
 };

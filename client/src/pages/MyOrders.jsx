@@ -10,7 +10,7 @@ const MyOrders = () => {
 
   const { orders, status, error } = useSelector((state) => state.orders);
 
-  console.log(orders);
+
   
   useEffect(() => {
     dispatch(fetchOrders());
