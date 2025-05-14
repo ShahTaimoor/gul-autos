@@ -87,7 +87,7 @@ const ProductList = () => {
 
     setIsAddingToCart(false);
     toast.success('Product added to cart');
-    setQuantities(prev => ({ ...prev, [product._id]: 0 }));
+    setQuantities(prev => ({ ...prev, [product._id]: 1 }));
   };
 
   useEffect(() => {
@@ -172,10 +172,7 @@ const ProductList = () => {
       />
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3>
-        <div className="flex gap-2 mt-1">
-          <p className="text-sm text-gray-600">Category:</p>
-          <p className="text-sm text-black">{product.category?.name}</p>
-        </div>
+        
 
         {/* Spacer to push content below */}
         <div className="flex-grow" />
@@ -200,7 +197,7 @@ const ProductList = () => {
             disabled={loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0}
             className={`w-full mt-3 px-4 py-2 text-sm rounded-lg transition-colors ${
               loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0
-                ? 'bg-gray-400 cursor-not-allowed'
+                ? 'bg-red-700 cursor-not-allowed'
                 : 'bg-black hover:bg-gray-800'
             } text-white`}
           >
