@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '../ui/input';
 import { addToCart } from '@/redux/slices/cartSlice';
@@ -11,6 +11,63 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { Pagination } from 'swiper/modules';
 import { Loader2 } from 'lucide-react';
+import { Badge } from '../ui/badge';
+import { motion, useInView } from 'framer-motion';
+
+const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAddingToCart }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: false });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 40 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full"
+    >
+      <div className="relative aspect-square overflow-hidden">
+        <img
+          src={product.image || '/placeholder-product.jpg'}
+          alt={product.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => (e.currentTarget.src = '/placeholder-product.jpg')}
+        />
+      </div>
+      <div className="p-4 flex flex-col flex-grow">
+        <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3>
+        <div className="flex-grow" />
+        <div className="mt-4 flex flex-col gap-2">
+          <div className="flex sm:flex-row items-center gap-2 justify-between mt-4">
+            {/* Quantity Input */}
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-medium">Qty</p>
+              <input
+                type="number"
+                max={product.stock}
+                value={quantity || ''}
+                onChange={(e) => onQuantityChange(product._id, e.target.value, product.stock)}
+                className="w-16 text-center border rounded-xl text-sm py-2"
+              />
+            </div>
+
+            {/* Add to Cart Button */}
+            <button
+              onClick={() => onAddToCart(product)}
+              disabled={isAddingToCart || quantity <= 0}
+              className={`text-sm cursor-pointer px-4 md:px-8 py-2 rounded-xl transition-colors whitespace-nowrap w-full sm:w-auto ${isAddingToCart || quantity <= 0
+                  ? 'bg-red-700 cursor-not-allowed'
+                  : 'bg-black hover:bg-gray-800'
+                } text-white`}
+            >
+              {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 const ProductList = () => {
   const [category, setCategory] = useState('all');
@@ -19,8 +76,8 @@ const ProductList = () => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { categories } = useSelector(s => s.categories);
-  const { products, status } = useSelector(s => s.products);
+  const { categories } = useSelector((s) => s.categories);
+  const { products, status } = useSelector((s) => s.products);
   const { user } = useSelector((state) => state.auth);
 
   const chunkArray = (array, size) => {
@@ -42,10 +99,18 @@ const ProductList = () => {
   const categoryChunks = chunkArray(combinedCategories, 8);
 
   useEffect(() => {
+    dispatch(AllCategory());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchProducts({ category, searchTerm }));
+  }, [category, searchTerm, dispatch]);
+
+  useEffect(() => {
     if (products.length > 0) {
       const initialQuantities = {};
       products.forEach(product => {
-        initialQuantities[product._id] = product.stock > 0 ? 1 : 0 ;
+        initialQuantities[product._id] = product.stock > 0 ? 1 : 0;
       });
       setQuantities(initialQuantities);
     }
@@ -54,10 +119,7 @@ const ProductList = () => {
   const handleQuantityChange = (productId, value, stock) => {
     let newValue = parseInt(value);
     newValue = Math.max(Math.min(newValue, stock), 0);
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: newValue,
-    }));
+    setQuantities(prev => ({ ...prev, [productId]: newValue }));
   };
 
   const handleAddToCart = async (product) => {
@@ -90,43 +152,31 @@ const ProductList = () => {
     setQuantities(prev => ({ ...prev, [product._id]: 1 }));
   };
 
-  useEffect(() => {
-    dispatch(AllCategory());
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm }));
-  }, [category, searchTerm, dispatch]);
-
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10">
-
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Category Swiper */}
-      <Swiper
-        pagination={true}
-        modules={[Pagination]}
-        className="mySwiper"
-        spaceBetween={10}
-      >
+      <Swiper pagination modules={[Pagination]} className="mySwiper" spaceBetween={10}>
         {categoryChunks.map((chunk, index) => (
           <SwiperSlide key={index}>
-            <div className="grid grid-cols-4 gap-4 pb-4 mb-6">
+            <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
               {chunk.map(cat => (
                 <div
                   key={cat._id}
-                  className={`cursor-pointer flex flex-col items-center w-24 text-center p-2 ${category === cat._id ? 'border-b' : 'bg-white'}`}
+                  className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''}  cursor-pointer text-center`}
                   onClick={() => setCategory(cat._id)}
                 >
-                  <div className="flex justify-center">
+                  <div className={`rounded-full p-1`}>
                     <img
                       src={cat.image || '/fallback.jpg'}
                       alt={cat.name}
-                      className="w-12 rounded-full h-12 object-cover"
+                      className="w-16 h-16 object-cover rounded-full"
                     />
                   </div>
-                  <p className="text-sm mt-1 text-center w-full">{cat.name}</p>
+                  <p className={`text-xs mt-2`}>
+                    {cat.name}
+                  </p>
                 </div>
               ))}
             </div>
@@ -134,80 +184,40 @@ const ProductList = () => {
         ))}
       </Swiper>
 
-      {/* Search Input */}
-      <Input
+      <input
         value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
+        onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search products…"
-        className="flex-1 mb-5"
+        className="mb-6 border w-full rounded-xl border-[#FED700]  px-3 py-2 focus:outline-none focus:ring-1 focus:ring-yellow-400"
       />
 
-      {/* Loading Spinner */}
+      {/* Loader */}
       {loadingProducts && (
         <div className="flex justify-center py-10">
           <Loader2 className="animate-spin" size={32} />
         </div>
       )}
 
-      {/* No Products Found Message */}
-      {products.length === 0 && (
-        <p className="text-center text-lg text-gray-500 mb-10">
-          {category === 'all' && searchTerm === ''
-            ? 'No products found.'
-            : category !== 'all' && searchTerm === ''
-              ? 'No products found in this category.'
-              : 'No products match your search.'}
-        </p>
+      {/* Empty */}
+      {!loadingProducts && products.filter(p => p.stock > 0).length === 0 && (
+        <p className="text-center text-lg text-gray-500 mb-10">No products found.</p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-        {products.map(product => (
-          <div key={product._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full">
-            <img
-              width={1600}
-              height={1600}
-              src={product.image || '/fallback.jpg'}
-              alt={product.title}
-              className="w-full object-cover"
+      {/* Product Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {products
+          .filter(product => product.stock > 0)
+          .map(product => (
+            <ProductCard
+              key={product._id}
+              product={product}
+              quantity={quantities[product._id]}
+              onQuantityChange={handleQuantityChange}
+              onAddToCart={handleAddToCart}
+              isAddingToCart={isAddingToCart}
             />
-            <div className="p-4 flex flex-col flex-grow">
-              <h3 className="font-semibold text-lg line-clamp-2">{product.title}</h3>
-
-
-              {/* Spacer to push content below */}
-              <div className="flex-grow" />
-
-              {/* Quantity and Add to Cart */}
-              <div className="mt-4">
-                <div className="flex gap-4 items-center">
-                  <p className="text-sm font-medium">Quantity</p>
-                  <input
-                    type="number"
-
-                    max={product.stock}
-                    value={quantities[product._id] || ""}
-                    onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
-                    className={`w-20 text-center border rounded-md text-sm p-1 ${product.stock === 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                    disabled={product.stock === 0}
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleAddToCart(product)}
-                  disabled={loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0}
-                  className={`w-full mt-3 px-4 py-2 text-sm rounded-lg transition-colors ${loadingProducts || isAddingToCart || quantities[product._id] <= 0 || product.stock === 0
-                      ? 'bg-red-700 cursor-not-allowed'
-                      : 'bg-black hover:bg-gray-800'
-                    } text-white`}
-                >
-                  {isAddingToCart ? 'Adding...' : 'Add to Cart'}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
       </div>
-
     </div>
   );
 };

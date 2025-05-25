@@ -1,16 +1,19 @@
-import axios from "axios";
+// src/features/auth/authService.js
+import axiosInstance from './axiosInstance';
 
 const loginUser = async (userData) => {
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/login`,
-      userData,
-      {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    return response.data; // should include { user, token, success, message }
-  };
+  const response = await axiosInstance.post('/login', userData, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
 
-const authService = { loginUser };
+const updateProfile = async (data) => {
+  const response = await axiosInstance.put('/update-profile', data, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data.user;
+};
+
+const authService = { loginUser, updateProfile };
 export default authService;

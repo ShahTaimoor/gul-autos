@@ -1,7 +1,7 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import authService from "./authService";
+// src/features/auth/authSlice.js
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import authService from './authService';
 
-// Load user from localStorage on app load
 const userFromStorage = localStorage.getItem('user')
   ? JSON.parse(localStorage.getItem('user'))
   : null;
@@ -13,14 +13,24 @@ const initialState = {
   error: null,
 };
 
-// Thunk for login
 export const login = createAsyncThunk(
   'auth/login',
-  async (user, thunkAPI) => {
+  async (userData, thunkAPI) => {
     try {
-      return await authService.loginUser(user);
+      return await authService.loginUser(userData);
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || 'Login failed');
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (formData, thunkAPI) => {
+    try {
+      return await authService.updateProfile(formData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
     }
   }
 );
@@ -41,7 +51,7 @@ const authSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(login.fulfilled, (state, action) => {
-        state.status = 'success';
+        state.status = 'succeeded';
         state.user = action.payload.user;
         state.isAuthenticated = true;
         localStorage.setItem('user', JSON.stringify(action.payload.user));
@@ -49,8 +59,20 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      .addCase(updateProfile.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = { ...state.user, ...action.payload };
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       });
-  }
+  },
 });
 
 export const { logout } = authSlice.actions;

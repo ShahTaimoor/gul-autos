@@ -1,11 +1,3 @@
-import CheckoutProduct from '@/components/custom/CheckoutProduct';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -13,17 +5,32 @@ import { toast } from 'sonner';
 import { addOrder } from '@/redux/slices/order/orderSlice';
 import { emptyCart } from '@/redux/slices/cartSlice';
 
+
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import CheckoutProduct from '@/components/custom/CheckoutProduct';
+import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { updateProfile } from '@/redux/slices/auth/authSlice';
+
 const Checkout = () => {
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [city, setCity] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const { cartItems, totalPrice } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
+  const [address, setAddress] = useState(user?.address || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [city, setCity] = useState(user?.city || '');
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const showForm = !user?.address || !user?.phone || !user?.city;
 
   const handleCheckout = async () => {
     if (address.trim() === '' || phone.trim() === '' || city.trim() === '') {
@@ -37,12 +44,17 @@ const Checkout = () => {
 
     try {
       setLoading(true);
+
+      // Update user profile first to keep user info synced
+      await dispatch(updateProfile({ address, phone, city })).unwrap();
+
+      // Then place order
       const orderData = {
         products: productArray,
         amount: totalPrice.toFixed(2),
-        address: address,
-        phone: phone,  // Add phone to the order
-        city: city,    // Add city to the order
+        address,
+        phone,
+        city,
       };
 
       const res = await dispatch(addOrder(orderData)).unwrap();
@@ -55,7 +67,7 @@ const Checkout = () => {
         toast.error('Failed to place order');
       }
     } catch (err) {
-      setError(err || 'Something went wrong!');
+      setError(err?.message || 'Something went wrong!');
       toast.error('Something went wrong!');
     } finally {
       setLoading(false);
@@ -82,7 +94,7 @@ const Checkout = () => {
 
             <div className='space-y-4'>
               <Label htmlFor="name" className="text-sm">Full Name</Label>
-              <Input id='name' value={user?.name} disabled placeholder='John Doe' />
+              <Input id='name' value={user?.name || ''} disabled placeholder='John Doe' />
 
               <Label htmlFor="address" className="text-sm">Shipping Address</Label>
               <Textarea
@@ -91,6 +103,7 @@ const Checkout = () => {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder='Enter your full address'
                 rows={4}
+                disabled={!showForm}
               />
 
               <Label htmlFor="phone" className="text-sm">Phone Number</Label>
@@ -99,6 +112,7 @@ const Checkout = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder='Enter your phone number'
+                disabled={!showForm}
               />
 
               <Label htmlFor="city" className="text-sm">City</Label>
@@ -107,6 +121,7 @@ const Checkout = () => {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder='Enter your city'
+                disabled={!showForm}
               />
             </div>
 
@@ -119,7 +134,6 @@ const Checkout = () => {
             </Button>
           </Card>
 
-          {/* Error Message */}
           {error && (
             <Alert variant="destructive" className="mt-6">
               <AlertTitle>Error</AlertTitle>

@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post('/order', isAuthorized, async (req, res) => {
   try {
-    const { products, address, amount,phone,city } = req.body;
+    const { products, address, amount, phone, city } = req.body;
 
     if (!products || products.length === 0) {
       return res.status(400).json({ success: false, message: 'No products provided' });
@@ -34,15 +34,45 @@ router.post('/order', isAuthorized, async (req, res) => {
       await product.save();
     }
 
-    // Create new order
+    // Find the user
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Save address, phone, city if not already present in user profile
+    let updatedUser = false;
+
+    if (!user.address && address) {
+      user.address = address;
+      updatedUser = true;
+    }
+
+    if (!user.phone && phone) {
+      user.phone = phone;
+      updatedUser = true;
+    }
+
+    if (!user.city && city) {
+      user.city = city;
+      updatedUser = true;
+    }
+
+    if (updatedUser) {
+      await user.save();
+    }
+
+    // Create new order with either user profile info or request info
     const newOrder = new Order({
       products,
       userId: req.user.id,
-      address,
-      phone,city,
+      address: user.address || address,
+      phone: user.phone || phone,
+      city: user.city || city,
       amount,
       paymentMethod: 'COD',
-      status: 'Pending'
+      status: 'Pending',
     });
 
     const savedOrder = await newOrder.save();
@@ -53,6 +83,7 @@ router.post('/order', isAuthorized, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
+
 
 // @route GET /api/orders/my-orders
 // @desc Get logged-in user's orders
@@ -192,5 +223,7 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
+
 
 module.exports = router;

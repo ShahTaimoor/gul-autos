@@ -37,7 +37,7 @@ const Signup = () => {
       );
 
       toast.success('Signup successful! Please login.');
-      navigate('/login');
+      navigate('/');
     } catch (err) {
       console.error(err);
       toast.error('User already exists. Please choose another name.');
@@ -54,7 +54,7 @@ const Signup = () => {
     <div className='w-full mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
-          <h2 className='text-xl font-medium'>Zaryab Auto</h2>
+          <h2 className='text-xl font-medium'>Gul Auto</h2>
         </div>
         <h2 className='text-2xl font-bold text-center mb-6'>Hey There!</h2>
         <p className='text-center mb-6'>Enter your details to Sign Up</p>
@@ -67,10 +67,10 @@ const Signup = () => {
         )}
 
         <div className='mb-4'>
-          <label className='block text-sm font-semibold mb-2'>Name</label>
+          <label className='block text-sm font-semibold mb-2'>Shop Name</label>
           <Input
             onChange={handleChange}
-            placeholder='Enter Your Name'
+            placeholder='Enter Your Shop Name'
             type='text'
             name='name'
             value={inputValue.name}

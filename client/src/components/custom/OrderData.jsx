@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
-import { PDFDocument, rgb } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 
 const OrderData = ({
   price,
@@ -14,223 +14,314 @@ const OrderData = ({
   status = "Pending",
 }) => {
 
-
-  const handleDownloadInvoice = async () => {
+const handleDownloadInvoice = async (orderDetails) => {
     try {
-      const pdfDoc = await PDFDocument.create();
-      const page = pdfDoc.addPage([600, 800]);
+        
 
-      // Header
-      page.drawRectangle({
-        x: 0,
-        y: 720,
-        width: 600,
-        height: 80,
-        color: rgb(0, 0.53, 0.71),
-      });
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage([600, 800]);
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-      // Header Text
-      page.drawText("INVOICE", {
-        x: 50,
-        y: 750,
-        size: 28,
-        color: rgb(1, 1, 1),
-      });
-
-      // Company Info (right aligned)
-      const rightAlignX = 400;
-      page.drawText("GUL", {
-        x: rightAlignX,
-        y: 750,
-        size: 12,
-        color: rgb(1, 1, 1),
-      });
-      page.drawText("GUL AUTOS", {
-        x: rightAlignX,
-        y: 735,
-        size: 10,
-        color: rgb(1, 1, 1)
-      });
-      page.drawText("Email: support@company.com", {
-        x: rightAlignX,
-        y: 705,
-        size: 10,
-        color: rgb(1, 1, 1)
-      });
-      page.drawText("Phone: +11111111111", {
-        x: rightAlignX,
-        y: 690,
-        size: 10,
-        color: rgb(1, 1, 1)
-      });
-
-      // Customer Information Section
-      const customerInfoYStart = 670;
-      const labelX = 50;
-      const valueX = 200;
-      const lineHeight = 20;
-
-      
-      // Customer Info - using dynamic data where available
-      const customerInfo = [
-        { label: "Order Date", value: new Date(createdAt).toLocaleDateString() },
-        { label: "Order Status", value: status },
-        { label: "Payment Method", value: paymentMethod },
-        { label: "Delivery Address", value: address || "Not specified", multiLine: true },
-        { label: "City", value: city || "Not specified", multiLine: true },
-        { label: "Mobile Number", value: phone ? String(phone) : "Not specified", multiLine: true },
-      ];
-
-
-
-      let currentY = customerInfoYStart;
-
-      customerInfo.forEach(info => {
-        // Draw label
-        page.drawText(info.label, {
-          x: labelX,
-          y: currentY,
-          size: 12,
-          color: rgb(0, 0, 0)
+        // Header
+        page.drawRectangle({
+            x: 0,
+            y: 720,
+            width: 600,
+            height: 80,
+            color: rgb(0, 0.53, 0.71),
         });
 
-        // Draw value
-        if (info.multiLine) {
-          page.drawText(info.value, {
-            x: valueX,
-            y: currentY,
+        // Header Text
+        page.drawText("INVOICE", {
+            x: 50,
+            y: 750,
+            size: 28,
+            font,
+            color: rgb(1, 1, 1),
+        });
+
+        // Company Info
+        const rightAlignX = 400;
+        page.drawText("GUL", {
+            x: rightAlignX,
+            y: 750,
             size: 12,
-            maxWidth: 350,
-            lineHeight: 15
-          });
-          currentY -= 30; // Extra space for multi-line
-        } else {
-          page.drawText(info.value, {
-            x: valueX,
-            y: currentY,
-            size: 12
-          });
-          currentY -= lineHeight;
-        }
-      });
-
-      // Order Details Section
-      const orderDetailsY = currentY - 20;
-      page.drawText("Order Details", {
-        x: 50,
-        y: orderDetailsY,
-        size: 16,
-        color: rgb(0, 0, 0),
-      });
-
-      // Table Layout
-      const tableStartY = orderDetailsY - 30;
-      const columnPositions = {
-        item: 50,
-        quantity: 250,
-        price: 350,
-        total: 450
-      };
-
-      // Table Header
-      page.drawRectangle({
-        x: columnPositions.item - 10,
-        y: tableStartY,
-        width: 500,
-        height: 20,
-        color: rgb(0.85, 0.85, 0.85),
-      });
-
-      page.drawText("Item", { x: columnPositions.item, y: tableStartY + 5, size: 12 });
-      page.drawText("Quantity", { x: columnPositions.quantity, y: tableStartY + 5, size: 12 });
-      page.drawText("Price", { x: columnPositions.price, y: tableStartY + 5, size: 12 });
-      page.drawText("Total", { x: columnPositions.total, y: tableStartY + 5, size: 12 });
-
-      // Table Rows - using the actual products prop
-      let rowY = tableStartY - 20;
-      let grandTotal = 0;
-
-      products.forEach(product => {
-        const productName = product?.id?.title || "Product";
-        const quantity = product?.quantity || 0;
-        const price = product?.id?.price || 0;
-        const total = quantity * price;
-        grandTotal += total;
-
-        // Item name (with maxWidth to prevent overflow)
-        page.drawText(productName, {
-          x: columnPositions.item,
-          y: rowY,
-          size: 12,
-          maxWidth: 180
+            font,
+            color: rgb(1, 1, 1),
+        });
+        page.drawText("GUL AUTOS", {
+            x: rightAlignX,
+            y: 735,
+            size: 10,
+            font,
+            color: rgb(1, 1, 1),
+        });
+        page.drawText("Email: support@gulautos.com", {
+            x: rightAlignX,
+            y: 705,
+            size: 10,
+            font,
+            color: rgb(1, 1, 1),
+        });
+        page.drawText("Phone: +92 3114000096", {
+            x: rightAlignX,
+            y: 690,
+            size: 10,
+            font,
+            color: rgb(1, 1, 1),
         });
 
-        // Quantity (centered)
-        page.drawText(`${quantity}`, {
-          x: columnPositions.quantity + 20,
-          y: rowY,
-          size: 12
+        // Customer Info
+        const customerInfoYStart = 670;
+        const labelX = 50;
+        const valueX = 200;
+        const lineHeight = 20;
+
+        const customerInfo = [
+            { label: "Order Date", value: new Date(createdAt).toLocaleDateString() },
+            { label: "Order Status", value: status },
+            { label: "Payment Method", value: paymentMethod },
+            { label: "Delivery Address", value: address || "Not specified", multiLine: true },
+            { label: "City", value: city || "Not specified", multiLine: true },
+            { label: "Mobile Number", value: phone ? String(phone) : "Not specified", multiLine: true },
+        ];
+
+        let currentY = customerInfoYStart;
+        customerInfo.forEach(info => {
+            page.drawText(info.label, {
+                x: labelX,
+                y: currentY,
+                size: 12,
+                font,
+                color: rgb(0, 0, 0),
+            });
+
+            page.drawText(info.value, {
+                x: valueX,
+                y: currentY,
+                size: 12,
+                font,
+                maxWidth: 350,
+            });
+
+            currentY -= info.multiLine ? 30 : lineHeight;
         });
 
-        // Price (right aligned)
-        page.drawText(`Rs. ${price.toLocaleString()}`, {
-          x: columnPositions.price + 30,
-          y: rowY,
-          size: 12
+        // Border for customer info
+        const borderX = labelX - 20;
+        const borderY = currentY + 20;
+        const borderWidth = 510;
+        const borderHeight = customerInfoYStart - currentY + 10;
+
+        ["Top", "Bottom", "Left", "Right"].forEach((side) => {
+            const start = {
+                Top: { x: borderX, y: borderY + borderHeight },
+                Bottom: { x: borderX, y: borderY },
+                Left: { x: borderX, y: borderY },
+                Right: { x: borderX + borderWidth, y: borderY },
+            }[side];
+
+            const end = {
+                Top: { x: borderX + borderWidth, y: borderY + borderHeight },
+                Bottom: { x: borderX + borderWidth, y: borderY },
+                Left: { x: borderX, y: borderY + borderHeight },
+                Right: { x: borderX + borderWidth, y: borderY + borderHeight },
+            }[side];
+
+            page.drawLine({ start, end, thickness: 1, color: rgb(0, 0, 0) });
         });
 
-        // Total (right aligned)
-        page.drawText(`Rs. ${total.toLocaleString()}`, {
-          x: columnPositions.total + 30,
-          y: rowY,
-          size: 12
+        // Order Details
+        const orderDetailsY = currentY - 20;
+        page.drawText("Order Details", {
+            x: 50,
+            y: orderDetailsY,
+            size: 16,
+            font,
+            color: rgb(0, 0, 0),
         });
 
-        rowY -= 20;
-      });
+        // Table setup
+        const tableStartY = orderDetailsY - 30;
+        // Adjusted column positions and widths for mixed alignment
+        const columnPositions = { id: 40, item: 80, quantity: 280, price: 370, total: 470 };
+        const columnWidths = { id: 30, item: 190, quantity: 70, price: 100, total: 90 };
 
-      // Grand Total
-      page.drawText("Grand Total:", {
-        x: columnPositions.price,
-        y: rowY - 20,
-        size: 14,
-        color: rgb(0, 0, 0)
-      });
-      page.drawText(`Rs. ${grandTotal.toLocaleString()}`, {
-        x: columnPositions.total + 30,
-        y: rowY - 20,
-        size: 14,
-        color: rgb(0, 0, 0)
-      });
+        // Header
+        page.drawRectangle({
+            x: columnPositions.id - 10,
+            y: tableStartY,
+            width: 510,
+            height: 20,
+            color: rgb(0.85, 0.85, 0.85),
+        });
 
-      // Footer
-      page.drawRectangle({
-        x: 0,
-        y: 0,
-        width: 600,
-        height: 40,
-        color: rgb(0.1, 0.1, 0.1),
-      });
-      page.drawText("Thank you for your order!", {
-        x: 230,
-        y: 15,
-        size: 12,
-        color: rgb(1, 1, 1),
-      });
+        // Header text alignment (left-aligned)
+        ["ID", "Item", "Quantity", "Price", "Total"].forEach((header, i) => {
+            const x = [columnPositions.id, columnPositions.item, columnPositions.quantity, columnPositions.price, columnPositions.total][i];
+            page.drawText(header, { x, y: tableStartY + 5, size: 12, font });
+        });
 
-      // Download
-      const pdfBytes = await pdfDoc.save();
-      const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `invoice_${new Date(createdAt).getTime()}.pdf`;
-      link.click();
+        // Row rendering
+        let rowY = tableStartY - 30;
+        let grandTotal = 0;
+        const fontSize = 10;
+        const rowLineHeight = 14;
+        const maxItemWidth = columnWidths.item;
+
+        const wrapText = (text, maxWidth) => {
+            const words = text.split(" ");
+            let lines = [], currentLine = "";
+
+            words.forEach((word) => {
+                const testLine = currentLine ? currentLine + " " + word : word;
+                const testLineWidth = font.widthOfTextAtSize(testLine, fontSize);
+                if (testLineWidth < maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            });
+
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        };
+
+        products.forEach((product, index) => {
+            const productId = index + 1;
+            const productName = product?.id?.title || "Product";
+            const quantity = product?.quantity || 0;
+            const price = product?.id?.price || 0;
+            const total = quantity * price;
+            grandTotal += total;
+
+            const wrappedNameLines = wrapText(productName, maxItemWidth);
+            const rowHeight = Math.max(rowLineHeight, wrappedNameLines.length * rowLineHeight); // Ensure minimum height
+
+            // Calculate vertical center for single-line items like ID, Quantity, Price, Total
+            const centerY = rowY - (rowHeight / 2) + (fontSize / 2);
+
+            // ID (left-aligned)
+            page.drawText(String(productId), {
+                x: columnPositions.id,
+                y: centerY,
+                size: fontSize,
+                font,
+            });
+
+            // Item Name (left-aligned, wrapped)
+            wrappedNameLines.forEach((line, idx) => {
+                page.drawText(line, {
+                    x: columnPositions.item,
+                    y: rowY - (idx * rowLineHeight),
+                    size: fontSize,
+                    font,
+                });
+            });
+
+            // Quantity (CENTERED)
+            const quantityText = `${quantity}`;
+            const quantityTextWidth = font.widthOfTextAtSize(quantityText, fontSize);
+            const quantityX = columnPositions.quantity + (columnWidths.quantity / 3) - (quantityTextWidth / 3);
+            page.drawText(quantityText, {
+                x: quantityX,
+                y: centerY,
+                size: fontSize,
+                font,
+            });
+
+            // Price (left-aligned)
+            page.drawText(`Rs. ${price.toLocaleString('en-IN')}`, {
+                x: columnPositions.price,
+                y: centerY,
+                size: fontSize,
+                font,
+            });
+
+            // Total (left-aligned)
+            page.drawText(`Rs. ${total.toLocaleString('en-IN')}`, {
+                x: columnPositions.total,
+                y: centerY,
+                size: fontSize,
+                font,
+            });
+
+            rowY -= (rowHeight + 6);
+        });
+
+        // Table borders
+        const tableX = columnPositions.id - 10;
+        const tableY = tableStartY + 20;
+        const tableHeight = tableStartY - rowY + 30;
+
+        ["Top", "Bottom", "Left", "Right"].forEach((side) => {
+            const start = {
+                Top: { x: tableX, y: tableY },
+                Bottom: { x: tableX, y: tableY - tableHeight },
+                Left: { x: tableX, y: tableY - tableHeight },
+                Right: { x: tableX + 510, y: tableY - tableHeight },
+            }[side];
+
+            const end = {
+                Top: { x: tableX + 510, y: tableY },
+                Bottom: { x: tableX + 510, y: tableY - tableHeight },
+                Left: { x: tableX, y: tableY },
+                Right: { x: tableX + 510, y: tableY },
+            }[side];
+
+            page.drawLine({ start, end, thickness: 1, color: rgb(0, 0, 0) });
+        });
+
+        // Grand Total
+        const grandTotalY = rowY - 30;
+
+        page.drawLine({
+            start: { x: columnPositions.price, y: grandTotalY + 20 },
+            end: { x: columnPositions.total , y: grandTotalY + 20 },
+            thickness: 1,
+            color: rgb(0, 0, 0),
+        });
+
+        // Grand Total label (left-aligned with price column)
+        page.drawText("Grand Total:", {
+            x: columnPositions.price,
+            y: grandTotalY,
+            size: 14,
+            font,
+        });
+
+        // Grand Total value (left-aligned with total column)
+        const finalTotalText = `Rs. ${grandTotal.toLocaleString('en-IN')}`;
+        page.drawText(finalTotalText, {
+            x: columnPositions.total,
+            y: grandTotalY,
+            size: 14,
+            font,
+        });
+
+        // Save and download
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "invoice.pdf";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error generating PDF invoice:", error);
-      alert("Failed to generate invoice. Please try again.");
+        console.error("Error generating invoice PDF:", error);
     }
-  };
+};
+
+
+
+
+
+
 
 
   return (

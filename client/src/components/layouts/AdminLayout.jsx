@@ -5,11 +5,13 @@ import { AppSidebar } from "../custom/AppSidebar"
 const AdminLayout = ({ children }) => {
     return (
         <SidebarProvider>
-            <AppSidebar />
-            <main>
-                <SidebarTrigger />
-                {children}
-            </main>
+            <div className="flex flex-col md:flex-row min-h-screen">
+                <AppSidebar />
+                <main className="flex-1 p-4">
+                    <SidebarTrigger />
+                    {children}
+                </main>
+            </div>
         </SidebarProvider>
     )
 }

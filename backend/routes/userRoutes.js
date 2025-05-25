@@ -6,15 +6,12 @@ const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// @route   POST /api/users/signup
-// @desc    Register a new user
-// @access  Public
+// Signup
 router.post('/signup', async (req, res) => {
   const { name, password } = req.body;
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const user = await User.create({ name, password: hashedPassword });
 
     res.status(201).json({
@@ -28,10 +25,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-
-// @route   POST /api/users/login
-// @desc    Authenticate user
-// @access  Public
+// Login
 router.post('/login', async (req, res) => {
   const { name, password } = req.body;
 
@@ -64,10 +58,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-// @route   GET /api/users/logout
-// @desc    Log out the user
-// @access  Public
+// Logout
 router.get('/logout', (req, res) => {
   return res.cookie('token', '', {
     httpOnly: true,
@@ -80,9 +71,8 @@ router.get('/logout', (req, res) => {
   });
 });
 
-// @route   GET /api/users/all-users
-// @desc    Get all users (Admin only)
-// @access  Private/Admin
+// All users
+
 router.get('/all-users', isAuthorized, isAdmin, async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
@@ -94,6 +84,39 @@ router.get('/all-users', isAuthorized, isAdmin, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Server error while fetching users');
+  }
+});
+
+// Update profile
+router.put('/update-profile', isAuthorized, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name, phone, address, city } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+    user.address = address || user.address;
+    user.city = city || user.city;
+
+    const updatedUser = await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        city: updatedUser.city,
+      },
+    });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

@@ -24,6 +24,7 @@ import ProtectedRoute from "./components/custom/ProtectedRoute";
 import Category from "./pages/Category";
 import Users from "./pages/Users";
 import UpdateProduct from "./components/custom/UpdateProduct";
+import Profile from "./pages/Profile";
 
 const App = () => {
   const router = createBrowserRouter([
@@ -78,6 +79,14 @@ const App = () => {
       element: (
         <RootLayout>
           <Success />
+        </RootLayout>
+      ),
+    },
+    {
+      path: "/profile",
+      element: (
+        <RootLayout>
+          <Profile />
         </RootLayout>
       ),
     },

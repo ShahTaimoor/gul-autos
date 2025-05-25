@@ -54,7 +54,7 @@ const ToggleLogout = ({ user }) => {
                         {user?.role === 1 ? (
                             <Link to='/admin/dashboard'>Admin Dashboard</Link>
                         ) : (
-                            <Link to='/'>Profile</Link>
+                            <Link to='/profile'>Profile</Link>
                         )}
                     </DropdownMenuItem>
 
