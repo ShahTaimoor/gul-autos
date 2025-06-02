@@ -75,7 +75,7 @@ const Checkout = () => {
   };
 
   return (
-    <div className='mx-auto max-w-6xl px-4 sm:px-8 py-12'>
+    <div className='mx-auto mt-20 max-w-6xl px-4 sm:px-8 py-12'>
       <div className='flex flex-col sm:flex-row gap-10'>
         {/* LEFT: Order Summary */}
         <div className='sm:w-2/3 space-y-6'>

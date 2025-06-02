@@ -7,6 +7,7 @@ import { updateProfile } from '@/redux/slices/auth/authSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -33,6 +34,7 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -51,7 +53,7 @@ const Profile = () => {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-4 space-y-6 max-w-4xl">
+      <div className="container  mx-auto p-4 space-y-6 max-w-4xl">
         <Skeleton className="h-8 w-48 mb-6" />
         <div className="space-y-4">
           <Skeleton className="h-4 w-full" />
@@ -63,7 +65,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mt-20 mx-auto p-4 max-w-4xl">
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-primary to-secondary h-32 relative">
           <div className="absolute -bottom-16 left-6">
@@ -93,11 +95,11 @@ const Profile = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="text-lg font-medium">{user?.address || 'Not provided'}</p>
+                  <p className="text-lg font-medium overflow-hidden">{user?.address.slice(0,56).toUpperCase() || 'Not provided'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">City</p>
-                  <p className="text-lg font-medium">{user?.city || 'Not provided'}</p>
+                  <p className="text-lg font-medium">{user?.city.slice(0,20).toUpperCase() || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -128,7 +130,7 @@ const Profile = () => {
                       name="city"
                       type="text"
                       placeholder="New York"
-                      value={formData.city}
+                      value={formData.city.slice(0,20)}
                       onChange={handleChange}
                     />
                   </div>
@@ -137,7 +139,7 @@ const Profile = () => {
                   <label htmlFor="address" className="block text-sm font-medium text-muted-foreground mb-1">
                     Address
                   </label>
-                  <Input
+                  <Textarea
                     id="address"
                     name="address"
                     type="text"

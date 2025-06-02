@@ -74,7 +74,7 @@ const CartProduct = ({ _id, name, price, quantity, image, stock }) => {
       <div className="flex items-center">
         <img src={image || '/fallback.jpg'} alt={name} className="w-16 h-16 object-cover rounded-md" />
         <div className="ml-4">
-          <h4 className="font-semibold text-gray-900">{name}</h4>
+          <h4 className="font-semibold text-gray-900">{name.slice(0,30)}...</h4>
           <p className="text-sm text-gray-500">Qty: {quantity}</p>
         </div>
       </div>

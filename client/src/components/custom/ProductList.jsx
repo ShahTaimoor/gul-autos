@@ -155,12 +155,12 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-6 lg:px-4 py-6">
       {/* Category Swiper */}
       <Swiper pagination modules={[Pagination]} className="mySwiper" spaceBetween={10}>
         {categoryChunks.map((chunk, index) => (
           <SwiperSlide key={index}>
-            <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
+            <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-2">
               {chunk.map(cat => (
                 <div
                   key={cat._id}

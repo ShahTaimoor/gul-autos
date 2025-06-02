@@ -2,19 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { Button } from '../ui/button';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+    Dialog,
+    DialogTrigger,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import OrderData from './OrderData';
 import { fetchOrdersAdmin } from '@/redux/slices/order/orderSlice';
-
 
 const Orders = () => {
     const dispatch = useDispatch();
     const { orders, status, error } = useSelector((state) => state.orders);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
+    // For filtering by date
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    });
 
-    // Fetch orders on component mount
     useEffect(() => {
         dispatch(fetchOrdersAdmin());
     }, [dispatch]);
@@ -25,20 +35,36 @@ const Orders = () => {
         }
     }, [status, error]);
 
+    // Filter orders by selected date (yyyy-mm-dd)
+    const filteredOrders = orders.filter((order) => {
+        const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
+        return orderDate === selectedDate;
+    });
+
     return (
         <div className="px-6 py-10">
             <h1 className="text-2xl font-bold mb-8">My Orders</h1>
 
+            {/* Date picker for filtering */}
+            <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="mb-6 p-2 border rounded"
+                max={new Date().toISOString().split('T')[0]}
+            />
+
             {status === 'loading' ? (
                 <div className="text-center text-gray-500">Loading orders...</div>
-            ) : orders.length === 0 ? (
-                <div className="text-center text-gray-500">No orders found.</div>
+            ) : filteredOrders.length === 0 ? (
+                <div className="text-center text-gray-500">No orders found for {selectedDate}.</div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                         <div
                             key={order._id}
                             className="flex flex-col bg-white border rounded-2xl shadow-md p-6 hover:shadow-lg transition"
+                            style={{ minHeight: '450px', position: 'relative' }} // Set minHeight to keep cards consistent
                         >
                             {/* Order Header */}
                             <div className="mb-4">
@@ -59,18 +85,11 @@ const Orders = () => {
                             </div>
 
                             {/* Products List */}
-                            <div className="flex flex-col gap-3 max-h-40 overflow-y-auto pr-2">
+                            <div className="flex flex-col gap-3 max-h-40 overflow-y-auto pr-2 mb-4">
                                 {order.products.map((item, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center gap-3 border-b pb-2 last:border-none"
-                                    >
+                                    <div key={index} className="flex items-center gap-3 border-b pb-2 last:border-none">
                                         <img
-                                             src={
-                                                item?.id?.picture?.secure_url
-                                                  ? item.id.picture.secure_url
-                                                  : "fallback.jpg"
-                                              }
+                                            src={item?.id?.picture?.secure_url ? item.id.picture.secure_url : 'fallback.jpg'}
                                             alt={item.id?.name || 'Product Image'}
                                             className="w-10 h-10 object-cover rounded-md"
                                         />
@@ -83,22 +102,23 @@ const Orders = () => {
                                 ))}
                             </div>
 
-                            {/* Shipping Address */}
-                            <div className="mt-4">
-                                <p className="text-gray-500 text-sm">Shipping Address</p>
-                                <p className="text-gray-700 text-sm font-medium mt-1">{order.address}</p>
-                            </div>
-                            <div className="mt-4">
-                                <p className="text-gray-500 text-sm">Shipping Address</p>
-                                <p className="text-gray-700 text-sm font-medium mt-1">{order.city}</p>
-                            </div>
-                            <div className="mt-4">
-                                <p className="text-gray-500 text-sm">Shipping Address</p>
-                                <p className="text-gray-700 text-sm font-medium mt-1">{order.phone}</p>
-                            </div>
 
-                            {/* Actions */}
-                            <div className="mt-6">
+
+                            {/* Actions - positioned at the bottom */}
+                            <div className="mt-auto pt-6">
+                                {/* Shipping Address */}
+                                <div className="mb-1">
+                                    <p className="text-gray-500 text-sm">Shipping Address</p>
+                                    <p className="text-gray-700 text-sm font-medium mt-1">{order.address.slice(0,80)}</p>
+                                </div>
+                                <div className="mb-1">
+                                    <p className="text-gray-500 text-sm">City</p>
+                                    <p className="text-gray-700 text-sm font-medium mt-1">{order.city.slice(0,20)}</p>
+                                </div>
+                                <div className="mb-1">
+                                    <p className="text-gray-500 text-sm">Phone</p>
+                                    <p className="text-gray-700 text-sm font-medium mt-1">{order.phone}</p>
+                                </div>
                                 <Dialog>
                                     <DialogTrigger asChild>
                                         <Button
@@ -113,9 +133,7 @@ const Orders = () => {
                                     <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                                         <DialogHeader>
                                             <DialogTitle>Invoice Details</DialogTitle>
-                                            <DialogDescription>
-                                                Here’s the full invoice for this order.
-                                            </DialogDescription>
+                                            <DialogDescription>Here’s the full invoice for this order.</DialogDescription>
                                         </DialogHeader>
 
                                         {selectedOrder && (
