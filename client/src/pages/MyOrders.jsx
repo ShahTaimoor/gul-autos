@@ -5,24 +5,26 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import OrderData from '@/components/custom/OrderData';
 import { fetchOrders } from '@/redux/slices/order/orderSlice';
 
+// Helper to get today's date in 'yyyy-mm-dd' format for Pakistan timezone
+const getPakistaniDate = () => {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+};
+
 const MyOrders = () => {
   const dispatch = useDispatch();
 
   const { orders, status, error } = useSelector((state) => state.orders);
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // Default to today, formatted as yyyy-mm-dd for input[type=date]
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState(getPakistaniDate);
 
   useEffect(() => {
     dispatch(fetchOrders());
   }, [dispatch]);
 
-  // Filter orders by selected date
+  // Filter orders by selected date based on Pakistan timezone
   const filteredOrders = orders.filter(order => {
-    const orderDate = new Date(order.createdAt).toISOString().split('T')[0];
+    const orderDate = new Date(order.createdAt)
+      .toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
     return orderDate === selectedDate;
   });
 
@@ -44,7 +46,7 @@ const MyOrders = () => {
         value={selectedDate}
         onChange={(e) => setSelectedDate(e.target.value)}
         className="mb-6 p-2 border rounded"
-        max={new Date().toISOString().split('T')[0]} // Optional: restrict max date to today
+        max={getPakistaniDate()} // restrict max date to today in Pakistan timezone
       />
 
       {status === 'failed' ? (
