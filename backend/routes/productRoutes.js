@@ -49,7 +49,7 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
 });
 
 
-// @route PUT /api/products/update-product/:id
+// @route PUT /api/poducts/update-product/:id
 // @desc Update an existing product ID
 // @access Private/Admin
 router.put('/update-product/:id', isAuthorized, isAdmin, upload.single('picture'), async (req, res) => {
