@@ -157,7 +157,7 @@ const AllProducts = () => {
                 )}
               </div>
 
-              {/* Conten Section with sticky bottom buttons */}
+              {/* Content Section with sticky bottom buttons */}
               <div className="p-4 flex flex-col flex-grow justify-between">
                 {/* Top Content */}
                 <div className="space-y-3">
