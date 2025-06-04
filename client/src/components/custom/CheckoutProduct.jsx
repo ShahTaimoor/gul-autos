@@ -9,7 +9,7 @@ const CheckoutProduct = ({
   return (
     <div className="flex justify-between items-start p-4 rounded-lg bg-white border border-gray-200 hover:shadow-md transition-shadow">
       <div className="flex items-start gap-4">
-        {/* Image Container */}
+        {/* Image Containe */}
         <div className="relative flex-shrink-0">
           <img
             src={image}
