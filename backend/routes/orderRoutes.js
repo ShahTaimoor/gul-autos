@@ -147,6 +147,19 @@ router.get('/get-all-orders', isAuthorized, isAdmin, async (req, res) => {
   }
 });
 
+// Helper function to convert any date to Pakistan date string 'YYYY-MM-DD'
+function toPakistanDateISOString(date) {
+  const d = new Date(date);
+  const pakistanOffset = 5 * 60; // 5 hours in minutes
+  const localTime = new Date(d.getTime() + pakistanOffset * 60000);
+
+  const year = localTime.getUTCFullYear();
+  const month = String(localTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(localTime.getUTCDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
 // GET: Metrics (Sales, Users, Recent Orders)
 router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
   const { startDate, endDate } = req.query;
@@ -155,9 +168,25 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
     const start = new Date(startDate || new Date().setMonth(new Date().getMonth() - 1));
     const end = new Date(endDate || new Date());
 
+    // Get orders in date range
     const ordersInRange = await Order.find({ createdAt: { $gte: start, $lte: end } });
     const totalSales = ordersInRange.reduce((acc, order) => acc + Number(order.amount), 0);
 
+    // Calculate sales grouped by Pakistan date for frontend filtering
+    const salesByDateMap = {};
+    ordersInRange.forEach(order => {
+      const date = toPakistanDateISOString(order.createdAt);
+      if (!salesByDateMap[date]) {
+        salesByDateMap[date] = 0;
+      }
+      salesByDateMap[date] += Number(order.amount);
+    });
+    const salesByDate = Object.entries(salesByDateMap).map(([date, totalAmount]) => ({
+      date,
+      totalAmount,
+    }));
+
+    // Calculate last month sales for growth
     const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 2));
     const lastMonthOrders = await Order.find({ createdAt: { $gte: lastMonth, $lte: start } });
     const totalLastMonth = lastMonthOrders.reduce((acc, order) => acc + Number(order.amount), 0);
@@ -166,6 +195,7 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
       ? ((totalSales - totalLastMonth) / totalLastMonth) * 100
       : 0;
 
+    // Calculate users growth
     const thisMonthUsers = await User.find({ createdAt: { $gte: start, $lte: end } });
     const lastMonthUsers = await User.find({ createdAt: { $gte: lastMonth, $lte: start } });
 
@@ -173,9 +203,11 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
       ? ((thisMonthUsers.length - lastMonthUsers.length) / lastMonthUsers.length) * 100
       : 0;
 
+    // Active now: orders in last hour
     const lastHour = new Date(new Date().setHours(new Date().getHours() - 1));
     const lastHourOrders = await Order.find({ createdAt: { $gte: lastHour, $lte: new Date() } });
 
+    // Previous day orders for growth calc
     const previousDayOrders = await Order.find({
       createdAt: {
         $gte: new Date(new Date().setDate(new Date().getDate() - 1)),
@@ -187,11 +219,12 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
       ? (lastHourOrders.length / previousDayOrders.length) * 100
       : 0;
 
+    // Recent orders for display
     const recentOrders = await Order.find()
       .populate({ path: 'userId', select: 'name email' })
       .select('amount userId createdAt')
       .sort({ createdAt: -1 })
-      .limit(9);
+      .limit(10);
 
     return res.status(200).json({
       success: true,
@@ -216,6 +249,7 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
           count: totalSales.toFixed(2),
           orders: recentOrders,
         },
+        salesByDate, // grouped by Pakistan date
       },
     });
   } catch (error) {
@@ -223,6 +257,8 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 });
+
+
 
 
 

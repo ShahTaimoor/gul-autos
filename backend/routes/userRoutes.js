@@ -25,7 +25,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// Login
+// Logi
 router.post('/login', async (req, res) => {
   const { name, password } = req.body;
 
@@ -39,14 +39,14 @@ router.post('/login', async (req, res) => {
     user.password = undefined;
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP || '1d',
+      expiresIn: process.env.JWT_EXP || '365d',
     });
 
     return res.cookie('token', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     }).status(200).json({
       success: true,
       user,

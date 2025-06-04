@@ -317,13 +317,6 @@ const handleDownloadInvoice = async (orderDetails) => {
     }
 };
 
-
-
-
-
-
-
-
   return (
     <Card className="grid gap-2 p-2">
       {products.map((product, idx) => (

@@ -243,7 +243,7 @@ const Category = () => {
                 </div>
 
 
-                {/* Image preview */}
+                {/* Image previe */}
                 {inputValues.picture && (
                   <div className="mt-2">
                     <img

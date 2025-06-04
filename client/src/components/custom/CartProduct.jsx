@@ -1,3 +1,4 @@
+// CartProduct.jsx
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -68,52 +69,58 @@ const CartProduct = ({ _id, name, price, quantity, image, stock }) => {
     }
   };
 
-
   return (
-    <div className="flex justify-between items-center py-3 border-b cursor-pointer hover:bg-gray-50" onClick={handleBuyNow}>
+    <div
+      className="flex justify-between items-center px-2 py-3 border-b cursor-pointer hover:bg-gray-50"
+      onClick={handleBuyNow}
+    >
       <div className="flex items-center">
-        <img src={image || '/fallback.jpg'} alt={name} className="w-16 h-16 object-cover rounded-md" />
+        <img
+          src={image || '/fallback.jpg'}
+          alt={name}
+          className="w-16 h-16 object-cover rounded-md"
+        />
         <div className="ml-4">
-          <h4 className="font-semibold text-gray-900">{name}</h4>
-          <p className="text-sm text-gray-500">Qty: {quantity}</p>
+          <h4 className="font-semibold text-gray-900">{name.slice(0, 50)}...</h4>
+          <div className='flex items-center gap-4 mt-2'>
+            <div className="flex border border-black rounded-full">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDecrease(e);
+                }}
+                className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400"
+                disabled={quantity <= 1}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                min="1"
+                max={stock}
+                value={inputQty || ''}
+                onChange={handleManualChange}
+                onBlur={handleManualBlur}
+                onClick={(e) => e.stopPropagation()}
+                className="w-10 text-center focus:outline-none text-sm py-1"
+              />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleIncrease(e);
+                }}
+                className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400"
+                disabled={quantity >= stock}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
       <div className="flex items-center space-x-4">
-      
-
-        {/* Quantity Controls */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleDecrease}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={quantity <= 1}
-            title="Decrease quantity"
-          >
-            -
-          </button>
-
-          <input
-            type="number"
-            value={inputQty}
-            onChange={handleManualChange}
-            onBlur={handleManualBlur}
-            min="1"
-            max={stock}
-            className="w-16 border rounded-md text-center text-sm p-1"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          <button
-            onClick={handleIncrease}
-            className="text-gray-500 hover:text-gray-700"
-            disabled={quantity >= stock}
-            title="Increase quantity"
-          >
-            +
-          </button>
-        </div>
-
         {/* Remove Button */}
         <button
           onClick={handleRemove}

@@ -11,10 +11,16 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { Pagination } from 'swiper/modules';
 import { Loader2 } from 'lucide-react';
-import { Badge } from '../ui/badge';
 import { motion, useInView } from 'framer-motion';
 
-const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAddingToCart }) => {
+const ProductCard = ({
+  product,
+  quantity,
+  onQuantityChange,
+  onAddToCart,
+  isAddingToCart,
+  isInCart,
+}) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: false });
 
@@ -39,28 +45,65 @@ const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, isAddin
         <div className="flex-grow" />
         <div className="mt-4 flex flex-col gap-2">
           <div className="flex sm:flex-row items-center gap-2 justify-between mt-4">
-            {/* Quantity Input */}
+            {/* Quantity Controls */}
             <div className="flex items-center gap-1">
               <p className="text-sm font-medium">Qty</p>
-              <input
-                type="number"
-                max={product.stock}
-                value={quantity || ''}
-                onChange={(e) => onQuantityChange(product._id, e.target.value, product.stock)}
-                className="w-16 text-center border rounded-xl text-sm py-2"
-              />
+              <div className="flex border border-black rounded-full">
+                <button
+                  onClick={() =>
+                    onQuantityChange(product._id, (parseInt(quantity) || 1) - 1, product.stock)
+                  }
+                  className="w-7 rounded-l-full h-7 flex items-center justify-center text-sm font-bold hover:bg-gray-200"
+                  disabled={(parseInt(quantity) || 1) <= 1}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  max={product.stock}
+                  value={quantity === '' ? '' : quantity}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      onQuantityChange(product._id, '', product.stock);
+                    } else {
+                      const parsed = parseInt(val);
+                      if (!isNaN(parsed)) {
+                        onQuantityChange(product._id, parsed, product.stock);
+                      }
+                    }
+                  }}
+                  className="w-10 text-center focus:outline-none text-sm py-1"
+                />
+                <button
+                  onClick={() =>
+                    onQuantityChange(product._id, (parseInt(quantity) || 1) + 1, product.stock)
+                  }
+                  className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200"
+                  disabled={(parseInt(quantity) || 1) >= product.stock}
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             {/* Add to Cart Button */}
             <button
               onClick={() => onAddToCart(product)}
-              disabled={isAddingToCart || quantity <= 0}
-              className={`text-sm cursor-pointer px-4 md:px-8 py-2 rounded-xl transition-colors whitespace-nowrap w-full sm:w-auto ${isAddingToCart || quantity <= 0
+              disabled={isInCart || isAddingToCart || (parseInt(quantity) || 0) <= 0}
+              className={`text-sm cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-colors whitespace-nowrap w-full sm:w-auto ${
+                isInCart
+                  ? 'bg-green-600'
+                  : isAddingToCart || (parseInt(quantity) || 0) <= 0
                   ? 'bg-red-700 cursor-not-allowed'
                   : 'bg-black hover:bg-gray-800'
-                } text-white`}
+              } text-white`}
             >
-              {isAddingToCart ? 'Adding...' : 'Add to Cart'}
+              {isInCart
+                ? 'Added to Cart'
+                : isAddingToCart
+                ? 'Adding...'
+                : 'Add to Cart'}
             </button>
           </div>
         </div>
@@ -76,9 +119,11 @@ const ProductList = () => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const { categories } = useSelector((s) => s.categories);
   const { products, status } = useSelector((s) => s.products);
   const { user } = useSelector((state) => state.auth);
+  const { cartItems } = useSelector((state) => state.cart);
 
   const chunkArray = (array, size) => {
     const result = [];
@@ -109,7 +154,7 @@ const ProductList = () => {
   useEffect(() => {
     if (products.length > 0) {
       const initialQuantities = {};
-      products.forEach(product => {
+      products.forEach((product) => {
         initialQuantities[product._id] = product.stock > 0 ? 1 : 0;
       });
       setQuantities(initialQuantities);
@@ -117,19 +162,26 @@ const ProductList = () => {
   }, [products]);
 
   const handleQuantityChange = (productId, value, stock) => {
+    if (value === '') {
+      setQuantities((prev) => ({ ...prev, [productId]: '' }));
+      return;
+    }
+
     let newValue = parseInt(value);
-    newValue = Math.max(Math.min(newValue, stock), 0);
-    setQuantities(prev => ({ ...prev, [productId]: newValue }));
+    if (isNaN(newValue)) newValue = 1;
+    newValue = Math.max(Math.min(newValue, stock), 1);
+    setQuantities((prev) => ({ ...prev, [productId]: newValue }));
   };
 
-  const handleAddToCart = async (product) => {
+  const handleAddToCart = (product) => {
     if (!user) {
       toast.warning('You must login first');
       navigate('/login');
       return;
     }
 
-    if (quantities[product._id] <= 0) {
+    const qty = parseInt(quantities[product._id]);
+    if (!qty || qty <= 0) {
       toast.warning('Please select at least 1 item');
       return;
     }
@@ -142,14 +194,14 @@ const ProductList = () => {
         name: product.title,
         price: product.price,
         stock: product.stock,
-        quantity: quantities[product._id],
+        quantity: qty,
         image: product.image,
       })
     );
 
     setIsAddingToCart(false);
     toast.success('Product added to cart');
-    setQuantities(prev => ({ ...prev, [product._id]: 1 }));
+    setQuantities((prev) => ({ ...prev, [product._id]: 1 }));
   };
 
   const loadingProducts = status === 'loading';
@@ -161,22 +213,22 @@ const ProductList = () => {
         {categoryChunks.map((chunk, index) => (
           <SwiperSlide key={index}>
             <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
-              {chunk.map(cat => (
+              {chunk.map((cat) => (
                 <div
                   key={cat._id}
-                  className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''}  cursor-pointer text-center`}
+                  className={`flex flex-col items-center rounded-xl p-1 ${
+                    category === cat._id ? 'border border-[#FED700]' : ''
+                  } cursor-pointer text-center`}
                   onClick={() => setCategory(cat._id)}
                 >
-                  <div className={`rounded-full p-1`}>
+                  <div className="rounded-full p-1">
                     <img
                       src={cat.image || '/fallback.jpg'}
                       alt={cat.name}
                       className="w-16 h-16 object-cover rounded-full"
                     />
                   </div>
-                  <p className={`text-xs mt-2`}>
-                    {cat.name}
-                  </p>
+                  <p className="text-xs mt-2">{cat.name}</p>
                 </div>
               ))}
             </div>
@@ -188,7 +240,7 @@ const ProductList = () => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search products…"
-        className="mb-6 border w-full rounded-xl border-[#FED700]  px-3 py-2 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+        className="mb-6 border w-full rounded-xl border-[#FED700] px-3 py-2 focus:outline-none focus:ring-1 focus:ring-yellow-400"
       />
 
       {/* Loader */}
@@ -198,25 +250,29 @@ const ProductList = () => {
         </div>
       )}
 
-      {/* Empty */}
-      {!loadingProducts && products.filter(p => p.stock > 0).length === 0 && (
+      {/* Empty State */}
+      {!loadingProducts && products.filter((p) => p.stock > 0).length === 0 && (
         <p className="text-center text-lg text-gray-500 mb-10">No products found.</p>
       )}
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {products
-          .filter(product => product.stock > 0)
-          .map(product => (
-            <ProductCard
-              key={product._id}
-              product={product}
-              quantity={quantities[product._id]}
-              onQuantityChange={handleQuantityChange}
-              onAddToCart={handleAddToCart}
-              isAddingToCart={isAddingToCart}
-            />
-          ))}
+          .filter((product) => product.stock > 0)
+          .map((product) => {
+            const isInCart = !!cartItems.find((item) => item._id === product._id);
+            return (
+              <ProductCard
+                key={product._id}
+                product={product}
+                quantity={quantities[product._id]}
+                onQuantityChange={handleQuantityChange}
+                onAddToCart={handleAddToCart}
+                isAddingToCart={isAddingToCart}
+                isInCart={isInCart}
+              />
+            );
+          })}
       </div>
     </div>
   );
