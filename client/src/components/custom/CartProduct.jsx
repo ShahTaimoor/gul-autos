@@ -12,7 +12,7 @@ const CartProduct = ({ _id, name, price, quantity, image, stock }) => {
   const [inputQty, setInputQty] = useState(quantity);
 
   useEffect(() => {
-    setInputQty(quantity); // Sync when quantity updates externally
+    setInputQty(quantity); // Syn when quantity updates externally
   }, [quantity]);
 
   const handleBuyNow = () => {
