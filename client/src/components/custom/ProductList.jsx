@@ -58,6 +58,7 @@ const ProductCard = ({
                 >
                   −
                 </button>
+
                 <input
                   type="number"
                   max={product.stock}
@@ -73,8 +74,13 @@ const ProductCard = ({
                       }
                     }
                   }}
-                  className="w-10 text-center focus:outline-none text-sm py-1"
+                  onFocus={(e) => e.target.select()}
+                  className="w-10 text-center focus:outline-none text-sm py-1 
+                    [&::-webkit-outer-spin-button]:appearance-none 
+                    [&::-webkit-inner-spin-button]:appearance-none 
+                    appearance-none"
                 />
+
                 <button
                   onClick={() =>
                     onQuantityChange(product._id, (parseInt(quantity) || 1) + 1, product.stock)
@@ -90,7 +96,7 @@ const ProductCard = ({
             {/* Add to Cart Button */}
             <button
               onClick={() => onAddToCart(product)}
-              disabled={isInCart || isAddingToCart || (parseInt(quantity) || 0) <= 0}
+              disabled={isAddingToCart || (parseInt(quantity) || 0) <= 0}
               className={`text-sm cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-colors whitespace-nowrap w-full sm:w-auto ${
                 isInCart
                   ? 'bg-green-600'
@@ -216,9 +222,8 @@ const ProductList = () => {
               {chunk.map(cat => (
                 <div
                   key={cat._id}
-                  className={`flex flex-col items-center rounded-xl p-1 ${
-                    category === cat._id ? 'border border-[#FED700]' : ''
-                  } cursor-pointer text-center`}
+                  className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''
+                    } cursor-pointer text-center`}
                   onClick={() => setCategory(cat._id)}
                 >
                   <div className="rounded-full p-1">

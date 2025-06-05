@@ -142,3 +142,7 @@ body {
   -webkit-line-clamp: 2; /* Limits the title to 2 lines */
   -webkit-box-orient: vertical; /* Ensures the text is wrapped */
 }
+
+html{
+  scroll-behavior: smooth;
+}
