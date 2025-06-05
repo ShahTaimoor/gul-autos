@@ -58,7 +58,6 @@ const ProductCard = ({
                 >
                   −
                 </button>
-
                 <input
                   type="number"
                   max={product.stock}
@@ -74,11 +73,8 @@ const ProductCard = ({
                       }
                     }
                   }}
-                  onFocus={(e) => e.target.select()}
-                  className="w-10 text-center focus:outline-none text-sm py-1 
-                    [&::-webkit-outer-spin-button]:appearance-none 
-                    [&::-webkit-inner-spin-button]:appearance-none 
-                    appearance-none"
+                  onFocus={(e) => e.target.select()} 
+                  className="w-10 text-center focus:outline-none text-sm py-1"
                 />
 
                 <button
@@ -97,19 +93,18 @@ const ProductCard = ({
             <button
               onClick={() => onAddToCart(product)}
               disabled={isAddingToCart || (parseInt(quantity) || 0) <= 0}
-              className={`text-sm cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-colors whitespace-nowrap w-full sm:w-auto ${
-                isInCart
+              className={`text-sm cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-colors whitespace-nowrap w-full sm:w-auto ${isInCart
                   ? 'bg-green-600'
                   : isAddingToCart || (parseInt(quantity) || 0) <= 0
-                  ? 'bg-red-700 cursor-not-allowed'
-                  : 'bg-black hover:bg-gray-800'
-              } text-white`}
+                    ? 'bg-red-700 cursor-not-allowed'
+                    : 'bg-black hover:bg-gray-800'
+                } text-white`}
             >
               {isInCart
                 ? 'Added to Cart'
                 : isAddingToCart
-                ? 'Adding...'
-                : 'Add to Cart'}
+                  ? 'Adding...'
+                  : 'Add to Cart'}
             </button>
           </div>
         </div>
