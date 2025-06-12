@@ -46,6 +46,7 @@ const orderSchema = new mongoose.Schema({
     enum: ['Pending', 'Completed'],
     default: 'Pending',
   },
+  
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);
