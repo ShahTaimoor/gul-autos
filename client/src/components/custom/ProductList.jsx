@@ -119,7 +119,7 @@ const ProductCard = ({
           <button
             onClick={handleAddClick}
             disabled={isAddingToCart || (parseInt(quantity) || 0) <= 0}
-            className={`text-sm mt-2 lg:0 lg:w-32 cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 bg-black/80 hover:bg-black/90 ${isInCart
+            className={`text-sm mt-2 lg:mt-0 lg:w-32 cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 bg-black/80 hover:bg-black/90 ${isInCart
               ? 'bg-green-600 hover:bg-green-700'
               : isAddingToCart || (parseInt(quantity) || 0) <= 0
                 ? 'bg-red-700 cursor-not-allowed'
