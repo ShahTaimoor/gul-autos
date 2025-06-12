@@ -14,7 +14,6 @@ import { toast } from 'sonner';
 import OrderData from './OrderData';
 import { fetchOrdersAdmin } from '@/redux/slices/order/orderSlice';
 
-// Helper function to get Pakistani date in yyyy-mm-dd format
 const getPakistaniDate = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
 };
@@ -23,9 +22,8 @@ const Orders = () => {
   const dispatch = useDispatch();
   const { orders, status, error } = useSelector((state) => state.orders);
   const [selectedOrder, setSelectedOrder] = useState(null);
-
-  // For filtering by date, default to Pakistani date
   const [selectedDate, setSelectedDate] = useState(getPakistaniDate());
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     dispatch(fetchOrdersAdmin());
@@ -37,35 +35,50 @@ const Orders = () => {
     }
   }, [status, error]);
 
-  // Filter orders by selected date (yyyy-mm-dd)
-  const filteredOrders = orders.filter((order) => {
-    const orderDate = new Date(order.createdAt)
-      .toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
-    return orderDate === selectedDate;
-  });
-
   const todayString = getPakistaniDate();
+
+  const sortedOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const filteredOrders = showAll
+    ? sortedOrders
+    : sortedOrders.filter((order) => {
+        const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', {
+          timeZone: 'Asia/Karachi',
+        });
+        return orderDate === selectedDate;
+      });
 
   return (
     <div className="px-6 py-10">
-      <h1 className="text-2xl font-bold mb-8">My Orders</h1>
+      <h1 className="text-2xl font-bold mb-8">Orders</h1>
 
-      {/* Date picker for filtering */}
+      {/* Date and All Orders toggle */}
       <div className="flex items-center gap-4 mb-6">
         <input
           type="date"
           value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
+          onChange={(e) => {
+            setSelectedDate(e.target.value);
+            setShowAll(false);
+          }}
           className="p-2 border rounded"
           max={todayString}
         />
-        <Button onClick={() => setSelectedDate(todayString)}>Today</Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? 'Show Today\'s Orders' : 'Show All Orders'}
+        </Button>
       </div>
 
+      {/* Orders grid */}
       {status === 'loading' ? (
         <div className="text-center text-gray-500">Loading orders...</div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center text-gray-500">No orders found for {selectedDate}.</div>
+        <div className="text-center text-gray-500">
+          {showAll ? 'No orders found.' : `No orders found for ${selectedDate}.`}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredOrders.map((order) => (
@@ -78,7 +91,13 @@ const Orders = () => {
               <div className="mb-4">
                 <h2 className="text-lg font-semibold truncate">Order ID: {order._id}</h2>
                 <p className="text-sm text-gray-500">
-                  {new Date(order.createdAt).toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                  {new Date(order.createdAt).toLocaleDateString('en-US', {
+                    timeZone: 'Asia/Karachi',
+                    weekday: 'short',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  })}
                 </p>
               </div>
 
@@ -99,7 +118,11 @@ const Orders = () => {
                 {order.products.map((item, index) => (
                   <div key={index} className="flex items-center gap-3 border-b pb-2 last:border-none">
                     <img
-                      src={item?.id?.picture?.secure_url ? item.id.picture.secure_url : 'fallback.jpg'}
+                      src={
+                        item?.id?.picture?.secure_url
+                          ? item.id.picture.secure_url
+                          : 'fallback.jpg'
+                      }
                       alt={item.id?.name || 'Product Image'}
                       className="w-10 h-10 object-cover rounded-md"
                     />
@@ -112,21 +135,25 @@ const Orders = () => {
                 ))}
               </div>
 
-              {/* Actions - positioned at the bottom */}
+              {/* Actions */}
               <div className="mt-auto pt-6">
-                {/* Shipping Address */}
                 <div className="mb-1">
                   <p className="text-gray-500 text-sm">Shipping Address</p>
-                  <p className="text-gray-700 text-sm font-medium mt-1">{order.address.slice(0, 80)}</p>
+                  <p className="text-gray-700 text-sm font-medium mt-1">
+                    {order.address.slice(0, 80)}
+                  </p>
                 </div>
                 <div className="mb-1">
                   <p className="text-gray-500 text-sm">City</p>
-                  <p className="text-gray-700 text-sm font-medium mt-1">{order.city.slice(0, 20)}</p>
+                  <p className="text-gray-700 text-sm font-medium mt-1">
+                    {order.city.slice(0, 20)}
+                  </p>
                 </div>
                 <div className="mb-1">
                   <p className="text-gray-500 text-sm">Phone</p>
                   <p className="text-gray-700 text-sm font-medium mt-1">{order.phone}</p>
                 </div>
+
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
@@ -141,7 +168,9 @@ const Orders = () => {
                   <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Invoice Details</DialogTitle>
-                      <DialogDescription>Here’s the full invoice for this order.</DialogDescription>
+                      <DialogDescription>
+                        Here’s the full invoice for this order.
+                      </DialogDescription>
                     </DialogHeader>
 
                     {selectedOrder && (

@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -15,13 +15,16 @@ const Login = () => {
   const params = new URLSearchParams(location.search);
   const expired = params.get('expired');
   const from = location.state?.from?.pathname || '/';
+
   useEffect(() => {
     if (expired) {
       toast.error("Session expired. Please login again.");
     }
   }, [expired]);
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [inputValue, setInputValues] = useState({
     name: '',
     password: ''
@@ -45,7 +48,6 @@ const Login = () => {
           setInputValues({ name: '', password: '' });
           navigate(from, { replace: true });
         } else {
-          // This case might be rare, but just in case
           setErrorMsg('Login failed');
           toast.error('Login failed');
         }
@@ -53,8 +55,6 @@ const Login = () => {
       .catch((error) => {
         console.log('Login error:', error);
 
-        // Check error message or error code to detect invalid credentials
-        // Adjust the condition below according to your backend's error structure
         if (
           error?.message?.toLowerCase().includes('invalid') ||
           error?.message?.toLowerCase().includes('incorrect') ||
@@ -74,7 +74,6 @@ const Login = () => {
         setLoading(false);
       });
   };
-
 
   return (
     <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
@@ -104,16 +103,23 @@ const Login = () => {
           />
         </div>
 
-        <div className='mb-4'>
+        <div className='mb-4 relative'>
           <label className='block text-sm font-semibold mb-2'>Password</label>
           <Input
-            type='password'
+            type={showPassword ? 'text' : 'password'}
             name='password'
             placeholder='Enter your password'
             value={inputValue.password}
             onChange={handleChange}
             required
+            className='pr-10'
           />
+          <div
+            onClick={() => setShowPassword((prev) => !prev)}
+            className='absolute right-3 top-9 cursor-pointer text-gray-500'
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </div>
         </div>
 
         <Button className='w-full mt-4' disabled={loading} type='submit'>

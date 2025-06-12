@@ -120,16 +120,7 @@ const AllProducts = () => {
               ? 'Try adjusting your search or filter'
               : 'Add a new product to get started'}
           </p>
-          <Button
-            onClick={() => {
-              setSearchTerm('');
-              setCategory('all');
-            }}
-            variant="outline"
-            className="mt-4"
-          >
-            Clear filters
-          </Button>
+
         </div>
       )}
 
@@ -137,69 +128,67 @@ const AllProducts = () => {
       {!loading && products.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((p) => (
-            <Card key={p._id} className="group overflow-hidden transition-shadow hover:shadow-lg flex flex-col h-full">
-              {/* Image Section */}
-              <div className="relative aspect-square overflow-hidden">
+            <Card
+              key={p._id}
+              className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full"
+            >
+              {/* Product Image */}
+              <div className="relative aspect-square bg-gray-50 overflow-hidden">
                 <img
                   src={p.image || '/placeholder-product.jpg'}
                   alt={p.title}
-                  width={1600}
-                  height={1600}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => {
                     e.currentTarget.src = '/placeholder-product.jpg';
                   }}
                 />
                 {p.stock <= 0 && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="destructive">Out of Stock</Badge>
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                    <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
+                      Out of Stock
+                    </Badge>
                   </div>
                 )}
               </div>
 
-              {/* Content Section with sticky bottom buttons */}
-              <div className="p-4 flex flex-col flex-grow justify-between">
-                {/* Top Content */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <h3 className="font-medium line-clamp-2" title={p.title}>
-                      {p.title}
-                    </h3>
-                    <Badge variant="outline" className="font-medium">
-                      Rs {p.price}
-                    </Badge>
+              {/* Product Info */}
+              <div className="flex flex-col p-4">
+                <div className="space-y-1 mb-2">
+                  <h2 className="text-base font-semibold line-clamp-2">
+                    {capitalizeAllWords(p.title)}
+                  </h2>
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline">Rs {p.price}</Badge>
+                    {p.category?.name && (
+                      <span className="text-sm text-muted-foreground">
+                        {capitalizeAllWords(p.category.name)}
+                      </span>
+                    )}
                   </div>
-
-                   {p.category?.name && (
-                    <p className="text-sm text-muted-foreground">
-                      {capitalizeAllWords(p.category.name)}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 mt-1">
                     <span
-                      className={`inline-block h-2 w-2 rounded-full ${p.stock > 10
-                        ? 'bg-green-500'
-                        : p.stock > 0
-                          ? 'bg-amber-500'
-                          : 'bg-red-500'
+                      className={`inline-block w-2 h-2 rounded-full ${p.stock > 10
+                          ? 'bg-green-500'
+                          : p.stock > 0
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
                         }`}
                     />
-                    <span className="text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
                     </span>
                   </div>
                 </div>
 
-                {/* Fixed Bottom Buttons */}
-                <div className="flex gap-2 pt-4 mt-4">
+                {/* Action Buttons */}
+                <div className="mt-auto pt-2 flex gap-2">
                   <Button
                     onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
                     variant="outline"
                     size="sm"
                     className="flex-1 gap-2"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Edit className="w-4 h-4" />
                     Edit
                   </Button>
                   <Button
@@ -208,12 +197,14 @@ const AllProducts = () => {
                     size="sm"
                     className="flex-1 gap-2"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="w-4 h-4" />
                     Delete
                   </Button>
                 </div>
               </div>
             </Card>
+
+
 
           ))}
         </div>

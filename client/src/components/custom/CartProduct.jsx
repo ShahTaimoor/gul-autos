@@ -89,79 +89,84 @@ const CartProduct = ({ _id, name, price, quantity, image, stock }) => {
       `}</style>
 
       <div
-        className="flex relative justify-between items-center px-2 py-3 border-b cursor-pointer hover:bg-gray-50"
-        onClick={handleBuyNow}
+  className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50 cursor-pointer transition"
+  onClick={handleBuyNow}
+>
+  {/* Left Section: Image + Name */}
+  <div className="flex items-center gap-4">
+    <img
+      src={image || '/fallback.jpg'}
+      alt={name}
+      className="w-16 h-16 object-cover rounded-lg border"
+    />
+    <div className="max-w-[200px]">
+      <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">
+        {name}
+      </h4>
+    </div>
+  </div>
+
+  {/* Right Section: Quantity Controls + Delete */}
+  <div className="flex items-center gap-3 ml-auto">
+    {/* Quantity Controls */}
+    <div className="flex items-center gap-1 border border-gray-300 rounded-full shadow-sm">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (inputQty > 1) handleQuantityChange(inputQty - 1);
+          else toast.error('Quantity cannot be less than 1');
+        }}
+        className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
+        disabled={inputQty <= 1}
+        title="Decrease quantity"
       >
-        <div className="flex items-center">
-          <img
-            src={image || '/fallback.jpg'}
-            alt={name}
-            className="w-16 h-16 object-cover rounded-md"
-          />
-          <div className="ml-4">
-            <h4 className="font-semibold text-sm text-gray-900">{name.slice(0, 44)}...</h4>
-          </div>
+        −
+      </button>
 
-          {/* Quantity Controls */}
-          <div className="flex items-center gap-1 mr-6 lg:mr-1 border border-black rounded-full ml-4">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (inputQty > 1) handleQuantityChange(inputQty - 1);
-                else toast.error('Quantity cannot be less than 1');
-              }}
-              className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200"
-              disabled={inputQty <= 1}
-              title="Decrease quantity"
-            >
-              −
-            </button>
+      <input
+        type="number"
+        value={inputQty === '' ? '' : inputQty}
+        onChange={(e) => {
+          e.stopPropagation();
+          handleInputChange(e);
+        }}
+        onBlur={(e) => {
+          e.stopPropagation();
+          handleInputBlur();
+        }}
+        onClick={(e) => e.stopPropagation()}
+        max={stock}
+        min={1}
+        className="w-10 text-center text-sm focus:outline-none bg-transparent appearance-none 
+          [&::-webkit-inner-spin-button]:appearance-none 
+          [&::-webkit-outer-spin-button]:appearance-none"
+      />
 
-            <input
-              type="number"
-              value={inputQty === '' ? '' : inputQty}
-              onChange={(e) => {
-                e.stopPropagation();
-                handleInputChange(e);
-              }}
-              onBlur={(e) => {
-                e.stopPropagation();
-                handleInputBlur();
-              }}
-              onClick={(e) => e.stopPropagation()}
-              max={stock}
-              min={1}
-              className="w-10 text-center focus:outline-none text-sm py-1 
-                appearance-none 
-                [&::-webkit-inner-spin-button]:appearance-none 
-                [&::-webkit-outer-spin-button]:appearance-none"
-            />
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (inputQty < stock) handleQuantityChange(inputQty + 1);
+          else toast.error(`Only ${stock} items in stock`);
+        }}
+        className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
+        disabled={inputQty >= stock}
+        title="Increase quantity"
+      >
+        +
+      </button>
+    </div>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (inputQty < stock) handleQuantityChange(inputQty + 1);
-                else toast.error(`Only ${stock} items in stock`);
-              }}
-              className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200"
-              disabled={inputQty >= stock}
-              title="Increase quantity"
-            >
-              +
-            </button>
-          </div>
-        </div>
+    {/* Trash Button */}
+    <button
+      onClick={handleRemove}
+      className="text-red-500 hover:text-red-600 transition"
+      title="Remove from cart"
+    >
+      <Trash2 size={16} />
+    </button>
+  </div>
+</div>
 
-        <div className="flex absolute top-1 right-1 items-center space-x-4">
-          <button
-            onClick={handleRemove}
-            className="text-red-500 hover:text-red-700 transition"
-            title="Remove from cart"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
     </>
   );
 };
