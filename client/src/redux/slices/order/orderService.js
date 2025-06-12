@@ -69,7 +69,30 @@ const getMetrics = async () => {
   }
 };
 
+// Add this to your existing orderService.js
+
+// Update Order Status
+const updateOrderStatus = async (orderId, status) => {
+  try {
+    const axiosResponse = await axios.put(
+      `${API_URL}/${orderId}/status`,
+      { status },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    return axiosResponse.data;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || error.message || 'An unexpected error occurred while updating order status.';
+    return Promise.reject(errorMessage);
+  }
+};
 
 
-const orderService = { getAllOrder, addOrder, getMetrics, getAllOrderAdmin };
+const orderService = { getAllOrder, addOrder, getMetrics, getAllOrderAdmin, updateOrderStatus };
+
 export default orderService;

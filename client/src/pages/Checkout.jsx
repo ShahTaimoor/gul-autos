@@ -5,15 +5,23 @@ import { toast } from 'sonner';
 import { addOrder } from '@/redux/slices/order/orderSlice';
 import { emptyCart } from '@/redux/slices/cartSlice';
 import { updateProfile } from '@/redux/slices/auth/authSlice';
-
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import {
+  Check,
+  CreditCard,
+  Edit,
+  Home,
+  Loader2,
+  MapPin,
+  Phone,
+  ShoppingBag,
+  ShoppingCart,
+  AlertCircle,
+} from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import CheckoutProduct from '@/components/custom/CheckoutProduct';
 
 const Checkout = () => {
   const { cartItems, totalPrice } = useSelector((state) => state.cart);
@@ -32,7 +40,6 @@ const Checkout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Sync when user updates
   useEffect(() => {
     setFormData({
       address: user?.address || '',
@@ -58,7 +65,7 @@ const Checkout = () => {
 
   const handleCheckout = async () => {
     const { address, phone, city } = formData;
-    if (address.trim() === '' || phone.trim() === '' || city.trim() === '') {
+    if (!address.trim() || !phone.trim() || !city.trim()) {
       return toast('Please fill out all fields');
     }
 
@@ -97,103 +104,209 @@ const Checkout = () => {
   };
 
   return (
-    <div className='mx-auto mt-20 max-w-6xl px-4 sm:px-8 py-12'>
-      <div className='flex flex-col sm:flex-row gap-10'>
-        {/* LEFT: Order Summary */}
-        <div className='sm:w-2/3 space-y-6'>
-          <h2 className='text-2xl font-semibold text-gray-800'>Order Summary</h2>
-          <Card className="p-6 space-y-4">
-            {cartItems.map((item) => (
-              <CheckoutProduct key={item._id} {...item} />
-            ))}
-          </Card>
+    <div className="min-h-screen bg-gradient-to-b mt-12 from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Order Summary */}
+          <div className="md:w-2/3 space-y-6">
+            <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300">
+              <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-100 rounded-full filter blur-3xl opacity-20"></div>
+              </div>
+
+              <h2 className="relative z-10 text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+                <ShoppingBag className="w-6 h-6 mr-2 text-black" />
+                Order Summary
+              </h2>
+
+              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 space-y-4 divide-y divide-gray-100">
+                {cartItems.map((item) => (
+                  <div key={item._id} className="relative pb-2 pt-4 group">
+                    <div className="absolute inset-0 rounded-lg bg-blue-50 opacity-0 group-hover:opacity-30 transition-opacity duration-300 -mx-2"></div>
+                    <div className="relative flex items-start gap-4 z-10">
+                      <div className="relative flex-shrink-0">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-gray-200/60 group-hover:border-blue-200 transition-all shadow-sm relative">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none"></div>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                          {item.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-900">Qty: {item.quantity}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Billing Info */}
+          <div className="md:w-1/3">
+            <div className="sticky top-6">
+              <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                  <div className="absolute -top-5 -left-5 w-32 h-32 bg-teal-100 rounded-full filter blur-3xl opacity-20"></div>
+                </div>
+
+                <h2 className="relative z-10 text-xl font-semibold text-gray-800 mb-6 flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
+                  Billing Information
+                </h2>
+
+                <div className="relative z-10 space-y-6">
+                  {!showForm ? (
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-gray-700">Contact</h3>
+                          <Check className="w-4 h-4 text-green-500" />
+                        </div>
+                        <p className="text-sm text-gray-600">{user?.email}</p>
+                        <p className="text-sm text-gray-600">{user?.phone}</p>
+                      </div>
+
+                      <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium text-gray-700">Shipping Address</h3>
+                          <Check className="w-4 h-4 text-green-500" />
+                        </div>
+                        <p className="text-sm text-gray-600">{user?.name}</p>
+                        <p className="text-sm text-gray-600">{user?.address}</p>
+                        <p className="text-sm text-gray-600">{user?.city}</p>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowForm(true)}
+                        className="w-full border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Profile Info
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="phone" className="text-sm text-gray-600 mb-1 flex items-center">
+                          <Phone className="w-4 h-4 mr-1" />
+                          Phone
+                        </Label>
+                        <Input
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleChange}
+                          placeholder="+1 (555) 123-4567"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="city" className="text-sm text-gray-600 mb-1 flex items-center">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          City
+                        </Label>
+                        <Input
+                          name="city"
+                          value={formData.city}
+                          onChange={handleChange}
+                          placeholder="New York"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="address" className="text-sm text-gray-600 mb-1 flex items-center">
+                          <Home className="w-4 h-4 mr-1" />
+                          Address
+                        </Label>
+                        <Textarea
+                          name="address"
+                          value={formData.address}
+                          onChange={handleChange}
+                          placeholder="123 Main St, Apt 4B"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex gap-3 pt-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowForm(false)}
+                          className="flex-1 border-gray-300 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          onClick={handleProfileUpdate}
+                          disabled={status === 'loading'}
+                          className="flex-1 bg-black text-white"
+                        >
+                          {status === 'loading' ? (
+                            <>
+                              <Loader2 className="animate-spin w-4 h-4" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="w-4 h-4" />
+                              Save Info
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 text-center pt-2">
+                    By placing your order, you agree to our{' '}
+                    <a href="#" className="text-blue-600 hover:underline">
+                      Terms of Service
+                    </a>{' '}
+                    and{' '}
+                    <a href="#" className="text-blue-600 hover:underline">
+                      Privacy Policy
+                    </a>
+                    .
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <Alert variant="destructive" className="mt-6 animate-in fade-in">
+                  <AlertCircle className="w-5 h-5" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* RIGHT: Billing Information */}
-        <div className='sm:w-1/3'>
-          <Card className='p-6 shadow-lg rounded-lg space-y-6'>
-            <h2 className='text-xl font-semibold text-gray-800'>Billing Information</h2>
-
-            {!showForm ? (
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm">Full Name</Label>
-                  <Input value={user?.name || ''} disabled />
-                </div>
-                <div>
-                  <Label className="text-sm">Phone</Label>
-                  <Input value={user?.phone || ''} disabled />
-                </div>
-                <div>
-                  <Label className="text-sm">City</Label>
-                  <Input value={user?.city || ''} disabled />
-                </div>
-                <div>
-                  <Label className="text-sm">Address</Label>
-                  <Textarea value={user?.address || ''} disabled rows={3} />
-                </div>
-
-                <Button variant="outline" onClick={() => setShowForm(true)} className="w-full">
-                  Edit Profile Info
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="phone" className="text-sm">Phone</Label>
-                  <Input
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="city" className="text-sm">City</Label>
-                  <Input
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="Enter your city"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address" className="text-sm">Address</Label>
-                  <Textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    placeholder="Enter your address"
-                    rows={3}
-                  />
-                </div>
-                <div className="flex gap-4">
-                  <Button variant="outline" onClick={() => setShowForm(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleProfileUpdate} disabled={status === 'loading'}>
-                    {status === 'loading' ? 'Saving...' : 'Save Info'}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            <Button
-              onClick={handleCheckout}
-              disabled={loading}
-              className='w-full mt-6'
-            >
-              {loading ? <Loader2 className="animate-spin text-white mr-2" size={20} /> : 'Place Order'}
-            </Button>
-          </Card>
-
-          {error && (
-            <Alert variant="destructive" className="mt-6">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+      {/* Fixed Place Order Button */}
+      <div className="fixed animate-bounce bottom-5 left-5 z-50">
+        <Button
+          onClick={handleCheckout}
+          disabled={loading}
+          className="bg-black text-white px-6 py-3 shadow-lg hover:shadow-xl flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="animate-spin w-5 h-5" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <ShoppingCart className="w-5 h-5" />
+              Place Order
+            </>
           )}
-        </div>
+        </Button>
       </div>
     </div>
   );

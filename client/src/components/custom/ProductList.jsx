@@ -70,9 +70,9 @@ const ProductCard = ({
         <h3 className="font-semibold text-sm line-clamp-2">{product.title}</h3>
         <div className="flex-grow" />
 
-        <div className="flex flex-col gap-2 mt-4">
+        <div className="flex flex-col lg:flex-row gap-2 mt-4">
           <div className="flex sm:flex-row items-center gap-2 justify-between">
-            <div className="flex w-full justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+            <div className="flex w-full lg:w-28 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={() =>
                   onQuantityChange(product._id, (parseInt(quantity) || 1) - 1, product.stock)
@@ -119,7 +119,7 @@ const ProductCard = ({
           <button
             onClick={handleAddClick}
             disabled={isAddingToCart || (parseInt(quantity) || 0) <= 0}
-            className={`text-sm cursor-pointer px-4 md:px-5 py-2 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 bg-black/80 hover:bg-black/90 ${isInCart
+            className={`text-sm mt-2 lg:0 lg:w-32 cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 bg-black/80 hover:bg-black/90 ${isInCart
               ? 'bg-green-600 hover:bg-green-700'
               : isAddingToCart || (parseInt(quantity) || 0) <= 0
                 ? 'bg-red-700 cursor-not-allowed'
@@ -330,9 +330,9 @@ const ProductList = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-3 lg:bottom-10 right-0 lg:right-5 z-50">
+      <div className="fixed bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">
         <Link to='/'>
-          <img className='w-14 h-14' src="/whatsapp.webp" alt="" />
+          <img className='w-14 h-14' src="/WhatsApp.svg.webp" alt="" />
         </Link>
       </div>
     </div>

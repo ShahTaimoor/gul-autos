@@ -68,7 +68,7 @@ const CreateProducts = () => {
 
 
     return (
-        <Card className="w-full max-w-4xl lg:min-w-[1000px] lg:min-h-[700px]  mx-auto p-4 sm:p-6 md:p-8">
+        <Card className="w-full max-w-4xl lg:min-w-[900px] lg:min-h-[700px]  mx-auto p-4 sm:p-6 md:p-8">
             <CardHeader>
                 <CardTitle>Create Product</CardTitle>
             </CardHeader>

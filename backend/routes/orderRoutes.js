@@ -85,6 +85,49 @@ router.post('/order', isAuthorized, async (req, res) => {
 });
 
 
+// Add this route to your existing orderRoutes.js file
+
+// @route PUT /api/orders/:id/status
+// @desc Update order status
+// @access Admin
+router.put('/:id/status', isAuthorized, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const { id } = req.params;
+
+    if (!status) {
+      return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    const validStatuses = ['Pending', 'Completed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
+      });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Order status updated successfully',
+      data: order
+    });
+  } catch (error) {
+    console.error('Update Status Error:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
 // @route GET /api/orders/my-orders
 // @desc Get logged-in user's orders
 // @access Private
