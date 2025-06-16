@@ -72,22 +72,18 @@ const getMetrics = async () => {
 // Add this to your existing orderService.js
 
 // Update Order Status
-const updateOrderStatus = async (orderId, status) => {
+const updateOrderStatus = async (orderId, {status, packerName}) => {
   try {
     const axiosResponse = await axios.put(
       `${API_URL}/${orderId}/status`,
-      { status },
-      {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
+      { status, packerName },
+      { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
     );
     return axiosResponse.data;
   } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while updating order status.';
+    const errorMessage = 
+      error.response?.data?.message || error.message ||
+      'An unexpected error occurred while updating order';
     return Promise.reject(errorMessage);
   }
 };

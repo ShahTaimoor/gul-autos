@@ -46,6 +46,10 @@ const orderSchema = new mongoose.Schema({
     enum: ['Pending', 'Completed'],
     default: 'Pending',
   },
+   packerName: {
+    type: String,
+    default: ''
+  },
   
 }, { timestamps: true });
 

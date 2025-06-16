@@ -92,7 +92,7 @@ router.post('/order', isAuthorized, async (req, res) => {
 // @access Admin
 router.put('/:id/status', isAuthorized, isAdmin, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, packerName } = req.body;
     const { id } = req.params;
 
     if (!status) {
@@ -109,7 +109,7 @@ router.put('/:id/status', isAuthorized, isAdmin, async (req, res) => {
 
     const order = await Order.findByIdAndUpdate(
       id,
-      { status },
+      { status, packerName },
       { new: true }
     );
 

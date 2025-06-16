@@ -18,7 +18,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-import { CalendarDays, List, Search } from 'lucide-react';
+import { CalendarDays, List } from 'lucide-react';
 
 const getPakistaniDate = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
@@ -42,22 +42,48 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [localOrders, setLocalOrders] = useState([]);
 
-  const handleStatusUpdate = async (orderId, newStatus) => {
-    try {
-      await dispatch(updateOrderStatus({ orderId, status: newStatus })).unwrap();
-      toast.success(`Order status updated to ${newStatus}`);
+  const [packerNames, setPackerNames] = useState({});
 
-      setLocalOrders(prev =>
-        prev.map(order =>
-          order._id === orderId ? { ...order, status: newStatus } : order
+  const handlePackerNameChange = (orderId, name) => {
+    setPackerNames((prev) => ({
+      ...prev,
+      [orderId]: name,
+    }))
+  };
+
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    if (newStatus === 'Completed') {
+      const packer = packerNames[orderId];
+      if (!packer) {
+        toast.error('Please enter packer name first');
+        return;
+      }
+    }
+    try {
+      const packer = packerNames[orderId] || '';
+      await dispatch(updateOrderStatus({
+        orderId,
+        status: newStatus,
+        packerName: packer
+      })).unwrap();
+
+      toast.success(`Order marked as ${newStatus}`);
+
+      setLocalOrders((prev) =>
+        prev.map((order) =>
+          order._id === orderId
+            ? {
+              ...order,
+              status: newStatus,
+              packerName: newStatus === 'Completed' ? packer : order.packerName
+            }
+            : order
         )
       );
 
-      if (statusFilter !== 'All' && statusFilter !== newStatus) {
-        setLocalOrders(prev => prev.filter(o => o._id !== orderId));
-      }
+      
     } catch (error) {
-      toast.error(error || 'Failed to update order status');
+      toast.error(error?.message || 'Failed to update order status');
     }
   };
 
@@ -68,6 +94,14 @@ const Orders = () => {
   useEffect(() => {
     if (status === 'succeeded') {
       setLocalOrders(orders);
+      // Initialize packerNames from existing orders
+      const initialPackerNames = {};
+      orders.forEach((order) => {
+        if (order.packerName) {
+          initialPackerNames[order._id] = order.packerName;
+        }
+      });
+      setPackerNames(initialPackerNames);
     }
     if (status === 'failed') {
       toast.error(error || 'Failed to fetch orders');
@@ -78,29 +112,27 @@ const Orders = () => {
 
   const filteredOrders = [...localOrders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .filter(order => {
+    .filter((order) => {
       if (!showAll) {
-        const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', {
-          timeZone: 'Asia/Karachi',
-        });
+        const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
         return orderDate === selectedDate;
       }
       return true;
     })
-    .filter(order => {
+    .filter((order) => {
       if (statusFilter !== 'All') {
         return order.status?.toLowerCase() === statusFilter.toLowerCase();
       }
       return true;
     })
-    .filter(order => {
+    .filter((order) => {
       if (!searchQuery) return true;
       return (
         order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.phone.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.products.some(p => 
-          p.id?.name.toLowerCase().includes(searchQuery.toLowerCase())
+        order.products.some((p) =>
+          p?.id?.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
       );
     });
@@ -109,13 +141,13 @@ const Orders = () => {
     <div className="px-4 py-6 md:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Order Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Order Management
+          </h1>
           <p className="text-muted-foreground">
             View and manage customer orders
           </p>
         </div>
-        
-        
       </div>
 
       <div className="space-y-6">
@@ -144,16 +176,17 @@ const Orders = () => {
                 <CalendarDays className="h-4 w-4" />
                 {showAll ? "Show Today" : "Show All"}
               </Button>
-              
+
               {!showAll && (
-                <Input
+                <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-[150px]"
                   max={todayString}
+                  className="border p-1 rounded-md"
                 />
               )}
+
             </div>
           </div>
         </div>
@@ -181,9 +214,11 @@ const Orders = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">Order #{order._id.slice(-6)}</CardTitle>
+                      <CardTitle className="text-lg">
+                        Order #{order._id.slice(-6)}
+                      </CardTitle>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString('en-US', {
+                        {new Date(order.createdAt).toLocaleString('en-US', {
                           timeZone: 'Asia/Karachi',
                           weekday: 'short',
                           year: 'numeric',
@@ -194,13 +229,15 @@ const Orders = () => {
                         })}
                       </p>
                     </div>
-                    <Badge className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}>
+                    <Badge
+                      className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}
+                    >
                       {order.status}
                     </Badge>
                   </div>
                 </CardHeader>
-                
-                <CardContent className="space-y-2">
+
+                <CardContent className="flex flex-col h-full">
                   <div className="flex justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
@@ -250,63 +287,111 @@ const Orders = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Update Status</p>
-                    <Select
-                      value={order.status || 'Pending'}
-                      onValueChange={(value) => handleStatusUpdate(order._id, value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Pending">Pending</SelectItem>
-                        <SelectItem value="Completed">Completed</SelectItem>
-                        
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Packer Input if Pending */}
+                  {order.status === 'Pending' && (
+                    <div className="space-y-2 mt-2">
+                      <p className="text-sm font-semibold">Packer Name</p>
+                      <Input
+                        placeholder="Enter packer name"
+                        value={packerNames[order._id] || ''}
+                        onChange={(e) => handlePackerNameChange(order._id, e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Display Packer for Completed */}
+                  {order.status === 'Completed' && order.packerName && (
+                    <div className="mt-2 text-sm">
+                      <p className="font-semibold">Packed by:</p>
+                      <p>{order.packerName}</p>
+                    </div>
+                  )}
+
+                  {/* Update button */}
+                   <div className="mt-auto space-y-2">
+    <p className="text-sm font-semibold">Update Status</p>
+    <Select
+      value={order.status || 'Pending'}
+      onValueChange={(newStatus) => handleStatusUpdate(order._id, newStatus)}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Select status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="Pending">Pending</SelectItem>
+        <SelectItem value="Completed">Completed</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
                 </CardContent>
 
-                <CardFooter className="flex justify-end">
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        View Details
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Order Details</DialogTitle>
-                        <DialogDescription>
-                          Complete information for order #{order._id.slice(-6)}
-                        </DialogDescription>
-                      </DialogHeader>
-                      {selectedOrder && (
-                        <OrderData
-                          price={selectedOrder.amount}
-                          address={selectedOrder.address}
-                          phone={selectedOrder.phone}
-                          city={selectedOrder.city}
-                          createdAt={selectedOrder.createdAt}
-                          products={selectedOrder.products}
-                          paymentMethod={selectedOrder.paymentMethod || 'COD'}
-                          status={selectedOrder.status || 'Pending'}
-                        />
-                      )}
-                    </DialogContent>
-                  </Dialog>
-                </CardFooter>
+                {order.status === 'Pending' && (
+                  <CardFooter className="flex flex-col gap-2">
+                   
+
+                    {/* View Details button if Pending */}
+                    {order.status === 'Pending' &&  (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => setSelectedOrder(order)}
+                            className="w-full"
+                          >
+                            View Details
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle>Order Details</DialogTitle>
+                            <DialogDescription>
+                              Complete information for order #{order._id.slice(-6)}
+                            </DialogDescription>
+                          </DialogHeader>
+                          {selectedOrder && (
+                            <OrderData
+                              price={selectedOrder.amount}
+                              address={selectedOrder.address}
+                              phone={selectedOrder.phone}
+                              city={selectedOrder.city}
+                              createdAt={selectedOrder.createdAt}
+                              products={selectedOrder.products}
+                              paymentMethod={selectedOrder.paymentMethod || 'COD'}
+                              status={selectedOrder.status || 'Pending'}
+                              packerName={selectedOrder.packerName}
+                            />
+                          )}
+
+                        </DialogContent>
+                      </Dialog>
+                    )}
+
+                  </CardFooter>
+                )}
+
               </Card>
             ))}
           </div>
         )}
+
       </div>
     </div>
-  );
+  )
 };
 
 export default Orders;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

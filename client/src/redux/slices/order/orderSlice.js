@@ -17,10 +17,10 @@ export const addOrder = createAsyncThunk(
 
 export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
-  async ({ orderId, status }, thunkAPI) => {
+  async ({ orderId, status, packerName }, thunkAPI) => {
     try {
-      const res = await orderService.updateOrderStatus(orderId, status);
-      return { orderId, status, data: res.data };
+      const res = await orderService.updateOrderStatus(orderId, { status, packerName });
+      return { orderId, status, packerName };
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
@@ -71,7 +71,7 @@ const initialState = {
   orders: [],
   metrics: null,
   status: 'idle',
-    newOrdersCount: 0,
+  newOrdersCount: 0,
   error: null,
   metricsStatus: 'idle',
   metricsError: null,
