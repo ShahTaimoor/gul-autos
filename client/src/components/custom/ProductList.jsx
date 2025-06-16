@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
-import { Pagination } from 'swiper/modules';
+import { Navigation, Pagination } from 'swiper/modules';
 import { Loader2, LayoutPanelLeft, Grid2x2, Grid3x3 } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import { flyToCart } from './FlyToCart';
@@ -220,27 +220,58 @@ const ProductList = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-4 py-6">
-      <Swiper pagination modules={[Pagination]} className="mySwiper" spaceBetween={10}>
-        {categoryChunks.map((chunk, index) => (
-          <SwiperSlide key={index}>
-            <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
-              {chunk.map((cat) => (
-                <div
-                  key={cat._id}
-                  className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''
-                    } cursor-pointer text-center`}
-                  onClick={() => setCategory(cat._id)}
-                >
-                  <div className="rounded-full p-1">
-                    <img src={cat.image || '/fallback.jpg'} alt={cat.name} className="w-16 h-16 object-cover rounded-full" />
+      <div className="relative">
+        <Swiper
+          pagination={{ clickable: true }}
+          modules={[Pagination, Navigation]}
+          spaceBetween={10}
+          navigation={{ nextEl: '.custom-swiper-button-next', prevEl: '.custom-swiper-button-prev' }}
+          className="mySwiper"
+        >
+          {categoryChunks.map((chunk, idx) => (
+            <SwiperSlide key={idx}>
+              <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
+                {chunk.map((cat) => (
+                  <div
+                    key={cat._id}
+                    className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''
+                      } cursor-pointer text-center`}
+                    onClick={() => setCategory(cat._id)}
+                  >
+                    <div className="rounded-full p-1">
+                      <img src={cat.image || "/fallback.jpg"} alt={cat.name} className="w-16 h-16 object-cover rounded-full" />
+                    </div>
+                    <p className="text-xs mt-2">{cat.name}</p>
                   </div>
-                  <p className="text-xs mt-2">{cat.name}</p>
-                </div>
-              ))}
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+                ))}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        {/* Arrow Buttons (Desktop only) */}
+        <div className="hidden lg:flex absolute top-[120px] -translate-y-1/2 -left-3 z-10 custom-swiper-button-prev cursor-pointer bg-gray-100 p-2 rounded-full shadow">
+          <svg
+            className="w-4 h-4 text-black"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </div>
+
+        <div className="hidden lg:flex absolute top-[120px] -translate-y-1/2 -right-3 z-10 custom-swiper-button-next cursor-pointer bg-gray-100 p-2 rounded-full shadow">
+          <svg
+            className="w-4 h-4 text-black"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
 
       <div className="mb-6">
         {/* Flex row layout for desktop, column on mobile */}
