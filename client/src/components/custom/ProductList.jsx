@@ -331,7 +331,7 @@ const ProductList = () => {
       </div>
 
       <div className="fixed bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">
-        <Link to='/'>
+        <Link to='https://wa.me/923130922988?text=  Hi How Are you ?' target='_blank'>
           <img className='w-14 h-14' src="/WhatsApp.svg.webp" alt="" />
         </Link>
       </div>
