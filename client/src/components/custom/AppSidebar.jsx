@@ -2,6 +2,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { logout } from "../../redux/slices/auth/authSlice";
+import { fetchOrdersAdmin } from "@/redux/slices/order/orderSlice";
 import {
   FilePlus2Icon,
   ChartBarStacked,
@@ -33,37 +34,28 @@ const items = [
   { title: "Analytics", url: "/admin/dashboard/analytics", icon: ChartBar },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
   { title: "Shop", url: "/", icon: ShoppingCart },
-]
+];
 
 export function AppSidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { orders } = useSelector((state) => state.orders);
+  const { user } = useSelector((state) => state.auth);
   const [message, setMessage] = useState(null);
-  const [hasVisitedOrders, setHasVisitedOrders] = useState(false);
 
-  // Filter pending orders safely
-  const pendingOrderCount = orders?.filter(
-    (o) => o?.status?.toLowerCase() === "pending"
-  ).length || 0;
-
-  // On first render, check if we previously visited orders
+  // Fetch orders after login
   useEffect(() => {
-    const previouslyVisited = localStorage.getItem("hasVisitedOrders");
-
-    if (previouslyVisited === "true") {
-      setHasVisitedOrders(true);
+    if (user) {
+      dispatch(fetchOrdersAdmin());
     }
-  }, []);
+  }, [dispatch, user]);
 
-  // Update localStorage when we visit orders
-  useEffect(() => {
-    if (pathname === "/admin/dashboard/orders" && !hasVisitedOrders) {
-      setHasVisitedOrders(true);
-      localStorage.setItem("hasVisitedOrders", "true");
-    }
-  }, [pathname]);
+  // Count pending orders safely
+  const pendingOrderCount =
+    Array.isArray(orders) && orders.length > 0
+      ? orders.filter((o) => o?.status?.toLowerCase() === "pending").length
+      : 0;
 
   const handleLogout = async () => {
     try {
@@ -71,9 +63,9 @@ export function AppSidebar() {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       });
-      window.localStorage.removeItem("user");
-      dispatch(logout());  
-      navigate("/login");  
+      localStorage.removeItem("user");
+      dispatch(logout());
+      navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
       setMessage("An error occurred while logging out.");
@@ -93,9 +85,7 @@ export function AppSidebar() {
   return (
     <Sidebar className="shadow-lg border-r bg-white">
       <SidebarHeader className="p-4 border-b">
-        <h2 className="text-xl font-bold text-gray-800">
-          Admin Panel
-        </h2>
+        <h2 className="text-xl font-bold text-gray-800">Admin Panel</h2>
       </SidebarHeader>
 
       <SidebarContent>
@@ -107,27 +97,31 @@ export function AppSidebar() {
 
               return (
                 <SidebarMenuItem key={item.title}>
-                   <SidebarMenuButton
+                  <SidebarMenuButton
                     asChild
                     className={`group relative transition-all duration-200 rounded-md ${
-                      isActive ? "bg-zinc-100 text-primary font-semibold" : "hover:bg-zinc-100"
+                      isActive
+                        ? "bg-zinc-100 text-primary font-semibold"
+                        : "hover:bg-zinc-100"
                     }`}
-                   >
-                    <Link to={item.url} className="flex items-center gap-3 p-2 w-full relative">
+                  >
+                    <Link
+                      to={item.url}
+                      className="flex items-center gap-3 p-2 w-full relative"
+                    >
                       <Icon className="w-5 h-5 text-gray-700 group-hover:text-primary transition" />
                       <span className="text-sm">{item.title}</span>
 
-                      {/* Pending Order Badge - only show if we've visited orders first */}
-                      {item.showBadge && hasVisitedOrders && pendingOrderCount > 0 && (
+                      {/* Show badge if item is orders and pending orders exist */}
+                      {item.showBadge && pendingOrderCount > 0 && (
                         <span className="absolute right-2 top-2 animate-bounce inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-black rounded-full shadow-md">
                           {pendingOrderCount}
                         </span>
                       )}
-
                     </Link>
-                   </SidebarMenuButton>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-              )
+              );
             })}
           </SidebarMenu>
         </SidebarGroup>
@@ -142,5 +136,5 @@ export function AppSidebar() {
         </Button>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
