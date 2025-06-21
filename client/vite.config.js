@@ -23,7 +23,7 @@ export default defineConfig({
       {
         src: "maskable.png",
         sizes: "196x196",
-        type: "image/jpg",
+        type: "image/png",
         purpose: "any maskable"
       },
       {
