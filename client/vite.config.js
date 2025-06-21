@@ -11,7 +11,7 @@ export default defineConfig({
     VitePWA({
   registerType: "autoUpdate",
   filename: 'manifest.webmanifest',
-  includeAssets: ["vite.svg", "robots.txt", "logos.jpg"],
+  includeAssets: ["vite.svg", "robots.txt", "logo.jpg"],
   manifest: {
     name: "Gul Autos",
     short_name: "Gul Autos",
@@ -27,7 +27,7 @@ export default defineConfig({
         purpose: "any maskable"
       },
       {
-        src: "logos.jpg",
+        src: "logo.jpg",
         sizes: "192x192",
         type: "image/jpg"
       }
