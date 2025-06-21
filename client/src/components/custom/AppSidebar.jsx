@@ -43,6 +43,7 @@ export function AppSidebar() {
   const { orders } = useSelector((state) => state.orders);
   const { user } = useSelector((state) => state.auth);
   const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);  // Loading state
 
   // Fetch orders after login
   useEffect(() => {
@@ -57,7 +58,9 @@ export function AppSidebar() {
       ? orders.filter((o) => o?.status?.toLowerCase() === "pending").length
       : 0;
 
+  // Handle logout
   const handleLogout = async () => {
+    setLoading(true);
     try {
       await axios.get(`${import.meta.env.VITE_API_URL}/logout`, {
         withCredentials: true,
@@ -69,6 +72,8 @@ export function AppSidebar() {
     } catch (error) {
       console.error("Logout error:", error);
       setMessage("An error occurred while logging out.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -105,10 +110,7 @@ export function AppSidebar() {
                         : "hover:bg-zinc-100"
                     }`}
                   >
-                    <Link
-                      to={item.url}
-                      className="flex items-center gap-3 p-2 w-full relative"
-                    >
+                    <Link to={item.url} className="flex items-center gap-3 p-2 w-full relative">
                       <Icon className="w-5 h-5 text-gray-700 group-hover:text-primary transition" />
                       <span className="text-sm">{item.title}</span>
 
@@ -131,8 +133,16 @@ export function AppSidebar() {
         <Button
           onClick={handleLogout}
           className="w-full bg-black text-white font-semibold"
+          disabled={loading}  // Disable button while loading
         >
-          Logout
+          {loading ? (
+            <div className="flex items-center justify-center gap-2">
+              {/* You can use any spinner or icon component here */}
+              <div className="w-4 h-4 border-2 border-t-2 border-gray-300 rounded-full animate-spin"></div> Logging out...
+            </div>
+          ) : (
+            "Logout"
+          )}
         </Button>
       </SidebarFooter>
     </Sidebar>
