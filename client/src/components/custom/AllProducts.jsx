@@ -29,9 +29,11 @@ const capitalizeAllWords = (str) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 };
+
 const AllProducts = () => {
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [stockFilter, setStockFilter] = useState('all');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -55,11 +57,21 @@ const AllProducts = () => {
     }
   };
 
+  
+
+  // Filter based on selected tab
+  let filteredProducts = products;
+  if (stockFilter === 'active') {
+    filteredProducts = products.filter((p) => p.stock > 0);
+  } else if (stockFilter === 'out-of-stock') {
+    filteredProducts = products.filter((p) => p.stock <= 0);
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <h1 className='text-2xl mb-5'>All Products</h1>
 
-      {/* Filter*/}
+      {/* Filter Section */}
       <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -84,6 +96,20 @@ const AllProducts = () => {
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Stock Filter Tabs */}
+        <div className="flex gap-3 mt-4">
+          {['all', 'active', 'out-of-stock'].map((tab) => (
+            <Button
+              key={tab}
+              variant={stockFilter === tab ? 'default' : 'outline'}
+              onClick={() => setStockFilter(tab)}
+              size="sm"
+            >
+              {tab === 'all' ? 'All' : tab === 'active' ? 'Active' : 'Out of Stock'}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -120,14 +146,13 @@ const AllProducts = () => {
               ? 'Try adjusting your search or filter'
               : 'Add a new product to get started'}
           </p>
-
         </div>
       )}
 
-      {/* Produc Grid */}
-      {!loading && products.length > 0 && (
+      {/* Product Grid */}
+      {!loading && filteredProducts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((p) => (
+          {filteredProducts.map((p) => (
             <Card
               key={p._id}
               className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full"
@@ -167,12 +192,13 @@ const AllProducts = () => {
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <span
-                      className={`inline-block w-2 h-2 rounded-full ${p.stock > 10
+                      className={`inline-block w-2 h-2 rounded-full ${
+                        p.stock > 10
                           ? 'bg-green-500'
                           : p.stock > 0
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }`}
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                      }`}
                     />
                     <span className="text-xs text-muted-foreground">
                       {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
@@ -181,31 +207,32 @@ const AllProducts = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="mt-auto pt-2 flex gap-2">
-                  <Button
-                    onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    onClick={() => handleDelete(p._id)}
-                    variant="destructive"
-                    size="sm"
-                    className="flex-1 gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </Button>
+                <div className="mt-auto pt-2 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(p._id)}
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1 gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </Button>
+                  </div>
+
+                  
                 </div>
               </div>
             </Card>
-
-
-
           ))}
         </div>
       )}
