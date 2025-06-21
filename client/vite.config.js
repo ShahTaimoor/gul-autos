@@ -10,7 +10,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
   registerType: "autoUpdate",
-  includeAssets: ["logo-192.png", "logo-512.png", "robots.txt", "favicon.ico"],
+  filename: 'manifest.webmanifest',
+  includeAssets: ["vite.svg", "robots.txt", "logo.jpg"],
   manifest: {
     name: "Gul Autos",
     short_name: "Gul Autos",
@@ -20,19 +21,21 @@ export default defineConfig({
     theme_color: "#000000",
     icons: [
       {
-        src: "logo-192.png",
-        sizes: "192x192",
+        src: "maskable.png",
+        sizes: "196x196",
         type: "image/png",
-        purpose: "any"
+        purpose: "any maskable"
       },
       {
-        src: "logo-512.png",
+        src: "logo.jpg",
         sizes: "192x192",
-        type: "image/png",
-        purpose: "any"
+        type: "image/jpeg"
       }
     ]
-  }
+  },
+  workbox: {
+    globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+  },
 })
 
   ],
