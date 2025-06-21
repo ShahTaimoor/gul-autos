@@ -9,35 +9,35 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-  registerType: "autoUpdate",
-  filename: 'manifest.webmanifest',
-  includeAssets: ["vite.svg", "robots.txt", "logo.jpg"],
-  manifest: {
-    name: "Gul Autos",
-    short_name: "Gul Autos",
-    start_url: "/",
-    display: "standalone",
-    background_color: "#000000",
-    theme_color: "#000000",
-    icons: [
-      {
-        src: "maskable.png",
-        sizes: "196x196",
-        type: "image/png",
-        purpose: "any maskable"
+      registerType: "autoUpdate",
+      filename: 'manifest.webmanifest',
+      includeAssets: ["vite.svg", "robots.txt", "favicon.ico", "logo.png"],
+      manifest: {
+        name: "Gul Autos",
+        short_name: "Gul Autos",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#000000",
+        theme_color: "#000000",
+        icons: [
+          {
+            src: "logos.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "logos.png",
+            sizes: "196x196",
+            type: "image/png",
+            purpose: "maskable"
+          }
+        ]
       },
-      {
-        src: "logo.jpg",
-        sizes: "192x192",
-        type: "image/jpeg"
-      }
-    ]
-  },
-  workbox: {
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-  },
-})
-
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+      },
+    })
   ],
   resolve: {
     alias: {
