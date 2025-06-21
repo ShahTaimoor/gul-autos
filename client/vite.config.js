@@ -29,7 +29,7 @@ export default defineConfig({
       {
         src: "logo.jpg",
         sizes: "192x192",
-        type: "image/jpg"
+        type: "image/jpeg"
       }
     ]
   },
