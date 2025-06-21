@@ -10,7 +10,7 @@ import {
   PackageSearch,
   ChartBar,
   UserCheck,
-  ShoppingCart,
+
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,7 +33,7 @@ const items = [
   { title: "Orders", url: "/admin/dashboard/orders", icon: PackageSearch, showBadge: true },
   { title: "Analytics", url: "/admin/dashboard/analytics", icon: ChartBar },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
-  { title: "Shop", url: "/", icon: ShoppingCart },
+  
 ];
 
 export function AppSidebar() {
