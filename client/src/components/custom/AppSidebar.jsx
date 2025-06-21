@@ -58,7 +58,7 @@ export function AppSidebar() {
       ? orders.filter((o) => o?.status?.toLowerCase() === "pending").length
       : 0;
 
-  // Handle logout
+  // Handle logouTs
   const handleLogout = async () => {
     setLoading(true);
     try {
