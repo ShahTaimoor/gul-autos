@@ -1,9 +1,12 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ShoppingCart } from 'lucide-react';
-import CartProduct from './CartProduct';
+import { ShoppingCart, Trash2 } from 'lucide-react';
+import {
+  removeFromCart,
+  updateCartQuantity,
+} from '@/redux/slices/cartSlice';
 
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -18,12 +21,184 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 
+const CartProduct = ({ _id, name, price, quantity, image, stock, onValidationChange }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [inputQty, setInputQty] = useState(quantity);
+  const prevIsValid = useRef(true);
+  useEffect(() => {
+    setInputQty(quantity);
+  }, [quantity]);
+  useEffect(() => {
+    const isValid = inputQty > 0 && inputQty <= stock && typeof inputQty === 'number';
+
+    if (prevIsValid.current !== isValid) {
+      prevIsValid.current = isValid;
+      onValidationChange(_id, isValid);
+    }
+  }, [inputQty, stock, _id, onValidationChange]);
+
+  const handleBuyNow = () => {
+    if (inputQty > stock || inputQty <= 0) {
+      toast.error('Invalid product quantity');
+      return;
+    }
+    navigate('/');
+  };
+
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    dispatch(removeFromCart(_id));
+    toast.success('Product removed from cart');
+  };
+
+  const handleQuantityChange = (newQty) => {
+    if (newQty === '' || isNaN(newQty)) {
+      setInputQty('');
+      return;
+    }
+    let val = Math.max(1, Math.min(parseInt(newQty), stock));
+    setInputQty(val);
+    if (val !== quantity) {
+      dispatch(updateCartQuantity({ _id, quantity: val }));
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    if (val === '') {
+      setInputQty('');
+    } else {
+      const parsed = parseInt(val);
+      if (!isNaN(parsed)) {
+        if (parsed <= stock) {
+          setInputQty(parsed);
+        } else {
+          toast.error(`Only ${stock} items in stock`);
+          setInputQty(stock);
+        }
+      }
+    }
+  };
+
+  const handleInputBlur = () => {
+    if (inputQty === '' || isNaN(inputQty) || inputQty <= 0) {
+      toast.error('Quantity must be at least 1');
+      setInputQty(quantity);
+      return;
+    }
+
+    if (inputQty > stock) {
+      toast.error(`Only ${stock} items in stock`);
+      setInputQty(stock);
+      return;
+    }
+
+    if (inputQty !== quantity) {
+      dispatch(updateCartQuantity({ _id, quantity: inputQty }));
+    }
+  };
+
+  return (
+    <>
+      <style>{`
+        input[type='number']::-webkit-inner-spin-button,
+        input[type='number']::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type='number'] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+
+      <div
+        className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50 cursor-pointer transition"
+        onClick={handleBuyNow}
+      >
+        <div className="flex items-center gap-4">
+          <img
+            src={image || '/fallback.jpg'}
+            alt={name}
+            className="w-16 h-16 object-cover rounded-lg border"
+          />
+          <div className="max-w-[200px]">
+            <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">{name}</h4>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-1 border rounded-full shadow-sm border-gray-300">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (inputQty > 1) handleQuantityChange(inputQty - 1);
+                else toast.error('Quantity cannot be less than 1');
+              }}
+              className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
+              disabled={inputQty <= 1}
+            >
+              −
+            </button>
+
+            <input
+              type="number"
+              value={inputQty === '' ? '' : inputQty}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleInputChange(e);
+              }}
+              onBlur={(e) => {
+                e.stopPropagation();
+                handleInputBlur();
+              }}
+              onClick={(e) => e.stopPropagation()}
+              max={stock}
+              min={1}
+              className={`w-10 text-center text-sm focus:outline-none bg-transparent appearance-none
+                `}
+            />
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (inputQty < stock) handleQuantityChange(inputQty + 1);
+                else toast.error(`Only ${stock} items in stock`);
+              }}
+              className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
+              disabled={inputQty >= stock}
+            >
+              +
+            </button>
+          </div>
+
+          <button
+            onClick={handleRemove}
+            className="text-red-500 hover:text-red-600 transition"
+            title="Remove from cart"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
 const CartDrawer = () => {
-  const { cartItems, totalQuantity, totalPrice } = useSelector((state) => state.cart);
+  const { cartItems, totalQuantity } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
-  const [stockErrors, setStockErrors] = React.useState([]);
+  const [stockErrors, setStockErrors] = useState([]);
+  const [validationMap, setValidationMap] = useState({});
+
+  const handleValidationChange = (id, isValid) => {
+    setValidationMap((prev) => ({
+      ...prev,
+      [id]: isValid,
+    }));
+  };
 
   const handleBuyNow = () => {
     if (!user) {
@@ -35,6 +210,14 @@ const CartDrawer = () => {
       return;
     }
 
+    const hasInvalidQty = Object.values(validationMap).includes(false);
+
+    if (hasInvalidQty) {
+      toast.error('Fix invalid quantities in cart before checkout.');
+      return;
+    }
+
+    setStockErrors([]);
     navigate('/checkout');
   };
 
@@ -74,7 +257,13 @@ const CartDrawer = () => {
 
         <div className="mt-4 max-h-[60vh] overflow-y-auto">
           {cartItems.length > 0 ? (
-            cartItems.map((item) => <CartProduct key={item._id} {...item} />)
+            cartItems.map((item) => (
+              <CartProduct
+                key={item._id}
+                {...item}
+                onValidationChange={handleValidationChange}
+              />
+            ))
           ) : (
             <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
           )}
@@ -84,7 +273,10 @@ const CartDrawer = () => {
           <SheetClose asChild>
             <Button
               onClick={handleBuyNow}
-              disabled={cartItems.length === 0 || stockErrors.length > 0}
+              disabled={
+                cartItems.length === 0 ||
+                Object.values(validationMap).includes(false)
+              }
               className="w-full"
             >
               Checkout
@@ -95,5 +287,4 @@ const CartDrawer = () => {
     </Sheet>
   );
 };
-
 export default CartDrawer;

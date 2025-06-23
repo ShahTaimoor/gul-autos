@@ -34,7 +34,7 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -77,16 +77,16 @@ const Profile = () => {
             </Avatar>
           </div>
         </div>
-        
+
         <CardHeader className="pt-20">
           <CardTitle className="text-3xl">{user?.name}</CardTitle>
         </CardHeader>
-        
+
         <CardContent>
           {!showForm ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-               
+
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
                   <p className="text-lg font-medium">{user?.phone || 'Not provided'}</p>
@@ -95,11 +95,11 @@ const Profile = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="text-lg font-medium overflow-hidden">{user?.address.slice(0,56).toUpperCase() || 'Not provided'}</p>
+                  <p className="text-lg font-medium overflow-hidden">{user?.address.slice(0, 56).toUpperCase() || 'Not provided'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">City</p>
-                  <p className="text-lg font-medium">{user?.city.slice(0,20).toUpperCase() || 'Not provided'}</p>
+                  <p className="text-lg font-medium">{user?.city.slice(0, 20).toUpperCase() || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -107,85 +107,137 @@ const Profile = () => {
             <div className="space-y-6">
               <h2 className="text-xl font-semibold">Update Profile Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground mb-1">
-                      Phone Number
-                    </label>
-                    <Input
+                <div className="space-y-6">
+                  {/* Phone */}
+                  <div className="relative w-full">
+                    <input
                       id="phone"
                       name="phone"
                       type="tel"
-                      placeholder="+92 0003333220"
+                      placeholder=" "
                       value={formData.phone}
                       onChange={handleChange}
+                      required
+                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                     />
-                  </div>
-                  <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-muted-foreground mb-1">
-                      City
+                    <label
+                      htmlFor="phone"
+                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                    >
+                      Phone Number
                     </label>
-                    <Input
+                  </div>
+
+                  {/* City */}
+                  <div className="relative w-full">
+                    <input
                       id="city"
                       name="city"
                       type="text"
-                      placeholder="New York"
-                      value={formData.city.slice(0,20)}
+                      placeholder=" "
+                      value={formData.city.slice(0, 20)}
                       onChange={handleChange}
+                      required
+                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                     />
+                    <label
+                      htmlFor="city"
+                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                    >
+                      City
+                    </label>
+                  </div>
+
+                  {/* Address */}
+                  <div className="relative w-full">
+                    <textarea
+                      id="address"
+                      name="address"
+                      placeholder=" "
+                      value={formData.address}
+                      onChange={handleChange}
+                      required
+                      rows={3}
+                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                    />
+                    <label
+                      htmlFor="address"
+                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                    >
+                      Address
+                    </label>
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-muted-foreground mb-1">
-                    Address
-                  </label>
-                  <Textarea
-                    id="address"
-                    name="address"
-                    type="text"
-                    placeholder="123 Main St, Apt 4B"
-                    value={formData.address}
-                    onChange={handleChange}
-                    className="h-full"
-                  />
-                </div>
+
               </div>
             </div>
           )}
         </CardContent>
-        
-        <CardFooter className="flex justify-end gap-4">
-          {!showForm ? (
-            <Button onClick={() => setShowForm(true)} variant="outline">
-              Edit Profile
-            </Button>
-          ) : (
-            <>
-              <Button 
-                onClick={() => setShowForm(false)} 
-                variant="outline"
-                disabled={status === 'loading'}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                disabled={status === 'loading'}
-                className={`mt-2`}
-              >
-                {status === 'loading' ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : 'Save Changes'}
-              </Button>
-            </>
-          )}
-        </CardFooter>
+
+       <CardFooter className="flex justify-end items-center space-x-3 pt-4">
+  {!showForm ? (
+    <Button onClick={() => setShowForm(true)} variant="outline">
+      Edit Profile
+    </Button>
+  ) : (
+    <>
+      <Button
+        onClick={() => setShowForm(false)}
+        variant="outline"
+        disabled={status === 'loading'}
+      >
+        Cancel
+      </Button>
+      <Button
+        onClick={handleSubmit}
+        disabled={status === 'loading'}
+        className="flex items-center gap-2"
+      >
+        {status === 'loading' ? (
+          <>
+            <svg
+              className="animate-spin h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 
+                3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            Saving...
+          </>
+        ) : (
+          'Save Changes'
+        )}
+      </Button>
+    </>
+  )}
+</CardFooter>
+
       </Card>
     </div>
   );
