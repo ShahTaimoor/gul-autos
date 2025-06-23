@@ -13,16 +13,16 @@ const initialState = {
   error: null,
 };
 
-export const login = createAsyncThunk(
-  'auth/login',
-  async (userData, thunkAPI) => {
-    try {
-      return await authService.loginUser(userData);
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
+export const login = createAsyncThunk('auth/login', async (userData, thunkAPI) => {
+  try {
+    return await authService.loginUser(userData);
+  } catch (error) {
+    const message =
+      error.response?.data?.message || error.message || 'Login failed';
+    return thunkAPI.rejectWithValue(message);
   }
-);
+});
+
 
 export const updateProfile = createAsyncThunk(
   'auth/updateProfile',

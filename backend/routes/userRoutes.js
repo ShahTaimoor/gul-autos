@@ -31,32 +31,29 @@ router.post('/login', async (req, res) => {
 
   try {
     const user = await User.findOne({ name });
-    if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) return res.status(401).json({ message: 'Shop name or password is incorrect' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid name or password' });
+    if (!isMatch) return res.status(401).json({ message: 'Shop name or password is incorrect' });
 
     user.password = undefined;
-
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP || '365d',
+    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXP,
     });
 
-    return res.cookie('token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'None',
-      maxAge: 365 * 24 * 60 * 60 * 1000,
-    }).status(200).json({
-      success: true,
-      user,
-      token,
-    });
+    res
+      .cookie('token', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        maxAge: 15 * 60 * 1000,
+      })
+      .json({ success: true, user });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Server error during login');
+    res.status(500).json({ message: 'Login error' });
   }
 });
+
 
 // Logout
 router.get('/logout', (req, res) => {
