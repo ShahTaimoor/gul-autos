@@ -1,3 +1,4 @@
+// src/features/auth/authSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from './authService';
 
@@ -12,32 +13,27 @@ const initialState = {
   error: null,
 };
 
-export const login = createAsyncThunk('auth/login', async (userData, thunkAPI) => {
-  try {
-    return await authService.loginUser(userData);
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+export const login = createAsyncThunk(
+  'auth/login',
+  async (userData, thunkAPI) => {
+    try {
+      return await authService.loginUser(userData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
   }
-});
+);
 
-
-
-
-export const updateProfile = createAsyncThunk('auth/updateProfile', async (formData, thunkAPI) => {
-  try {
-    return await authService.updateProfile(formData);
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (formData, thunkAPI) => {
+    try {
+      return await authService.updateProfile(formData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
   }
-});
-
-export const logoutAsync = createAsyncThunk('auth/logout', async (_, thunkAPI) => {
-  try {
-    await authService.logoutUser();
-  } catch (error) {
-    return thunkAPI.rejectWithValue(error.message);
-  }
-});
+);
 
 const authSlice = createSlice({
   name: 'auth',
@@ -75,12 +71,7 @@ const authSlice = createSlice({
       .addCase(updateProfile.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
-      .addCase(logoutAsync.fulfilled, (state) => {
-        state.user = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem('user');
-      })
+      });
   },
 });
 

@@ -1,23 +1,10 @@
 const express = require('express');
+const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const User = require('../models/User');
 const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
-const cookieParser = require('cookie-parser');
-const serverless = require('serverless-http'); // 👈 serverless adapter
 
-const app = express();
 const router = express.Router();
-
-app.use(express.json());
-app.use(cookieParser());
-
-// Generate Tokens
-const generateTokens = (userId) => {
-  const accessToken = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXP });
-  const refreshToken = jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: process.env.JWT_REFRESH_EXP });
-  return { accessToken, refreshToken };
-};
 
 // Signup
 router.post('/signup', async (req, res) => {
@@ -27,13 +14,18 @@ router.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ name, password: hashedPassword });
 
-    res.status(201).json({ success: true, message: 'User created', user });
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      user,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Signup failed' });
+    console.error(error);
+    res.status(500).send('Server error during registration');
   }
 });
 
-// Login
+// Logi
 router.post('/login', async (req, res) => {
   const { name, password } = req.body;
 
@@ -42,88 +34,90 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Invalid password' });
+    if (!isMatch) return res.status(401).json({ message: 'Invalid name or password' });
 
     user.password = undefined;
-    const { accessToken, refreshToken } = generateTokens(user._id);
 
-    res
-      .cookie('token', accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        maxAge: 15 * 60 * 1000,
-      })
-      .cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      })
-      .json({ success: true, user, token: accessToken });
-  } catch (error) {
-    res.status(500).json({ message: 'Login error' });
-  }
-});
-
-// Refresh Token
-router.get('/refresh-token', async (req, res) => {
-  const { refreshToken } = req.cookies;
-  if (!refreshToken) return res.status(401).json({ message: 'No refresh token' });
-
-  try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-    const accessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP,
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXP || '365d',
     });
 
-    res.cookie('token', accessToken, {
+    return res.cookie('token', token, {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
-      maxAge: 15 * 60 * 1000,
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    }).status(200).json({
+      success: true,
+      user,
+      token,
     });
-
-    res.json({ success: true, token: accessToken });
-  } catch (err) {
-    return res.status(401).json({ message: 'Invalid refresh token' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error during login');
   }
 });
 
 // Logout
 router.get('/logout', (req, res) => {
-  res
-    .clearCookie('token', { httpOnly: true, secure: true, sameSite: 'None' })
-    .clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'None' })
-    .json({ success: true, message: 'Logged out' });
+  return res.cookie('token', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    expires: new Date(0),
+  }).status(200).json({
+    success: true,
+    message: 'Logged out successfully',
+  });
 });
 
-// Get All Users (Admin Only)
+// All users
+
 router.get('/all-users', isAuthorized, isAdmin, async (req, res) => {
-  const users = await User.find({}).select('-password');
-  res.json({ success: true, users });
+  try {
+    const users = await User.find({}).select('-password');
+    res.status(200).json({
+      success: true,
+      users,
+      total: users.length,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error while fetching users');
+  }
 });
 
-// Update Profile
+// Update profile
 router.put('/update-profile', isAuthorized, async (req, res) => {
-  const { name, phone, address, city } = req.body;
-  const user = await User.findById(req.user.id);
+  try {
+    const userId = req.user.id;
+    const { name, phone, address, city } = req.body;
 
-  if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-  user.name = name || user.name;
-  user.phone = phone || user.phone;
-  user.address = address || user.address;
-  user.city = city || user.city;
+    user.name = name || user.name;
+    user.phone = phone || user.phone;
+    user.address = address || user.address;
+    user.city = city || user.city;
 
-  await user.save();
+    const updatedUser = await user.save();
 
-  res.json({ success: true, message: 'Profile updated', user });
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        city: updatedUser.city,
+      },
+    });
+  } catch (error) {
+    console.error('Update Profile Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
-// Register router under base path
-app.use('/api/auth', router);
-
-// Export for Vercel
-module.exports = app;
-module.exports.handler = serverless(app);
+module.exports = router;
