@@ -197,42 +197,74 @@ const Checkout = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="phone" className="text-sm text-gray-600 mb-1 flex items-center">
-                          <Phone className="w-4 h-4 mr-1" />
-                          Phone
-                        </Label>
-                        <Input
+                      {/* Phone */}
+                      <div className="relative w-full">
+                        <input
+                          type="text"
                           name="phone"
+                          id="phone"
                           value={formData.phone}
                           onChange={handleChange}
-                          placeholder="+1 (555) 123-4567"
+                          placeholder=" "
+                          required
+                          className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                         />
+                        <label
+                          htmlFor="phone"
+                          className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
+                        >
+                          <Phone className="w-4 h-4" /> Phone
+                        </label>
                       </div>
-                      <div>
-                        <Label htmlFor="city" className="text-sm text-gray-600 mb-1 flex items-center">
-                          <MapPin className="w-4 h-4 mr-1" />
-                          City
-                        </Label>
-                        <Input
+                      {/* City */}
+                      <div className="relative w-full">
+                        <input
+                          type="text"
                           name="city"
+                          id="city"
                           value={formData.city}
                           onChange={handleChange}
-                          placeholder="New York"
+                          placeholder=" "
+                          required
+                          className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                         />
+                        <label
+                          htmlFor="city"
+                          className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
+                        >
+                          <MapPin className="w-4 h-4" /> City
+                        </label>
                       </div>
-                      <div>
-                        <Label htmlFor="address" className="text-sm text-gray-600 mb-1 flex items-center">
-                          <Home className="w-4 h-4 mr-1" />
-                          Address
-                        </Label>
-                        <Textarea
+                      {/* Address */}
+                      <div className="relative w-full">
+                        <textarea
                           name="address"
+                          id="address"
                           value={formData.address}
                           onChange={handleChange}
-                          placeholder="123 Main St, Apt 4B"
+                          placeholder=" "
                           rows={3}
+                          required
+                          className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                         />
+                        <label
+                          htmlFor="address"
+                          className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
+                        >
+                          <Home className="w-4 h-4" /> Address
+                        </label>
                       </div>
                       <div className="flex gap-3 pt-2">
                         <Button
