@@ -3,8 +3,14 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
+const cookieParser = require('cookie-parser');
+const serverless = require('serverless-http'); // 👈 serverless adapter
 
+const app = express();
 const router = express.Router();
+
+app.use(express.json());
+app.use(cookieParser());
 
 // Generate Tokens
 const generateTokens = (userId) => {
@@ -46,13 +52,13 @@ router.post('/login', async (req, res) => {
         httpOnly: true,
         secure: true,
         sameSite: 'None',
-        maxAge: 15 * 60 * 1000, // 15m
+        maxAge: 15 * 60 * 1000,
       })
       .cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: 'None',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
+        maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .json({ success: true, user, token: accessToken });
   } catch (error) {
@@ -115,4 +121,9 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
   res.json({ success: true, message: 'Profile updated', user });
 });
 
-module.exports = router;
+// Register router under base path
+app.use('/api/auth', router);
+
+// Export for Vercel
+module.exports = app;
+module.exports.handler = serverless(app);
