@@ -121,6 +121,13 @@
     @apply bg-background text-foreground;
   }
 }
+@layer utilities {
+  input:-webkit-autofill {
+    box-shadow: inset 0 0 0 1000px white !important;
+    -webkit-box-shadow: inset 0 0 0 1000px white !important;
+    -webkit-text-fill-color: #000 !important;
+  }
+}
 
 * {
   scroll-behavior: smooth;

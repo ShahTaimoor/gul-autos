@@ -204,6 +204,8 @@ router.get('/get-products', async (req, res) => {
   }
 });
 
+
+
 router.get('/single-product/:id', async (req, res) => {
     const { id } = req.params;
     try {

@@ -1,19 +1,43 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// Load cart from localStorage
+// Load cart from localStorage safely
 const loadStateFromLocalStorage = () => {
   try {
-    const cartData = window.localStorage.getItem('cart');
-    if (cartData === null) {
+    const cartData = window.localStorage.getItem("cart");
+    if (!cartData) {
       return {
         cartItems: [],
         totalQuantity: 0,
         totalPrice: 0,
       };
     }
-    return JSON.parse(cartData);
+
+    const parsed = JSON.parse(cartData);
+
+    // Sanitize invalid quantity items
+    const filteredCartItems = (parsed.cartItems || []).filter(
+      (item) =>
+        typeof item.quantity === "number" &&
+        item.quantity > 0 &&
+        item.quantity <= item.stock
+    );
+
+    const totalQuantity = filteredCartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = filteredCartItems.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0
+    );
+
+    return {
+      cartItems: filteredCartItems.map((item) => ({
+        ...item,
+        totalItemPrice: item.quantity * item.price,
+      })),
+      totalQuantity,
+      totalPrice,
+    };
   } catch (error) {
-    console.log('Error while loading cart:', error);
+    console.log("Error while loading cart:", error);
     return {
       cartItems: [],
       totalQuantity: 0,
@@ -22,28 +46,27 @@ const loadStateFromLocalStorage = () => {
   }
 };
 
-// Save cart to localStorage
+// Save to localStorage
 const saveStateIntoLocalStorage = (state) => {
   try {
-    const cartData = JSON.stringify(state);
-    window.localStorage.setItem('cart', cartData);
+    window.localStorage.setItem("cart", JSON.stringify(state));
   } catch (error) {
-    console.log('Error while saving cart to localStorage:', error);
+    console.log("Error while saving cart to localStorage:", error);
   }
 };
 
 const initialState = loadStateFromLocalStorage();
 
 const cartSlice = createSlice({
-  name: 'cart',
+  name: "cart",
   initialState,
   reducers: {
     addToCart: (state, action) => {
       const newItem = action.payload;
-      const existingIndex = state.cartItems.findIndex(item => item._id === newItem._id);
+      const existingIndex = state.cartItems.findIndex((item) => item._id === newItem._id);
 
-      // Check if the new item quantity is greater than available stock
-      if (newItem.quantity > newItem.stock) {
+      // Quantity validation
+      if (!newItem.quantity || newItem.quantity <= 0 || newItem.quantity > newItem.stock) {
         return;
       }
 
@@ -57,58 +80,46 @@ const cartSlice = createSlice({
         const existingItem = state.cartItems[existingIndex];
         const newQuantity = existingItem.quantity + newItem.quantity;
 
-        // Ensure the quantity does not exceed stock
-        if (newQuantity > newItem.stock) {
-          return;
-        }
+        if (newQuantity > newItem.stock) return;
 
         existingItem.quantity = newQuantity;
-        existingItem.totalItemPrice = existingItem.quantity * existingItem.price;
+        existingItem.totalItemPrice = newQuantity * existingItem.price;
       }
 
-      state.totalQuantity += newItem.quantity;
-      state.totalPrice = state.cartItems.reduce(
-        (total, item) => total + item.totalItemPrice,
-        0
-      );
+      state.totalQuantity = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
+      state.totalPrice = state.cartItems.reduce((sum, item) => sum + item.totalItemPrice, 0);
 
       saveStateIntoLocalStorage(state);
     },
+
     updateCartQuantity: (state, action) => {
       const { _id, quantity } = action.payload;
-      const itemIndex = state.cartItems.findIndex(item => item._id === _id);
-
+      const itemIndex = state.cartItems.findIndex((item) => item._id === _id);
       if (itemIndex === -1) return;
 
       const item = state.cartItems[itemIndex];
 
-      // Stock check (optional safety)
-      if (quantity > item.stock) return;
+      // Guard: invalid quantity
+      if (!quantity || quantity <= 0 || quantity > item.stock) return;
 
-      // Update totalQuantity and totalPrice
       const quantityDifference = quantity - item.quantity;
+      item.quantity = quantity;
+      item.totalItemPrice = item.price * quantity;
       state.totalQuantity += quantityDifference;
 
-      item.quantity = quantity;
-      item.totalItemPrice = quantity * item.price;
-
-      // Recalculate total price
-      state.totalPrice = state.cartItems.reduce(
-        (sum, i) => sum + i.totalItemPrice,
-        0
-      );
+      state.totalPrice = state.cartItems.reduce((sum, i) => sum + i.totalItemPrice, 0);
 
       saveStateIntoLocalStorage(state);
     },
 
     removeFromCart: (state, action) => {
       const _id = action.payload;
-      const existingItem = state.cartItems.find(item => item._id === _id);
+      const existingItem = state.cartItems.find((item) => item._id === _id);
       if (!existingItem) return;
 
       state.totalQuantity -= existingItem.quantity;
-      state.totalPrice = Number((state.totalPrice - existingItem.quantity * existingItem.price).toFixed(2));
-      state.cartItems = state.cartItems.filter(item => item._id !== _id);
+      state.totalPrice = Number((state.totalPrice - existingItem.totalItemPrice).toFixed(2));
+      state.cartItems = state.cartItems.filter((item) => item._id !== _id);
 
       saveStateIntoLocalStorage(state);
     },
@@ -118,8 +129,8 @@ const cartSlice = createSlice({
       state.totalQuantity = 0;
       state.totalPrice = 0;
       saveStateIntoLocalStorage(state);
-    }
-  }
+    },
+  },
 });
 
 export const { addToCart, removeFromCart, emptyCart, updateCartQuantity } = cartSlice.actions;

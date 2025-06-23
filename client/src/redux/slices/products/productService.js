@@ -22,25 +22,22 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', searchTerm = '') => {
-    try {
-        const axiosResponse = await axios.get(
-            `${import.meta.env.VITE_API_URL}/get-products`
-            ,
-            {
-                params: { category, search: searchTerm },
-                withCredentials: true,
-                headers: { 'Content-Type': 'application/json', },
-            }
-
-
-        );
-        return axiosResponse.data?.data;
-    } catch (error) {
-        const errorMessage =
-            error.response?.data?.message || error.message || 'Something went wrong';
-        return Promise.reject(errorMessage);
-    }
+const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 12) => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/get-products`,
+      {
+        params: { category, search: searchTerm, page, limit },
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || error.message || 'Something went wrong';
+    return Promise.reject(errorMessage);
+  }
 };
 
 // single product

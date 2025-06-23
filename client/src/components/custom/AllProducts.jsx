@@ -186,10 +186,10 @@ const AllProducts = () => {
 
     {/* Action Buttons fixed at bottom */}
     <div className="mt-auto pt-2">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between gap-3.5 items-center">
         <Badge variant="outline">Rs {p.price}</Badge>
         {p.category?.name && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-tight text-muted-foreground">
             {capitalizeAllWords(p.category.name)}
           </span>
         )}

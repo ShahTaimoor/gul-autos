@@ -15,9 +15,9 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, searchTerm }, thunkAPI) => {
+    async ({ category, searchTerm, page = 1, limit = 12 }, thunkAPI) => {
         try {
-            const res = await productService.allProduct(category, searchTerm);
+            const res = await productService.allProduct(category, searchTerm, page, limit);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
@@ -66,7 +66,10 @@ const initialState = {
     products: [],
     singleProducts: null,
     status: 'idle',
-    error: null
+    error: null,
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
 };
 
 export const productsSlice = createSlice({
@@ -93,7 +96,11 @@ export const productsSlice = createSlice({
             })
             .addCase(fetchProducts.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.products = action.payload;
+                const { data, pagination } = action.payload || {};
+                state.products = data || [];
+                state.currentPage = pagination?.page || 1;
+                state.totalPages = pagination?.totalPages || 1;
+                state.totalItems = pagination?.total || 0;
             })
             .addCase(fetchProducts.rejected, (state, action) => {
                 state.status = 'failed';
@@ -140,6 +147,7 @@ export const productsSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+
     }
 });
 
