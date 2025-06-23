@@ -27,9 +27,7 @@ const getPakistaniDate = () => {
 const statusColors = {
   Pending: 'bg-yellow-100 text-yellow-800',
   Completed: 'bg-green-100 text-green-800',
-  Processing: 'bg-blue-100 text-blue-800',
-  Shipped: 'bg-purple-100 text-purple-800',
-  Cancelled: 'bg-red-100 text-red-800',
+
 };
 
 const Orders = () => {
@@ -84,30 +82,39 @@ const Orders = () => {
     dispatch(fetchOrdersAdmin());
   }, [dispatch]);
 
-  useEffect(() => {
-    if (status === 'succeeded') {
-      setLocalOrders((prev) => {
-        const existingIds = new Set(prev.map((order) => order._id));
-        const merged = [
-          ...orders.filter((order) => !existingIds.has(order._id)),
-          ...prev,
-        ];
-        return merged;
-      });
+useEffect(() => {
+  if (status === 'succeeded') {
+    setLocalOrders((prev) => {
+      // Create a map of existing orders for quick lookup
+      const orderMap = new Map(prev.map(order => [order._id, order]));
+      
+      // Update existing orders or add new ones
+      const updatedOrders = orders.map(order => 
+        orderMap.get(order._id) || order
+      );
+      
+      // Preserve any orders that aren't in the new response
+      const remainingOrders = prev.filter(order => 
+        !orders.some(o => o._id === order._id)
+      );
+      
+      return [...updatedOrders, ...remainingOrders];
+    });
 
-      const initialPackerNames = {};
-      orders.forEach((order) => {
-        if (order.packerName) {
-          initialPackerNames[order._id] = order.packerName;
-        }
-      });
-      setPackerNames((prev) => ({ ...initialPackerNames, ...prev }));
-    }
+    // Initialize packer names
+    const initialPackerNames = {};
+    orders.forEach((order) => {
+      if (order.packerName) {
+        initialPackerNames[order._id] = order.packerName;
+      }
+    });
+    setPackerNames((prev) => ({ ...prev, ...initialPackerNames }));
+  }
 
-    if (status === 'failed') {
-      toast.error(error || 'Failed to fetch orders');
-    }
-  }, [status, error, orders]);
+  if (status === 'failed') {
+    toast.error(error || 'Failed to fetch orders');
+  }
+}, [status, error, orders]);
 
 
   const todayString = getPakistaniDate();
