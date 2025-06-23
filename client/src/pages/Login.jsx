@@ -20,8 +20,6 @@ const Login = () => {
   const navigate = useNavigate();
 
   // Common states
-
-  // Common states
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
