@@ -6,7 +6,7 @@ import { Toaster } from "./components/ui/sonner";
 // Page Imports
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
 import Success from "./pages/Success";
@@ -26,7 +26,11 @@ import Users from "./pages/Users";
 import UpdateProduct from "./components/custom/UpdateProduct";
 import Profile from "./pages/Profile";
 
+
+
+
 const App = () => {
+  
   const router = createBrowserRouter([
     {
       path: "/",
@@ -47,13 +51,16 @@ const App = () => {
       ),
     },
     {
-      path: "/signup",
-      element: (
-        <RootLayout>
-          <Signup />
-        </RootLayout>
-      ),
-    },
+  path: "/",
+  element: (
+    <RootLayout>
+     
+      <ProtectedRoute>
+        <Home />
+      </ProtectedRoute>
+    </RootLayout>
+  ),
+},
     {
       path: "/checkout",
       element: (
@@ -186,6 +193,7 @@ const App = () => {
   return (
     <Provider store={store}>
       <Toaster />
+      
       <RouterProvider router={router} />
     </Provider>
   );

@@ -41,14 +41,13 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [localOrders, setLocalOrders] = useState([]);
-
   const [packerNames, setPackerNames] = useState({});
 
   const handlePackerNameChange = (orderId, name) => {
     setPackerNames((prev) => ({
       ...prev,
       [orderId]: name,
-    }))
+    }));
   };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
@@ -59,14 +58,10 @@ const Orders = () => {
         return;
       }
     }
+
     try {
       const packer = packerNames[orderId] || '';
-      await dispatch(updateOrderStatus({
-        orderId,
-        status: newStatus,
-        packerName: packer
-      })).unwrap();
-
+      await dispatch(updateOrderStatus({ orderId, status: newStatus, packerName: packer })).unwrap();
       toast.success(`Order marked as ${newStatus}`);
 
       setLocalOrders((prev) =>
@@ -75,13 +70,11 @@ const Orders = () => {
             ? {
               ...order,
               status: newStatus,
-              packerName: newStatus === 'Completed' ? packer : order.packerName
+              packerName: newStatus === 'Completed' ? packer : order.packerName,
             }
             : order
         )
       );
-
-      
     } catch (error) {
       toast.error(error?.message || 'Failed to update order status');
     }
@@ -93,20 +86,29 @@ const Orders = () => {
 
   useEffect(() => {
     if (status === 'succeeded') {
-      setLocalOrders(orders);
-      // Initialize packerNames from existing orders
+      setLocalOrders((prev) => {
+        const existingIds = new Set(prev.map((order) => order._id));
+        const merged = [
+          ...orders.filter((order) => !existingIds.has(order._id)),
+          ...prev,
+        ];
+        return merged;
+      });
+
       const initialPackerNames = {};
       orders.forEach((order) => {
         if (order.packerName) {
           initialPackerNames[order._id] = order.packerName;
         }
       });
-      setPackerNames(initialPackerNames);
+      setPackerNames((prev) => ({ ...initialPackerNames, ...prev }));
     }
+
     if (status === 'failed') {
       toast.error(error || 'Failed to fetch orders');
     }
   }, [status, error, orders]);
+
 
   const todayString = getPakistaniDate();
 
@@ -141,12 +143,8 @@ const Orders = () => {
     <div className="px-4 py-6 md:px-6 lg:px-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Order Management
-          </h1>
-          <p className="text-muted-foreground">
-            View and manage customer orders
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">Order Management</h1>
+          <p className="text-muted-foreground">View and manage customer orders</p>
         </div>
       </div>
 
@@ -155,26 +153,16 @@ const Orders = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <Tabs defaultValue="all" className="w-full sm:w-auto">
               <TabsList>
-                <TabsTrigger value="all" onClick={() => setStatusFilter('All')}>
-                  All
-                </TabsTrigger>
-                <TabsTrigger value="pending" onClick={() => setStatusFilter('Pending')}>
-                  Pending
-                </TabsTrigger>
-                <TabsTrigger value="completed" onClick={() => setStatusFilter('Completed')}>
-                  Completed
-                </TabsTrigger>
+                <TabsTrigger value="all" onClick={() => setStatusFilter('All')}>All</TabsTrigger>
+                <TabsTrigger value="pending" onClick={() => setStatusFilter('Pending')}>Pending</TabsTrigger>
+                <TabsTrigger value="completed" onClick={() => setStatusFilter('Completed')}>Completed</TabsTrigger>
               </TabsList>
             </Tabs>
 
             <div className="flex gap-2">
-              <Button
-                variant={showAll ? "outline" : "default"}
-                onClick={() => setShowAll(!showAll)}
-                className="gap-2"
-              >
+              <Button variant={showAll ? 'outline' : 'default'} onClick={() => setShowAll(!showAll)} className="gap-2">
                 <CalendarDays className="h-4 w-4" />
-                {showAll ? "Show Today" : "Show All"}
+                {showAll ? 'Show Today' : 'Show All'}
               </Button>
 
               {!showAll && (
@@ -186,7 +174,6 @@ const Orders = () => {
                   className="border p-1 rounded-md"
                 />
               )}
-
             </div>
           </div>
         </div>
@@ -199,24 +186,20 @@ const Orders = () => {
           <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
             <List className="h-12 w-12 text-muted-foreground" />
             <h3 className="text-lg font-medium">
-              {showAll
-                ? 'No orders found'
-                : `No ${statusFilter.toLowerCase()} orders found for ${selectedDate}`}
+              {showAll ? 'No orders found' : `No ${statusFilter.toLowerCase()} orders found for ${selectedDate}`}
             </h3>
             <p className="text-sm text-muted-foreground">
               {searchQuery ? 'Try a different search term' : 'Check back later for new orders'}
             </p>
           </div>
         ) : (
-          <div className="grid lg:w-[900px] grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid w-[350px] md:w-[1000px] lg:w-[1400px] grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredOrders.map((order) => (
               <Card key={order._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">
-                        Order #{order._id.slice(-6)}
-                      </CardTitle>
+                      <CardTitle className="text-lg">Order #{order._id.slice(-6)}</CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {new Date(order.createdAt).toLocaleString('en-US', {
                           timeZone: 'Asia/Karachi',
@@ -225,20 +208,18 @@ const Orders = () => {
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
-                    <Badge
-                      className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}
-                    >
+                    <Badge className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}>
                       {order.status}
                     </Badge>
                   </div>
                 </CardHeader>
 
                 <CardContent className="flex flex-col h-full">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between mb-2">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
                       <p className="text-lg font-semibold">Rs. {order.amount.toLocaleString()}</p>
@@ -249,7 +230,7 @@ const Orders = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-2">
                     <p className="text-sm font-medium">Products</p>
                     <ScrollArea className="h-32 rounded-md border">
                       <div className="p-2 space-y-2">
@@ -272,22 +253,15 @@ const Orders = () => {
                     </ScrollArea>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-2">
                     <p className="text-sm font-medium">Shipping Info</p>
                     <div className="text-sm">
-                      <p className="truncate">
-                        <span className="text-muted-foreground">Address:</span> {order.address}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">City:</span> {order.city}
-                      </p>
-                      <p>
-                        <span className="text-muted-foreground">Phone:</span> {order.phone}
-                      </p>
+                      <p className="truncate"><span className="text-muted-foreground">Address:</span> {order.address}</p>
+                      <p><span className="text-muted-foreground">City:</span> {order.city}</p>
+                      <p><span className="text-muted-foreground">Phone:</span> {order.phone}</p>
                     </div>
                   </div>
 
-                  {/* Packer Input if Pending */}
                   {order.status === 'Pending' && (
                     <div className="space-y-2 mt-2">
                       <p className="text-sm font-semibold">Packer Name</p>
@@ -299,7 +273,6 @@ const Orders = () => {
                     </div>
                   )}
 
-                  {/* Display Packer for Completed */}
                   {order.status === 'Completed' && order.packerName && (
                     <div className="mt-2 text-sm">
                       <p className="font-semibold">Packed by:</p>
@@ -307,91 +280,60 @@ const Orders = () => {
                     </div>
                   )}
 
-                  {/* Update button */}
-                   <div className="mt-auto space-y-2">
-    <p className="text-sm font-semibold">Update Status</p>
-    <Select
-      value={order.status || 'Pending'}
-      onValueChange={(newStatus) => handleStatusUpdate(order._id, newStatus)}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select status" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="Pending">Pending</SelectItem>
-        <SelectItem value="Completed">Completed</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
+                  <div className="mt-auto space-y-2">
+                    <p className="text-sm font-semibold">Update Status</p>
+                    <Select
+                      value={order.status || 'Pending'}
+                      onValueChange={(newStatus) => handleStatusUpdate(order._id, newStatus)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pending">Pending</SelectItem>
+                        <SelectItem value="Completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardContent>
 
-                {order.status === 'Pending' && (
-                  <CardFooter className="flex flex-col gap-2">
-                   
-
-                    {/* View Details button if Pending */}
-                    {order.status === 'Pending' &&  (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            onClick={() => setSelectedOrder(order)}
-                            className="w-full"
-                          >
-                            View Details
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader>
-                            <DialogTitle>Order Details</DialogTitle>
-                            <DialogDescription>
-                              Complete information for order #{order._id.slice(-6)}
-                            </DialogDescription>
-                          </DialogHeader>
-                          {selectedOrder && (
-                            <OrderData
-                              price={selectedOrder.amount}
-                              address={selectedOrder.address}
-                              phone={selectedOrder.phone}
-                              city={selectedOrder.city}
-                              createdAt={selectedOrder.createdAt}
-                              products={selectedOrder.products}
-                              paymentMethod={selectedOrder.paymentMethod || 'COD'}
-                              status={selectedOrder.status || 'Pending'}
-                              packerName={selectedOrder.packerName}
-                            />
-                          )}
-
-                        </DialogContent>
-                      </Dialog>
-                    )}
-
-                  </CardFooter>
-                )}
-
+                <CardFooter className="flex flex-col gap-2">
+                  <Dialog onOpenChange={(open) => open && setSelectedOrder(order)}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full">
+                        View Details
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Order Details</DialogTitle>
+                        <DialogDescription>
+                          Complete information for order #{order._id.slice(-6)}
+                        </DialogDescription>
+                      </DialogHeader>
+                      {selectedOrder && (
+                        <OrderData
+                          price={selectedOrder.amount}
+                          address={selectedOrder.address}
+                          phone={selectedOrder.phone}
+                          city={selectedOrder.city}
+                          createdAt={selectedOrder.createdAt}
+                          products={selectedOrder.products}
+                          paymentMethod={selectedOrder.paymentMethod || 'COD'}
+                          status={selectedOrder.status || 'Pending'}
+                          packerName={selectedOrder.packerName}
+                        />
+                      )}
+                    </DialogContent>
+                  </Dialog>
+                </CardFooter>
               </Card>
             ))}
           </div>
         )}
-
       </div>
     </div>
-  )
+  );
 };
 
 export default Orders;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
