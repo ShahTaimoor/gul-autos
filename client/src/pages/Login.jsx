@@ -11,16 +11,13 @@ import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const [tab, setTab] = useState('login');
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [input, setInput] = useState({
-    name: '',
-    password: '',
-  });
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const [input, setInput] = useState({ name: '', password: '' });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -64,12 +61,13 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(response.user));
         navigate('/');
       } else {
+        setError('Login failed');
         toast.error('Login failed');
       }
     } catch (err) {
       const msg = err?.message || 'Something went wrong during login';
-      toast.error(msg);
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -88,14 +86,14 @@ const Login = () => {
           <Button
             onClick={() => setTab('login')}
             variant={tab === 'login' ? 'default' : 'ghost'}
-            className={`w-1/2 ${tab === 'login' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
+            className={`w-1/2 transition-all ${tab === 'login' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
           >
             Login
           </Button>
           <Button
             onClick={() => setTab('signup')}
             variant={tab === 'signup' ? 'default' : 'ghost'}
-            className={`w-1/2 ${tab === 'signup' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
+            className={`w-1/2 transition-all ${tab === 'signup' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
           >
             Sign Up
           </Button>
@@ -121,11 +119,15 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder=" "
                 required
-                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white 
+                  focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
               />
               <label
                 htmlFor="name"
-                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+                  transition-all duration-200 ease-in-out pointer-events-none
+                  peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+                  peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
               >
                 Shop Name
               </label>
@@ -139,18 +141,22 @@ const Login = () => {
                 onChange={handleChange}
                 placeholder=" "
                 required
-                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white 
+                  focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
               />
               <label
                 htmlFor="password"
-                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+                  transition-all duration-200 ease-in-out pointer-events-none
+                  peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+                  peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
               >
                 Password
               </label>
               <button
                 type="button"
                 onClick={togglePassword}
-                className="absolute right-3 top-3.5 text-gray-400 hover:text-[#FED700]"
+                className="absolute right-3 top-3.5 text-gray-400 hover:text-[#FED700] transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -171,28 +177,30 @@ const Login = () => {
           </Button>
         </form>
 
-        {/* Tab switch text */}
-        {tab === 'login' ? (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <button
-              onClick={() => setTab('signup')}
-              className="text-[#FED700] hover:text-[#e3c16c] font-medium"
-            >
-              Sign up
-            </button>
-          </div>
-        ) : (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{' '}
-            <button
-              onClick={() => setTab('login')}
-              className="text-[#FED700] hover:text-[#e3c16c] font-medium"
-            >
-              Login
-            </button>
-          </div>
-        )}
+        {/* Toggle tab message */}
+        <div className="mt-6 text-center text-sm text-gray-500">
+          {tab === 'login' ? (
+            <>
+              Don't have an account?{' '}
+              <button
+                onClick={() => setTab('signup')}
+                className="text-[#FED700] hover:text-[#e3c16c] font-medium"
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{' '}
+              <button
+                onClick={() => setTab('login')}
+                className="text-[#FED700] hover:text-[#e3c16c] font-medium"
+              >
+                Login
+              </button>
+            </>
+          )}
+        </div>
       </Card>
     </div>
   );
