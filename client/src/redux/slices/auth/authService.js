@@ -8,7 +8,6 @@ const loginUser = async (userData) => {
   return response.data;
 };
 
-
 const updateProfile = async (data) => {
   const response = await axiosInstance.put('/update-profile', data, {
     headers: { 'Content-Type': 'application/json' },

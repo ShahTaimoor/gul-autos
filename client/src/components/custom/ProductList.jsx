@@ -278,7 +278,7 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="max-w-7xl mx-auto px-6 lg:px-4 py-6">
+    <div className="md:max-w-5xl lg:max-w-7xl mx-auto px-6 lg:px-4 py-6">
       {/* Swiper for categories */}
       <div className="relative">
         <Swiper
