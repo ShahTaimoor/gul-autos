@@ -17,11 +17,12 @@ export const login = createAsyncThunk('auth/login', async (userData, thunkAPI) =
   try {
     return await authService.loginUser(userData);
   } catch (error) {
-    const message =
-      error.response?.data?.message || error.message || 'Login failed';
-    return thunkAPI.rejectWithValue(message);
+    const message = error?.response?.data?.message || 'Shop name or password is incorrect';
+    return thunkAPI.rejectWithValue(message); // reject as string only
   }
 });
+
+
 
 
 export const updateProfile = createAsyncThunk(

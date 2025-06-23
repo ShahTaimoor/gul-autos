@@ -51,6 +51,7 @@ const Login = () => {
   };
 
   const handleLogin = async (e) => {
+
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -65,10 +66,14 @@ const Login = () => {
         toast.error('Login failed');
       }
     } catch (err) {
-      const msg = err?.message || 'Something went wrong during login';
+      const msg = typeof err === 'string'
+        ? err
+        : err?.response?.data?.message || 'Shop name or password is incorrect';
+
       setError(msg);
       toast.error(msg);
-    } finally {
+    }
+    finally {
       setLoading(false);
     }
   };
