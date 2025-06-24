@@ -1,3 +1,4 @@
+// src/features/auth/authService.js
 import axiosInstance from './axiosInstance';
 
 const loginUser = async (userData) => {
@@ -14,14 +15,5 @@ const updateProfile = async (data) => {
   return response.data.user;
 };
 
-const logoutUser = async () => {
-  await axiosInstance.get('/logout');
-};
-
-const authService = {
-  loginUser,
-  updateProfile,
-  logoutUser,
-};
-
+const authService = { loginUser, updateProfile };
 export default authService;

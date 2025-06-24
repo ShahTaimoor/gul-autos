@@ -1,225 +1,145 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
 import { useDispatch } from 'react-redux';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
-import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [tab, setTab] = useState('login');
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const expired = params.get('expired');
+  const from = location.state?.from?.pathname || '/';
 
-  // Common states
+  useEffect(() => {
+    if (expired) {
+      toast.error("Session expired. Please login again.");
+    }
+  }, [expired]);
+
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-
-  const [input, setInput] = useState({
+  const [inputValue, setInputValues] = useState({
     name: '',
-    password: '',
+    password: ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setInput((prev) => ({ ...prev, [name]: value }));
+    setInputValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const togglePassword = () => setShowPassword(!showPassword);
-
-  const handleSignup = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/signup`, input, {
-        headers: { 'Content-Type': 'application/json' },
+    setErrorMsg('');
+
+    dispatch(login(inputValue))
+      .unwrap()
+      .then((response) => {
+        if (response?.user) {
+          toast.success('Login successful');
+          setInputValues({ name: '', password: '' });
+          navigate(from, { replace: true });
+        } else {
+          setErrorMsg('Login failed');
+          toast.error('Login failed');
+        }
+      })
+      .catch((error) => {
+        console.log('Login error:', error);
+
+        if (
+          error?.message?.toLowerCase().includes('invalid') ||
+          error?.message?.toLowerCase().includes('incorrect') ||
+          error?.message?.toLowerCase().includes('username') ||
+          error?.message?.toLowerCase().includes('password')
+        ) {
+          const errorText = 'Username or password is incorrect';
+          setErrorMsg(errorText);
+          toast.error(errorText);
+        } else {
+          const errorText = error?.message || 'Something went wrong during login';
+          setErrorMsg(errorText);
+          toast.error(errorText);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
       });
-      toast.success('Signup successful! Logging you in...');
-      const loginResponse = await dispatch(login(input)).unwrap();
-      if (loginResponse?.user) {
-        localStorage.setItem('user', JSON.stringify(loginResponse.user));
-        navigate('/');
-      } else {
-        toast.error('Login failed after signup');
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error('User already exists. Please choose another name.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const response = await dispatch(login(input)).unwrap();
-      if (response?.user) {
-        toast.success('Login successful!');
-        localStorage.setItem('user', JSON.stringify(response.user));
-        navigate('/');
-      } else {
-        setError('Login failed');
-        toast.error('Login failed');
-      }
-    } catch (err) {
-      const msg = err?.message || 'Something went wrong during login';
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen px-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Card className="w-full max-w-md p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
-        {/* Logo/Branding */}
-        <div className="flex justify-center mb-6">
-          <div >
-            <img src="/logos.png" alt="" className='h-16' />
-          </div>
+    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
+        <div className='flex justify-center mb-6'>
+          <h2 className='text-xl font-medium'>Gul Auto</h2>
         </div>
+        <h2 className='text-2xl font-bold text-center mb-2'>Hey There!</h2>
+        <p className='text-center mb-6'>Enter your details to Login</p>
 
-        {/* Tabs */}
-        <div className="flex mb-8 bg-gray-100 p-1 rounded-lg">
-          <Button
-            onClick={() => setTab('login')}
-            variant={tab === 'login' ? 'default' : 'ghost'}
-            className={`w-1/2 cursor-pointer transition-all ${tab === 'login' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
-          >
-            Login
-          </Button>
-          <Button
-            onClick={() => setTab('signup')}
-            variant={tab === 'signup' ? 'default' : 'ghost'}
-            className={`w-1/2 cursor-pointer transition-all ${tab === 'signup' ? 'shadow-sm' : 'text-gray-600 hover:text-[#FED700]'}`}
-          >
-            Sign Up
-          </Button>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+        {errorMsg && (
+          <Alert variant='destructive' className='mb-4'>
+            <AlertTitle>Login Error</AlertTitle>
+            <AlertDescription>{errorMsg}</AlertDescription>
           </Alert>
         )}
 
-        {/* Form */}
-        <form onSubmit={tab === 'login' ? handleLogin : handleSignup}>
-          <div className="space-y-4">
-            <div className="relative w-full ">
-              <input
-                type="text"
-                name="name"
-                id="shop-name"
-                value={input.name}
-                onChange={handleChange}
-                placeholder=" "
-                required
-                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white 
-               focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-              />
-              <label
-                htmlFor="shop-name"
-                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-               transition-all duration-200 ease-in-out pointer-events-none
-               peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
-               peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-              >
-                Shop Name
-              </label>
-            </div>
+        <div className='mb-4'>
+          <label className='block text-sm font-semibold mb-2'>Shop Name</label>
+          <Input
+            type='text'
+            name='name'
+            placeholder='Enter your shop name'
+            value={inputValue.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
 
-
-            <div className="relative w-full mt-4">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                id="password"
-                value={input.password}
-                onChange={handleChange}
-                placeholder=" "
-                required
-                className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 pr-10 text-sm bg-white 
-               focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-              />
-
-              {/* Floating label inside border */}
-              <label
-                htmlFor="password"
-                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-               transition-all duration-200 ease-in-out pointer-events-none
-               peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
-               peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-              >
-                Password
-              </label>
-
-              {/* Eye/EyeOff toggle */}
-              <button
-                type="button"
-                onClick={togglePassword}
-                className="absolute right-3 top-3.5 text-gray-400 hover:text-[#FED700] transition-colors"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
+        <div className='mb-4 relative'>
+          <label className='block text-sm font-semibold mb-2'>Password</label>
+          <Input
+            type={showPassword ? 'text' : 'password'}
+            name='password'
+            placeholder='Enter your password'
+            value={inputValue.password}
+            onChange={handleChange}
+            required
+            className='pr-10'
+          />
+          <div
+            onClick={() => setShowPassword((prev) => !prev)}
+            className='absolute right-3 top-9 cursor-pointer text-gray-500'
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </div>
+        </div>
 
+        <Button className='w-full mt-4' disabled={loading} type='submit'>
+          {loading ? (
+            <>
+              <Loader2 className='animate-spin mr-2 h-4 w-4' />
+              Logging in...
+            </>
+          ) : (
+            'Login'
+          )}
+        </Button>
 
-
-          <Button className="w-full mt-6 h-10" type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                {tab === 'login' ? 'Logging in...' : 'Creating account...'}
-              </>
-            ) : tab === 'login' ? (
-              'Login to your account'
-            ) : (
-              'Create new account'
-            )}
-          </Button>
-        </form>
-
-        {tab === 'login' && (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <button
-              onClick={() => setTab('signup')}
-              className="text-[#FED700] cursor-pointer hover:text-[#e3c16c] font-medium"
-            >
-              Sign up
-            </button>
-          </div>
-        )}
-
-        {tab === 'signup' && (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{' '}
-            <button
-              onClick={() => setTab('login')}
-              className="text-[#FED700] cursor-pointer hover:text-[#e3c16c] font-medium"
-            >
-              Login
-            </button>
-          </div>
-        )}
-      </Card>
+        <p className='mt-6 text-center text-sm'>
+          Don't have an account?
+          <Link to='/signup' className='text-blue-500 ml-1'>Sign Up</Link>
+        </p>
+      </form>
     </div>
   );
 };
+
 export default Login;
