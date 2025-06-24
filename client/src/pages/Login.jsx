@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Loader2, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
