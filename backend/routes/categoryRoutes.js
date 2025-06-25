@@ -118,7 +118,7 @@ router.delete('/delete-category/:slug', isAuthorized, isAdmin, async (req, res) 
     }
 });
 
-// Get all categori
+// Get all categor
 router.get('/all-category', async (req, res) => {
     try {
         const categories = await Category.find().sort({ order: 1 });
