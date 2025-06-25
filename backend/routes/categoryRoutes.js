@@ -121,7 +121,7 @@ router.delete('/delete-category/:slug', isAuthorized, isAdmin, async (req, res) 
 // Get all categories
 router.get('/all-category', async (req, res) => {
     try {
-        const categories = await Category.find().sort({ createdAt: -1 });
+        const categories = await Category.find().sort({ order: 1 });
         if (!categories.length) {
             return res.status(404).json({ success: false, message: 'No categories found' });
         }
@@ -161,6 +161,21 @@ router.get('/single-category/:slug', async (req, res) => {
         console.error('Error fetching single category:', error);
         res.status(500).json({ success: false, message: 'Server error while fetching single category' });
     }
+});
+
+// Reorder categories
+router.put('/reorder-categories', async (req, res) => {
+  try {
+    const { reorderedIds } = req.body;
+
+    for (let i = 0; i < reorderedIds.length; i++) {
+      await Category.findByIdAndUpdate(reorderedIds[i], { order: i });
+    }
+
+    res.json({ success: true, message: 'Reorder saved' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to save order' });
+  }
 });
 
 module.exports = router;

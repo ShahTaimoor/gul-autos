@@ -61,6 +61,20 @@ export const SingleCategory = createAsyncThunk(
     }
 );
 
+
+export const reorderCategory = createAsyncThunk(
+    'categories/reorder',
+    async (reorderedIds, thunkAPI) => {
+        try {
+            const res = await categoryService.reorderCategories(reorderedIds);
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error?.response?.data?.message || error.message);
+        }
+    }
+);
+
+
 const initialState = {
     categories: [],
     status: 'idle',
@@ -75,7 +89,7 @@ const categoriesSlice = createSlice({
         builder
             .addCase(AddCategory.pending, (state) => { state.status = 'loading'; })
             .addCase(AddCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories.push(action.payload.data); })
-            
+
             .addCase(AddCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(AllCategory.pending, (state) => { state.status = 'loading'; })
             .addCase(AllCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })
@@ -84,24 +98,37 @@ const categoriesSlice = createSlice({
             .addCase(SingleCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })
             .addCase(SingleCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(deleteCategory.pending, (state) => { state.status = 'loading'; })
-            .addCase(deleteCategory.fulfilled, (state, action) => { state.status = 'succeeded';
-                 
-                 state.categories = state.categories.filter(prod => prod._id !== action.payload.id);
-                })
+            .addCase(deleteCategory.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+
+                state.categories = state.categories.filter(prod => prod._id !== action.payload.id);
+            })
             .addCase(deleteCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(updateCategory.pending, (state) => { state.status = 'loading'; })
-            .addCase(updateCategory.fulfilled, (state, action) => { state.status = 'succeeded'; 
-                
-             
+            .addCase(updateCategory.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+
+
                 const updatedCategory = action.payload.data;
 
                 // Update the category in the array instead of replacing the whole list
                 state.categories = state.categories.map((prod) =>
                     prod._id === updatedCategory._id ? updatedCategory : prod
                 );
-            
+
             })
             .addCase(updateCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
+            .addCase(reorderCategory.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(reorderCategory.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+            })
+            .addCase(reorderCategory.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            });
+
     }
 });
 

@@ -1,204 +1,250 @@
-import { AllCategory } from '@/redux/slices/categories/categoriesSlice'
-import { getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice'
-import React, { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
-import { Button } from '../ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { toast } from 'sonner'
+import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
+import { getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../ui/select';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const UpdateProduct = () => {
-    const [inputValue, setInputValue] = useState({
-        title: '',
-        price: '',
-        category: '',
-        picture: '',
-        description: '',
-        stock: '',
-    })
+  const [inputValue, setInputValue] = useState({
+    title: '',
+    price: '',
+    category: '',
+    picture: '',
+    description: '',
+    stock: '',
+  });
 
-    const { categories } = useSelector((state) => state.categories);
-    const { singleProducts } = useSelector(s => s.products);
-    const { id } = useParams()
+  const [previewImage, setPreviewImage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const navigate = useNavigate()
-    const dispatch = useDispatch()
+  const { categories } = useSelector((state) => state.categories);
+  const { singleProducts } = useSelector((s) => s.products);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-    const handleChange = (e) => {
-        const { name, value, type, files } = e.target;
-        setInputValue((values) => ({ ...values, [name]: type === 'file' ? files[0] : value }));
-    };
-
-    const handleCategoryChange = (value) => {
-        setInputValue((values) => ({ ...values, category: value }));
+  const handleChange = (e) => {
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      const file = files[0];
+      setInputValue((values) => ({ ...values, [name]: file }));
+      setPreviewImage(URL.createObjectURL(file));
+    } else {
+      setInputValue((values) => ({ ...values, [name]: value }));
     }
+  };
 
-    useEffect(() => {
-        dispatch(getSingleProduct(id))
-        dispatch(AllCategory())
-    }, [id, dispatch])
+  const handleCategoryChange = (value) => {
+    setInputValue((values) => ({ ...values, category: value }));
+  };
 
-    useEffect(() => {
-        if (singleProducts) {
-            const { title, price, category, picture, description, stock } = singleProducts
-            setInputValue({
-                title: title,
-                price: price,
-                category: category?._id,
-                picture: picture,
-                description: description,
-                stock: stock,
+  const handleRemoveImage = () => {
+    setInputValue((prev) => ({ ...prev, picture: '' }));
+    setPreviewImage('');
+  };
 
-            })
+  const handleCancel = () => {
+    navigate('/admin/dashboard/all-products');
+  };
 
+  useEffect(() => {
+    dispatch(getSingleProduct(id));
+    dispatch(AllCategory());
+  }, [id, dispatch]);
 
+  useEffect(() => {
+    if (singleProducts) {
+      const { title, price, category, picture, description, stock } = singleProducts;
+      setInputValue({
+        title,
+        price,
+        category: category?._id || '',
+        picture: '',
+        description,
+        stock,
+      });
+      setPreviewImage(picture?.secure_url || '');
+    }
+  }, [singleProducts]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    dispatch(updateSingleProduct({ inputValues: inputValue, id }))
+      .unwrap()
+      .then((response) => {
+        if (response?.success) {
+          toast.success(response?.message);
+          setInputValue({
+            title: '',
+            price: '',
+            category: '',
+            picture: '',
+            description: '',
+            stock: '',
+          });
+          setPreviewImage('');
+          navigate('/admin/dashboard/all-products');
+        } else {
+          toast.error(response?.message || 'Failed to update product');
         }
-    }, [singleProducts])
+      })
+      .catch((error) => {
+        toast.error(error || 'Failed to update product');
+      })
+      .finally(() => setLoading(false));
+  };
 
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Update Product</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
+          <div className="grid gap-6">
+            <div className="grid gap-3">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                type="text"
+                id="title"
+                name="title"
+                value={inputValue.title}
+                onChange={handleChange}
+                placeholder="Enter Product Title"
+              />
+            </div>
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  type="text"
+                  id="price"
+                  name="price"
+                  value={inputValue.price}
+                  onChange={handleChange}
+                  placeholder="Enter Product Price"
+                />
+              </div>
 
+              <div className="grid gap-3">
+                <Label htmlFor="category">Category</Label>
+                <Select value={inputValue.category} onValueChange={handleCategoryChange}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-        dispatch(updateSingleProduct({ inputValues: inputValue, id }))
-            .unwrap()
-            .then((response) => {
-                if (response?.success) {
-                    toast.success(response?.message);
-                    setInputValue({
-                        title: '',
-                        price: '',
-                        category: '',
-                        picture: '',
-                        description: '',
-                        stock: ''
-                      });
-                    navigate('/admin/dashboard/all-products')
-                } else {
-                    toast.error(response?.message || 'Failed to add PRODUCTSsdsd');
-                }
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                 <Label htmlFor="picture" className="text-sm font-medium text-gray-700">
+    Picture
+  </Label>
 
-            })
-            .catch((error) => {
-                toast.error(error || 'Failed to add PRODCUTS');
-            });
-    };
+  <label
+    htmlFor="picture"
+    className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:border-blue-500 hover:bg-blue-50 transition duration-200 ease-in-out"
+  >
+    <span className="text-gray-500 text-sm">Click to upload</span>
+    <span className="text-xs text-gray-400">(JPEG, PNG, WebP)</span>
+    <Input
+      type="file"
+      id="picture"
+      name="picture"
+      accept="image/*"
+      onChange={handleChange}
+      className="hidden"
+    />
+  </label>
+                {previewImage && (
+                  <div className="relative mt-2 w-32 h-32">
+                    <img
+                      src={previewImage}
+                      alt="Preview"
+                      className="w-full h-full object-cover rounded"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md hover:bg-red-700"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>
-                    Product Details
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} encType='multipart/form-data'>
-                    <div className='grid gap-6'>
-                        <div className='grid gap-3'>
-                            <Label htmlFor='title'>
-                                Title
-                            </Label>
-                            <Input type="text" id='title'
-                                placeholder='Enter Product Title'
-                               
-                                name='title'
-                                value={inputValue.title}
-                                onChange={handleChange}
-                            />
-                        </div>
-                        <div className='grid grid-cols-2'>
-                            <div className='grid gap-3'>
-                                <Label htmlFor='price'>
-                                    Price
-                                </Label>
-                                <Input type="text" id='price'
-                                    placeholder='Enter Product Price'
-                                    
-                                    name='price'
-                                    value={inputValue.price}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className='grid gap-3'>
-                                <Label htmlFor='category'>
-                                    Category
-                                </Label>
-                                <Select value={inputValue.category} onValueChange={handleCategoryChange}>
-                                    <SelectTrigger id="category">
-                                        <SelectValue placeholder="Select Category" />
-                                    </SelectTrigger>
-                                    <SelectContent position="popper">
-                                        {categories &&
-                                            categories.map((category) => (
-                                                <SelectItem key={category._id} value={category._id}>
-                                                    {category.name}
-                                                </SelectItem>
-                                            ))}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-3">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  type="text"
+                  id="description"
+                  name="description"
+                  value={inputValue.description}
+                  onChange={handleChange}
+                  placeholder="Enter Product Description"
+                />
+              </div>
+              <div className="grid gap-3">
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  type="number"
+                  id="stock"
+                  name="stock"
+                  value={inputValue.stock}
+                  onChange={handleChange}
+                  placeholder="Enter Product Stock"
+                />
+              </div>
+            </div>
 
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+            <div className="flex gap-4">
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Product'
+                )}
+              </Button>
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
 
-                        <div className='grid grid-cols-2'>
-                            <div className='grid gap-3'>
-                                <Label htmlFor='picture'>
-                                    Picture
-                                </Label>
-                                <Input type="file" id='picture'
-                                    placeholder='Enter Product Image'
-                                  
-                                    name='picture'
-
-                                    onChange={(e) => handleChange({
-                                        target: {
-                                            name: 'picture',
-                                            value: e.target.files[0]
-                                        }
-                                    })}
-                                />
-                            </div>
-
-                        </div>
-
-                        <div className='grid grid-cols-2'>
-                            <div className='grid gap-3'>
-                                <Label htmlFor='description'>
-                                    Description
-                                </Label>
-                                <Input type="text" id='description'
-                                    placeholder='Enter Product Price'
-                                 
-                                    name='description'
-                                    value={inputValue.description}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className='grid gap-3'>
-                                <Label htmlFor='stock'>
-                                    Stock
-                                </Label>
-                                <Input type="number" id='stock'
-                                    placeholder='Enter Product Stock'
-                                    
-                                    name='stock'
-                                    value={inputValue.stock}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-
-                        <Button type='submit'>
-                            Update Product
-                        </Button>
-                    </div>
-                </form>
-            </CardContent>
-        </Card>
-    )
-}
-
-export default UpdateProduct
+export default UpdateProduct;
