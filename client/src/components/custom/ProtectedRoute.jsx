@@ -8,39 +8,27 @@ const ProtectedRoute = ({ children }) => {
 
   const publicPaths = ['/login', '/signup'];
 
-  // Not logged in → redirect to login page (if not on publicPaths)
+  // Not authenticated and trying to access protected routes
   if (!isAuthenticated && !publicPaths.includes(pathname)) {
     return <Navigate to="/login?expired=true" replace state={{ from: pathname }} />;
   }
 
-  // Admin trying to revisit admin login → Redirect to admin dashboard
-  if (user && user.role === 1 && pathname === '/admin/login') {
+  // Admin trying to revisit /admin/login → redirect to admin dashboard
+  if (user?.role === 1 && pathname === '/admin/login') {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
-  // Admin trying to visit the homepage → Redirect to admin dashboard
-  if (user && user.role === 1 && pathname === '/') {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
-  // Normal user trying to access admin routes → Redirect to homepage
-  if (user && user.role === 0 && pathname.startsWith('/admin')) {
+  // 🚫 Normal user trying to access any admin route
+  if (user?.role === 0 && pathname.startsWith('/admin')) {
     return <Navigate to="/" replace />;
   }
 
-  // Logged-in users visiting login/signup pages → Redirect based on user role
+  // Authenticated user trying to access login/signup → redirect accordingly
   if (isAuthenticated && publicPaths.includes(pathname)) {
-    // Redirect to admin dashboard if the user is an admin (role 1)
-    if (user && user.role === 1) {
-      return <Navigate to="/admin/dashboard" replace />;
-    }
-    // Redirect to homepage if the user is a normal user (role 0)
-    if (user && user.role === 0) {
-      return <Navigate to="/" replace />;
-    }
+    return <Navigate to={user?.role === 1 ? '/admin/dashboard' : '/'} replace />;
   }
 
-  // Empty cart → No checkout for logged-in users
+  // Empty cart → disallow access to checkout
   if (user && pathname === '/checkout' && cartItems.length === 0) {
     return <Navigate to="/" replace />;
   }

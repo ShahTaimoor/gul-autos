@@ -551,7 +551,7 @@ const ProductList = () => {
             />
             <button
               onClick={() => setPreviewImage(null)}
-              className="absolute hover:bg-red-500 top-48 cursor-pointer right-2 md:top-2 md:right-28 bg-black/70 text-white rounded-full p-1 px-2"
+              className="absolute hover:bg-red-500 top-56 cursor-pointer right-2 md:top-2 md:right-28 bg-black/70 text-white rounded-full p-1 px-2"
             >
               ✕
             </button>
