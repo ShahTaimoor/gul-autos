@@ -291,19 +291,23 @@ const ProductList = () => {
           {categoryChunks.map((chunk, idx) => (
             <SwiperSlide key={idx}>
               <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
-                {chunk.map((cat) => (
-                  <div
-                    key={cat._id}
-                    className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''
-                      } cursor-pointer text-center`}
-                    onClick={() => setCategory(cat._id)}
-                  >
-                    <div className="rounded-full p-1">
-                      <img src={cat.image || "/fallback.jpg"} alt={cat.name} className="w-14 h-14 object-cover rounded-full" />
-                    </div>
-                    <p className="text-xs mt-2">{cat.name}</p>
-                  </div>
-                ))}
+               {chunk.map((cat) => (
+  <div
+    key={cat._id}
+    className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id ? 'border border-[#FED700]' : ''
+      } cursor-pointer text-center`}
+    onClick={() => setCategory(cat._id)}
+  >
+    <div className="rounded-full p-1">
+      <img src={cat.image || "/fallback.jpg"} alt={cat.name} className="w-14 h-14 object-cover rounded-full" />
+    </div>
+    <p className="text-xs mt-2">
+      {cat.name.split(' ').map(word => 
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ')}
+    </p>
+  </div>
+))}
               </div>
             </SwiperSlide>
           ))}
