@@ -46,7 +46,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Sortable Row Component
+// Sortable Row Componen
 const SortableRow = ({ category, children }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: category._id,
