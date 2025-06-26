@@ -14,7 +14,10 @@ import {
   Search,
   Pencil,
   PackageSearch,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import {
@@ -34,11 +37,13 @@ const AllProducts = () => {
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(24); 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { categories } = useSelector((s) => s.categories);
-  const { products, status } = useSelector((s) => s.products);
+  const { products, status, totalPages } = useSelector((s) => s.products);
 
   const loading = status === 'loading';
   const noProducts = status === 'succeeded' && products.length === 0;
@@ -48,16 +53,14 @@ const AllProducts = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm }));
-  }, [category, searchTerm, dispatch]);
+    dispatch(fetchProducts({ category, searchTerm, page, limit }));
+  }, [category, searchTerm, page, limit, dispatch]);
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       dispatch(deleteSingleProduct(id));
     }
   };
-
-  
 
   // Filter based on selected tab
   let filteredProducts = products;
@@ -66,6 +69,12 @@ const AllProducts = () => {
   } else if (stockFilter === 'out-of-stock') {
     filteredProducts = products.filter((p) => p.stock <= 0);
   }
+
+  // Pagination controls
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -104,7 +113,10 @@ const AllProducts = () => {
             <Button
               key={tab}
               variant={stockFilter === tab ? 'default' : 'outline'}
-              onClick={() => setStockFilter(tab)}
+              onClick={() => {
+                setStockFilter(tab);
+                setPage(1); // Reset to first page when changing filters
+              }}
               size="sm"
             >
               {tab === 'all' ? 'All' : tab === 'active' ? 'Active' : 'Out of Stock'}
@@ -151,89 +163,156 @@ const AllProducts = () => {
 
       {/* Product Grid */}
       {!loading && filteredProducts.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((p) => (
-           <Card
-  key={p._id}
-  className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full"
->
-  {/* Product Image */}
-  <div className="relative aspect-square bg-gray-50 overflow-hidden">
-    <img
-      src={p.image || '/placeholder-product.jpg'}
-      alt={p.title}
-      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-      onError={(e) => {
-        e.currentTarget.src = '/placeholder-product.jpg';
-      }}
-    />
-    {p.stock <= 0 && (
-      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-        <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
-          Out of Stock
-        </Badge>
-      </div>
-    )}
-  </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProducts.map((p) => (
+              <Card
+                key={p._id}
+                className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full"
+              >
+                {/* Product Image */}
+                <div className="relative aspect-square bg-gray-50 overflow-hidden">
+                  <img
+                    src={p.image || '/placeholder-product.jpg'}
+                    alt={p.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.src = '/placeholder-product.jpg';
+                    }}
+                  />
+                  {p.stock <= 0 && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                      <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
+                        Out of Stock
+                      </Badge>
+                    </div>
+                  )}
+                </div>
 
-  {/* Product Info */}
-  <div className="flex flex-col p-4 flex-1">
-    <div className="space-y-1 mb-2">
-      <h2 className="text-base font-semibold line-clamp-2">
-        {capitalizeAllWords(p.title)}
-      </h2>
-    </div>
+                {/* Product Info */}
+                <div className="flex flex-col p-4 flex-1">
+                  <div className="space-y-1 mb-2">
+                    <h2 className="text-base font-semibold line-clamp-2">
+                      {capitalizeAllWords(p.title)}
+                    </h2>
+                  </div>
 
-    {/* Action Buttons fixed at bottom */}
-    <div className="mt-auto pt-2">
-      <div className="flex justify-between gap-3.5 items-center">
-        <Badge variant="outline">Rs {p.price}</Badge>
-        {p.category?.name && (
-          <span className="text-sm text-tight text-muted-foreground">
-            {capitalizeAllWords(p.category.name)}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-2 mt-1">
-        <span
-          className={`inline-block w-2 h-2 rounded-full ${
-            p.stock > 10
-              ? 'bg-green-500'
-              : p.stock > 0
-              ? 'bg-yellow-500'
-              : 'bg-red-500'
-          }`}
-        />
-        <span className="text-xs text-muted-foreground">
-          {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-        </span>
-      </div>
-      <div className="flex gap-2 mt-2">
-        <Button
-          onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-2"
-        >
-          <Edit className="w-4 h-4" />
-          Edit
-        </Button>
-        <Button
-          onClick={() => handleDelete(p._id)}
-          variant="destructive"
-          size="sm"
-          className="flex-1 gap-2"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete
-        </Button>
-      </div>
-    </div>
-  </div>
-</Card>
+                  {/* Action Buttons fixed at bottom */}
+                  <div className="mt-auto pt-2">
+                    <div className="flex justify-between gap-3.5 items-center">
+                      <Badge variant="outline">Rs {p.price}</Badge>
+                      {p.category?.name && (
+                        <span className="text-sm text-tight text-muted-foreground">
+                          {capitalizeAllWords(p.category.name)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full ${
+                          p.stock > 10
+                            ? 'bg-green-500'
+                            : p.stock > 0
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete(p._id)}
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1 gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
 
-          ))}
-        </div>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex justify-center">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  {totalPages > 5 && page < totalPages - 2 && (
+                    <>
+                      <span className="px-2">...</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                      >
+                        {totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
