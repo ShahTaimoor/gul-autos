@@ -119,7 +119,7 @@ const AllProducts = () => {
               }}
               size="sm"
             >
-              {tab === 'all' ? 'All' : tab === 'active' ? 'Active' : 'Out of Stock'}
+              {tab === 'all' ? 'All' : tab === 'active' ? 'In Stock' : 'Out of Stock'}
             </Button>
           ))}
         </div>
