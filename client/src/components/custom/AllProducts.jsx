@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '../ui/input';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
@@ -12,18 +11,13 @@ import {
   Trash2,
   Edit,
   Search,
-  Pencil,
   PackageSearch,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import {
-  fetchProducts,
-  deleteSingleProduct,
-} from '@/redux/slices/products/productSlice';
+import { fetchProducts, deleteSingleProduct } from '@/redux/slices/products/productSlice';
 
 const capitalizeAllWords = (str) => {
   if (!str) return '';
@@ -35,10 +29,14 @@ const capitalizeAllWords = (str) => {
 
 const AllProducts = () => {
   const [category, setCategory] = useState('all');
+  const [categoryInput, setCategoryInput] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [limit] = useState(24); 
+  const [limit] = useState(24);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -62,28 +60,70 @@ const AllProducts = () => {
     }
   };
 
-  // Filter based on selected tab
-  let filteredProducts = products;
-  if (stockFilter === 'active') {
-    filteredProducts = products.filter((p) => p.stock > 0);
-  } else if (stockFilter === 'out-of-stock') {
-    filteredProducts = products.filter((p) => p.stock <= 0);
-  }
+  const filteredProducts =
+    stockFilter === 'active'
+      ? products.filter((p) => p.stock > 0)
+      : stockFilter === 'out-of-stock'
+      ? products.filter((p) => p.stock <= 0)
+      : products;
 
-  // Pagination controls
   const handlePageChange = (newPage) => {
     setPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(categoryInput.toLowerCase())
+  );
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
+  const hoverEffect = {
+    scale: 1.02,
+    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+    transition: { duration: 0.2 }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <h1 className='text-2xl mb-5'>All Products</h1>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="max-w-7xl mx-auto px-4 sm:px-6 py-8"
+    >
+      <motion.h1 
+        className='text-2xl mb-5'
+        initial={{ x: -20 }}
+        animate={{ x: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        All Products
+      </motion.h1>
 
       {/* Filter Section */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+      <motion.div 
+        className="bg-white rounded-lg shadow-sm p-4 mb-6"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
+          {/* Search Input */}
+          <motion.div 
+            className="relative flex-1"
+            whileHover={{ scale: 1.01 }}
+          >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               value={searchTerm}
@@ -91,165 +131,224 @@ const AllProducts = () => {
               placeholder="Search products by name..."
               className="pl-9"
             />
+          </motion.div>
+
+          {/* Category Dropdown */}
+          <div className="relative w-[180px]">
+            <Input
+              placeholder="Search category"
+              value={categoryInput}
+              onChange={(e) => {
+                setCategoryInput(e.target.value);
+                setShowCategoryDropdown(true);
+              }}
+              onFocus={() => setShowCategoryDropdown(true)}
+              onBlur={() => setTimeout(() => setShowCategoryDropdown(false), 150)}
+              className="w-full"
+            />
+            <AnimatePresence>
+              {showCategoryDropdown && (
+                <motion.ul
+                  className="absolute z-50 w-full mt-1 bg-white text-black shadow-lg rounded-md border max-h-60 overflow-y-auto"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <li
+                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                    onClick={() => {
+                      setCategory('all');
+                      setCategoryInput('');
+                      setShowCategoryDropdown(false);
+                    }}
+                  >
+                    All Categories
+                  </li>
+                  {filteredCategories.map((cat) => (
+                    <li
+                      key={cat._id}
+                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                      onClick={() => {
+                        setCategory(cat._id);
+                        setCategoryInput(cat.name);
+                        setShowCategoryDropdown(false);
+                      }}
+                    >
+                      {cat.name}
+                    </li>
+                  ))}
+                </motion.ul>
+              )}
+            </AnimatePresence>
           </div>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat._id} value={cat._id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Stock Filter Tabs */}
-        <div className="flex gap-3 mt-4">
+        <motion.div 
+          className="flex gap-3 mt-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
           {['all', 'active', 'out-of-stock'].map((tab) => (
-            <Button
-              key={tab}
-              variant={stockFilter === tab ? 'default' : 'outline'}
-              onClick={() => {
-                setStockFilter(tab);
-                setPage(1); // Reset to first page when changing filters
-              }}
-              size="sm"
-            >
-              {tab === 'all' ? 'All' : tab === 'active' ? 'In Stock' : 'Out of Stock'}
-            </Button>
+            <motion.div key={tab} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant={stockFilter === tab ? 'default' : 'outline'}
+                onClick={() => {
+                  setStockFilter(tab);
+                  setPage(1);
+                }}
+                size="sm"
+              >
+                {tab === 'all' ? 'All' : tab === 'active' ? 'In Stock' : 'Out of Stock'}
+              </Button>
+            </motion.div>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      {/* Loading State */}
+      {/* Loading Skeleton */}
       {loading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <motion.div 
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
           {[...Array(8)].map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-48 w-full" />
-              <div className="p-4 space-y-3">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-16" />
-                  <Skeleton className="h-4 w-20" />
+            <motion.div key={i} variants={item}>
+              <Card className="overflow-hidden">
+                <Skeleton className="h-48 w-full" />
+                <div className="p-4 space-y-3">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
                 </div>
-                <div className="flex gap-2 pt-2">
-                  <Skeleton className="h-9 w-full" />
-                  <Skeleton className="h-9 w-full" />
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* No Products Found */}
-      {noProducts && !loading && (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
-          <PackageSearch className="h-12 w-12 text-muted-foreground" />
-          <h3 className="text-lg font-medium">No products found</h3>
-          <p className="text-sm text-muted-foreground">
-            {searchTerm
-              ? 'Try adjusting your search or filter'
-              : 'Add a new product to get started'}
-          </p>
-        </div>
-      )}
+      <AnimatePresence>
+        {noProducts && !loading && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="flex flex-col items-center justify-center py-16 gap-4 text-center"
+          >
+            <PackageSearch className="h-12 w-12 text-muted-foreground" />
+            <h3 className="text-lg font-medium">No products found</h3>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm
+                ? 'Try adjusting your search or filter'
+                : 'Add a new product to get started'}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Product Grid */}
       {!loading && filteredProducts.length > 0 && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            variants={container}
+            initial="hidden"
+            animate="show"
+          >
             {filteredProducts.map((p) => (
-              <Card
-                key={p._id}
-                className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full"
-              >
-                {/* Product Image */}
-                <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                  <img
-                    src={p.image || '/placeholder-product.jpg'}
-                    alt={p.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.src = '/placeholder-product.jpg';
-                    }}
-                  />
-                  {p.stock <= 0 && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                      <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
-                        Out of Stock
-                      </Badge>
+              <motion.div key={p._id} variants={item} whileHover={hoverEffect}>
+                <Card className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full">
+                  <motion.div className="relative aspect-square bg-gray-50 overflow-hidden" whileHover={{ scale: 1.05 }}>
+                    <img
+                      src={p.image || '/placeholder-product.jpg'}
+                      alt={p.title}
+                      className="w-full h-full object-cover transition-transform duration-300"
+                      onError={(e) => { e.currentTarget.src = '/placeholder-product.jpg'; }}
+                    />
+                    {p.stock <= 0 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+                        <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
+                          Out of Stock
+                        </Badge>
+                      </div>
+                    )}
+                  </motion.div>
+
+                  <div className="flex flex-col p-4 flex-1">
+                    <div className="space-y-1 mb-2">
+                      <h2 className="text-base font-semibold line-clamp-2">
+                        {capitalizeAllWords(p.title)}
+                      </h2>
                     </div>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="flex flex-col p-4 flex-1">
-                  <div className="space-y-1 mb-2">
-                    <h2 className="text-base font-semibold line-clamp-2">
-                      {capitalizeAllWords(p.title)}
-                    </h2>
-                  </div>
-
-                  {/* Action Buttons fixed at bottom */}
-                  <div className="mt-auto pt-2">
-                    <div className="flex justify-between gap-3.5 items-center">
-                      <Badge variant="outline">Rs {p.price}</Badge>
-                      {p.category?.name && (
-                        <span className="text-sm text-tight text-muted-foreground">
-                          {capitalizeAllWords(p.category.name)}
+                    <div className="mt-auto pt-2">
+                      <div className="flex justify-between gap-3.5 items-center">
+                        <Badge variant="outline">Rs {p.price}</Badge>
+                        {p.category?.name && (
+                          <span className="text-sm text-muted-foreground">
+                            {capitalizeAllWords(p.category.name)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            p.stock > 10
+                              ? 'bg-green-500'
+                              : p.stock > 0
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                          }`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                          {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
                         </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span
-                        className={`inline-block w-2 h-2 rounded-full ${
-                          p.stock > 10
-                            ? 'bg-green-500'
-                            : p.stock > 0
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                        }`}
-                      />
-                      <span className="text-xs text-muted-foreground">
-                        {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </Button>
-                      <Button
-                        onClick={() => handleDelete(p._id)}
-                        variant="destructive"
-                        size="sm"
-                        className="flex-1 gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </Button>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-2"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(p._id)}
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
-          {/* Pagination Controls */}
+          {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-8 flex justify-center">
+            <motion.div 
+              className="mt-8 flex justify-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -261,44 +360,39 @@ const AllProducts = () => {
                   Previous
                 </Button>
 
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (page <= 3) {
-                      pageNum = i + 1;
-                    } else if (page >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = page - 2 + i;
-                    }
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = totalPages <= 5
+                    ? i + 1
+                    : page <= 3
+                    ? i + 1
+                    : page >= totalPages - 2
+                    ? totalPages - 4 + i
+                    : page - 2 + i;
 
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => handlePageChange(pageNum)}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
-                  })}
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={page === pageNum ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
 
-                  {totalPages > 5 && page < totalPages - 2 && (
-                    <>
-                      <span className="px-2">...</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                      >
-                        {totalPages}
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {totalPages > 5 && page < totalPages - 2 && (
+                  <>
+                    <span className="px-2">...</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(totalPages)}
+                    >
+                      {totalPages}
+                    </Button>
+                  </>
+                )}
 
                 <Button
                   variant="outline"
@@ -310,11 +404,11 @@ const AllProducts = () => {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 

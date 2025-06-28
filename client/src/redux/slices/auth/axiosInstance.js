@@ -1,7 +1,7 @@
 // src/features/auth/axiosInstance.js
 import axios from 'axios';
 import {store} from '../../store';
-import { logout } from './authSlice';
+import { logout, setTokenExpired } from './authSlice';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,8 +20,9 @@ axiosInstance.interceptors.response.use(
 
       // Clear auth state immediately
       store.dispatch(logout());
+      store.dispatch(setTokenExpired());
 
-      // Also force navigation to login (⚠️ inside a browser environment only)
+      // Also force navigation to login (inside a browser environment only)
       window.location.href = '/login?expired=true';
 
       return Promise.reject(new Error('Session expired. Redirecting...'));

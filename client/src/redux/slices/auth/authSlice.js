@@ -11,6 +11,7 @@ const initialState = {
   isAuthenticated: !!userFromStorage,
   status: 'idle',
   error: null,
+  tokenExpired: false,
 };
 
 export const login = createAsyncThunk(
@@ -39,13 +40,23 @@ export const updateProfile = createAsyncThunk(
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+ initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+       state.tokenExpired = false;
       localStorage.removeItem('user');
     },
+     setTokenExpired: (state, action) => {
+    state.tokenExpired = true;
+    state.user = null;
+    state.isAuthenticated = false;
+    localStorage.removeItem('user');
+  },
+  clearTokenExpired: (state) => {
+    state.tokenExpired = false;
+  },
   },
   extraReducers: (builder) => {
     builder
@@ -77,5 +88,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setTokenExpired, clearTokenExpired } = authSlice.actions;
 export default authSlice.reducer;
