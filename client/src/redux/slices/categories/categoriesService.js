@@ -82,10 +82,7 @@ const getSingleCat = async (slug) => {
     }
 };
 
-const reorderCategories = async (reorderedIds) => {
-  const res = await axios.put(`${import.meta.env.VITE_API_URL}/reorder-categories`, { reorderedIds }, { withCredentials: true });
-  return res.data;
-};
-const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat,reorderCategories };
+
+const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat };
 
 export default categoryService;

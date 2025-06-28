@@ -61,20 +61,6 @@ export const SingleCategory = createAsyncThunk(
     }
 );
 
-
-export const reorderCategory = createAsyncThunk(
-    'categories/reorder',
-    async (reorderedIds, thunkAPI) => {
-        try {
-            const res = await categoryService.reorderCategories(reorderedIds);
-            return res;
-        } catch (error) {
-            return thunkAPI.rejectWithValue(error?.response?.data?.message || error.message);
-        }
-    }
-);
-
-
 const initialState = {
     categories: [],
     status: 'idle',
@@ -118,16 +104,7 @@ const categoriesSlice = createSlice({
 
             })
             .addCase(updateCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
-            .addCase(reorderCategory.pending, (state) => {
-                state.status = 'loading';
-            })
-            .addCase(reorderCategory.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-            })
-            .addCase(reorderCategory.rejected, (state, action) => {
-                state.status = 'failed';
-                state.error = action.payload;
-            });
+           
 
     }
 });
