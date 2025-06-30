@@ -200,7 +200,7 @@ useEffect(() => {
             </p>
           </div>
         ) : (
-          <div className="grid w-[350px] md:w-[1000px] lg:w-[1400px] grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid w-[350px] lg:w-[900px] xl:w-[1400px] grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredOrders.map((order) => (
               <Card key={order._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>

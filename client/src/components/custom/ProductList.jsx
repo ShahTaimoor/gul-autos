@@ -110,7 +110,9 @@ const ProductCard = React.memo(({
           }`}
       >
         <h3 className="font-semibold text-sm line-clamp-2">
-          {product.title}
+          {product.title.split(' ').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                ).join(' ')}
         </h3>
         <div className="flex-grow" />
 
@@ -206,13 +208,13 @@ const ProductList = () => {
 }, [page]);
 
 
-  // Memoized combined categories
+  
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
     ...categories
   ], [categories]);
 
-  // Memoized category chunks
+  
   const categoryChunks = useMemo(() => {
     const chunkArray = (array, size) => {
       const result = [];

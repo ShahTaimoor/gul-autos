@@ -2,6 +2,7 @@
 import axios from 'axios';
 import {store} from '../../store';
 import { logout, setTokenExpired } from './authSlice';
+import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -24,6 +25,12 @@ axiosInstance.interceptors.response.use(
 
       // Also force navigation to login (inside a browser environment only)
       window.location.href = '/login?expired=true';
+
+       // Show toast only if we're in a browser environment
+      if (typeof window !== 'undefined') {
+        toast.error("Session expired. Please login again.");
+        window.location.href = '/login?expired=true';
+      }
 
       return Promise.reject(new Error('Session expired. Redirecting...'));
     }

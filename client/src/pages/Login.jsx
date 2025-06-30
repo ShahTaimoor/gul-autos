@@ -16,12 +16,6 @@ const Login = () => {
   const expired = params.get('expired');
   const from = location.state?.from?.pathname || '/';
 
-  useEffect(() => {
-    if (expired) {
-      toast.error("Session expired. Please login again.");
-    }
-  }, [expired]);
-
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +23,15 @@ const Login = () => {
     name: '',
     password: ''
   });
+
+useEffect(() => {
+  if (expired) {
+    const timer = setTimeout(() => {
+      toast.error("Session expired. Please login again.");
+    }, 100); // Small delay to avoid duplicates
+    return () => clearTimeout(timer);
+  }
+}, [expired]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
