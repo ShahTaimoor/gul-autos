@@ -15,7 +15,6 @@ import Error from "./pages/Error";
 import AdminLayout from "./components/layouts/AdminLayout";
 import CreateProducts from "./components/custom/CreateProducts";
 import AllProducts from "./components/custom/AllProducts";
-import Analytics from "./components/custom/Analytics";
 import Orders from "./components/custom/Orders";
 // Layouts
 import RootLayout from "./components/layouts/RootLayout";
@@ -139,19 +138,7 @@ const App = () => {
         </ProtectedRoute>
       ),
     },
-   
-   
-    {
-      path: "/admin/dashboard/analytics",
-      element: (
-        <ProtectedRoute>
-          <AdminLayout>
-            <Analytics />
-          </AdminLayout>
-        </ProtectedRoute>
 
-      ),
-    },
     {
       path: "/admin/dashboard/users",
       element: (

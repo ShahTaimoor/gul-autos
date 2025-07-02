@@ -32,7 +32,6 @@ const items = [
   { title: "Create Category", url: "/admin/category", icon: ChartBarStacked },
   { title: "All Products", url: "/admin/dashboard/all-products", icon: GalleryVerticalEnd },
   { title: "Orders", url: "/admin/dashboard/orders", icon: PackageSearch, showBadge: true },
-  { title: "Analytics", url: "/admin/dashboard/analytics", icon: ChartBar },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
   { title: "Shopping Cart", url: "/", icon: ShoppingCart }, 
   
