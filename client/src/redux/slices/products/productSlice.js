@@ -84,7 +84,15 @@ export const productsSlice = createSlice({
             })
             .addCase(AddProduct.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.products.push(action.payload.product);
+                const newProduct = action.payload.product;
+                
+                // Transform the product to match the expected structure
+                const transformedProduct = {
+                    ...newProduct,
+                    image: newProduct.picture?.secure_url || null
+                };
+                
+                state.products.push(transformedProduct);
             })
             .addCase(AddProduct.rejected, (state, action) => {
                 state.status = 'failed';
@@ -114,9 +122,15 @@ export const productsSlice = createSlice({
                 state.status = 'succeeded';
                 const updatedProduct = action.payload.product;
 
+                // Transform the product to match the expected structure (like get-products endpoint)
+                const transformedProduct = {
+                    ...updatedProduct,
+                    image: updatedProduct.picture?.secure_url || null
+                };
+
                 // Update the product in the array instead of replacing the whole list
                 state.products = state.products.map((prod) =>
-                    prod._id === updatedProduct._id ? updatedProduct : prod
+                    prod._id === updatedProduct._id ? transformedProduct : prod
                 );
             })
             .addCase(updateSingleProduct.rejected, (state, action) => {

@@ -533,9 +533,9 @@ Phone: ${order.phone}
                           city={selectedOrder.city}
                           createdAt={selectedOrder.createdAt}
                           products={selectedOrder.products}
-                          paymentMethod={selectedOrder.paymentMethod || 'COD'}
-                          status={selectedOrder.status || 'Pending'}
                           packerName={selectedOrder.packerName}
+                          hideStatus={true}
+                          hideCOD={true}
                         />
                       )}
                     </DialogContent>

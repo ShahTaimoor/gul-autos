@@ -14,10 +14,12 @@ import {
   PackageSearch,
   ChevronLeft,
   ChevronRight,
+  PackageX,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts, deleteSingleProduct } from '@/redux/slices/products/productSlice';
+import { fetchProducts, deleteSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
+import { toast } from 'sonner';
 
 const capitalizeAllWords = (str) => {
   if (!str) return '';
@@ -57,6 +59,24 @@ const AllProducts = () => {
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       dispatch(deleteSingleProduct(id));
+    }
+  };
+
+  const handleOutOfStock = (product) => {
+    if (window.confirm('Mark this product as out of stock?')) {
+      const formData = new FormData();
+      formData.append('stock', '0');
+      
+      dispatch(updateSingleProduct({ 
+        id: product._id, 
+        inputValues: formData 
+      })).then((result) => {
+        if (result.meta.requestStatus === 'fulfilled') {
+          toast.success('Product marked as out of stock');
+        } else {
+          toast.error('Failed to update product');
+        }
+      });
     }
   };
 
@@ -314,24 +334,36 @@ const AllProducts = () => {
                           {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
                         </span>
                       </div>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex flex-col gap-2 mt-2">
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(p._id)}
+                            variant="destructive"
+                            size="sm"
+                            className="flex-1 gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </Button>
+                        </div>
                         <Button
-                          onClick={() => navigate(`/admin/dashboard/update/${p._id}`)}
+                          onClick={() => handleOutOfStock(p)}
                           variant="outline"
                           size="sm"
-                          className="flex-1 gap-2"
+                          className="w-full gap-2"
+                          disabled={p.stock <= 0}
                         >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(p._id)}
-                          variant="destructive"
-                          size="sm"
-                          className="flex-1 gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
+                          <PackageX className="w-4 h-4" />
+                          {p.stock <= 0 ? 'Already Out of Stock' : 'Mark Out of Stock'}
                         </Button>
                       </div>
                     </div>
