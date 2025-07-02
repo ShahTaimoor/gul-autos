@@ -192,7 +192,7 @@ const ProductList = () => {
   const [sortOrder, setSortOrder] = useState('az');
   const [page, setPage] = useState(1);
   const [previewImage, setPreviewImage] = useState(null);
-  const limit = 33;
+  const limit = 31;
 
   const cartRef = useRef(null);
   const dispatch = useDispatch();

@@ -54,18 +54,7 @@ export const fetchOrdersAdmin = createAsyncThunk(
   }
 );
 
-// Fetch Metrics
-export const fetchOrdersMetrics = createAsyncThunk(
-  'orders/fetchOrdersMetrics',
-  async (_, thunkAPI) => {
-    try {
-      const res = await orderService.getMetrics();
-      return res;
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error);
-    }
-  }
-);
+
 
 const initialState = {
   orders: [],
@@ -107,19 +96,6 @@ const ordersSlice = createSlice({
       .addCase(fetchOrdersAdmin.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
-      })
-
-      // Fetch Metrics
-      .addCase(fetchOrdersMetrics.pending, (state) => {
-        state.metricsStatus = 'loading';
-      })
-      .addCase(fetchOrdersMetrics.fulfilled, (state, action) => {
-        state.metricsStatus = 'succeeded';
-        state.metrics = action.payload.data;
-      })
-      .addCase(fetchOrdersMetrics.rejected, (state, action) => {
-        state.metricsStatus = 'failed';
-        state.metricsError = action.payload;
       })
 
       // Add Order

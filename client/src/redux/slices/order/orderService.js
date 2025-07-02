@@ -52,24 +52,8 @@ const getAllOrderAdmin = async () => {
     return Promise.reject(errorMessage);
   }
 };
-// Get Orders 
-const getMetrics = async () => {
-  try {
-    const axiosResponse = await axios.get(`${API_URL}/get-metrics`, {
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    return axiosResponse.data;
-  } catch (error) {
-    const errorMessage =
-      error.response?.data?.message || error.message || 'An unexpected error occurred while fetching orders.';
-    return Promise.reject(errorMessage);
-  }
-};
 
-// Add this to your existing orderService.js
+
 
 // Update Order Status
 const updateOrderStatus = async (orderId, {status, packerName}) => {
@@ -89,6 +73,6 @@ const updateOrderStatus = async (orderId, {status, packerName}) => {
 };
 
 
-const orderService = { getAllOrder, addOrder, getMetrics, getAllOrderAdmin, updateOrderStatus };
+const orderService = { getAllOrder, addOrder,  getAllOrderAdmin, updateOrderStatus };
 
 export default orderService;
