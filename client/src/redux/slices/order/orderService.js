@@ -37,9 +37,11 @@ const addOrder = async (orderData) => {
 };
 
 // Get Orders By User ID
-const getAllOrderAdmin = async () => {
+// Get Orders By User ID (Admin)
+const getAllOrderAdmin = async (page = 1, limit = 30) => {
   try {
     const axiosResponse = await axios.get(`${API_URL}/get-all-orders`, {
+      params: { page, limit },
       withCredentials: true, 
       headers: {
         'Content-Type': 'application/json',

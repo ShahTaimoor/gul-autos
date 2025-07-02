@@ -44,9 +44,9 @@ export const fetchOrders = createAsyncThunk(
 // Fetch Orders (Admin)
 export const fetchOrdersAdmin = createAsyncThunk(
   'orders/fetchOrdersAdmin',
-  async (_, thunkAPI) => {
+  async ({ page = 1, limit = 30 } = {}, thunkAPI) => {
     try {
-      const res = await orderService.getAllOrderAdmin();
+      const res = await orderService.getAllOrderAdmin(page, limit);
       return res;
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
@@ -92,6 +92,8 @@ const ordersSlice = createSlice({
       .addCase(fetchOrdersAdmin.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.orders = action.payload.data;
+        state.totalPages = action.payload.totalPages || 1;
+        state.currentPage = action.payload.currentPage || 1;
       })
       .addCase(fetchOrdersAdmin.rejected, (state, action) => {
         state.status = 'failed';

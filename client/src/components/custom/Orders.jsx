@@ -40,6 +40,9 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [localOrders, setLocalOrders] = useState([]);
   const [packerNames, setPackerNames] = useState({});
+  const [page, setPage] = useState(1);
+  const limit = 30;
+  const totalPages = useSelector((state) => state.orders.totalPages) || 1;
 
   const handlePackerNameChange = (orderId, name) => {
     setPackerNames((prev) => ({
@@ -79,8 +82,8 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    dispatch(fetchOrdersAdmin());
-  }, [dispatch]);
+    dispatch(fetchOrdersAdmin({ page, limit }));
+  }, [dispatch, page]);
 
 useEffect(() => {
   if (status === 'succeeded') {
@@ -336,6 +339,34 @@ useEffect(() => {
                 </CardFooter>
               </Card>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8 gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+              <button
+                key={pg}
+                onClick={() => setPage(pg)}
+                className={`px-3 py-1 rounded border ${pg === page ? 'bg-yellow-400 text-white' : 'bg-white'}`}
+              >
+                {pg}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+            >
+              Next
+            </button>
           </div>
         )}
       </div>
