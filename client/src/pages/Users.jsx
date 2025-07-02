@@ -34,6 +34,7 @@ const Users = () => {
           
             <th className="py-3 px-4 border-b">Address</th>
             <th className="py-3 px-4 border-b">City</th>
+            <th className="py-3 px-4 border-b">Mobile</th>
             <th className="py-3 px-4 border-b">Role</th>
           </tr>
         </thead>
@@ -49,6 +50,7 @@ const Users = () => {
                 {user.address ? `${user.address.substring(0, 100)}${user.address.length > 100 ? '...' : ''}` : 'N/A'}
               </td>
               <td className="py-2 px-4 border-b">{user.city}</td>
+              <td className="py-2 px-4 border-b">{user.phone}</td>
               <td className="py-2 px-4 border-b">{user.role}</td>
             </tr>
           ))}
