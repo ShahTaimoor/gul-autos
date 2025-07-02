@@ -615,7 +615,7 @@ const ProductList = () => {
       )}
 
       {/* Cart Drawer */}
-      <div className="fixed top-4 right-16 z-50">
+      <div className="fixed top-4 right-16 md:right-8 z-50">
         <div
           ref={cartRef}
           className={`relative transition-all duration-300 ${cartItems.length > 0 ? 'animate-bounce' : ''
