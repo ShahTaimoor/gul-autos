@@ -301,8 +301,16 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
   }
 });
 
-
-
-
+// @route GET /api/orders/pending-orders-count
+// @desc Get total count of pending orders
+// @access Admin
+router.get('/pending-orders-count', isAuthorized, isAdmin, async (req, res) => {
+  try {
+    const count = await Order.countDocuments({ status: 'Pending' });
+    return res.status(200).json({ success: true, count });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
 
 module.exports = router;

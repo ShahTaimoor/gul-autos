@@ -1,6 +1,24 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import orderService from "./orderService";
 
+// Fetch Pending Order Count
+export const fetchPendingOrderCount = createAsyncThunk(
+  'orders/fetchPendingOrderCount',
+  async (_, thunkAPI) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const res = await fetch(`${API_URL}/pending-orders-count`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      return data.count;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message || 'Failed to fetch pending order count');
+    }
+  }
+);
+
 // Add Order
 export const addOrder = createAsyncThunk(
   'orders/addOrder',
@@ -64,6 +82,7 @@ const initialState = {
   error: null,
   metricsStatus: 'idle',
   metricsError: null,
+  pendingOrderCount: 0,
 };
 
 const ordersSlice = createSlice({
@@ -126,6 +145,9 @@ const ordersSlice = createSlice({
       .addCase(updateOrderStatus.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      .addCase(fetchPendingOrderCount.fulfilled, (state, action) => {
+        state.pendingOrderCount = action.payload;
       })
   },
 });

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import OrderData from './OrderData';
-import { fetchOrdersAdmin, updateOrderStatus } from '@/redux/slices/order/orderSlice';
+import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount } from '@/redux/slices/order/orderSlice';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
@@ -76,6 +76,8 @@ const Orders = () => {
             : order
         )
       );
+
+      dispatch(fetchPendingOrderCount());
     } catch (error) {
       toast.error(error?.message || 'Failed to update order status');
     }

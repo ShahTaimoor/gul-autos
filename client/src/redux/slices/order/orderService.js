@@ -55,7 +55,20 @@ const getAllOrderAdmin = async (page = 1, limit = 30) => {
   }
 };
 
-
+// Get Pending Order Count (Admin)
+const getPendingOrderCount = async () => {
+  try {
+    const axiosResponse = await axios.get(`${API_URL}/pending-orders-count`, {
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return axiosResponse.data.count;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || error.message || 'An unexpected error occurred while fetching pending order count.';
+    return Promise.reject(errorMessage);
+  }
+};
 
 // Update Order Status
 const updateOrderStatus = async (orderId, {status, packerName}) => {
@@ -74,7 +87,6 @@ const updateOrderStatus = async (orderId, {status, packerName}) => {
   }
 };
 
-
-const orderService = { getAllOrder, addOrder,  getAllOrderAdmin, updateOrderStatus };
+const orderService = { getAllOrder, addOrder,  getAllOrderAdmin, updateOrderStatus, getPendingOrderCount };
 
 export default orderService;

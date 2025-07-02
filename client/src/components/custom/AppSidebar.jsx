@@ -2,7 +2,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { logout } from "../../redux/slices/auth/authSlice";
-import { fetchOrdersAdmin } from "@/redux/slices/order/orderSlice";
+import { fetchOrdersAdmin, fetchPendingOrderCount, updateOrderStatus } from "@/redux/slices/order/orderSlice";
 import {
   FilePlus2Icon,
   ChartBarStacked,
@@ -25,6 +25,8 @@ import {
 } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 
 // Sidebar links
 const items = [
@@ -45,19 +47,15 @@ export function AppSidebar() {
   const { user } = useSelector((state) => state.auth);
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);  // Loading state
+  const pendingOrderCount = useSelector((state) => state.orders.pendingOrderCount);
 
   // Fetch orders after login
   useEffect(() => {
     if (user) {
       dispatch(fetchOrdersAdmin());
+      dispatch(fetchPendingOrderCount());
     }
   }, [dispatch, user]);
-
-  // Count pending orders safely
-  const pendingOrderCount =
-    Array.isArray(orders) && orders.length > 0
-      ? orders.filter((o) => o?.status?.toLowerCase() === "pending").length
-      : 0;
 
   // Handle logouTs
   const handleLogout = async () => {
@@ -76,6 +74,13 @@ export function AppSidebar() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    // ...existing code...
+    await dispatch(updateOrderStatus({ orderId, status: newStatus, packerName: packer })).unwrap();
+    toast.success(`Order marked as ${newStatus}`);
+    dispatch(fetchPendingOrderCount());
   };
 
   if (message) {
