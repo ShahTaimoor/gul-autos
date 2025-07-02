@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../ui/button';
 import {
@@ -19,20 +19,17 @@ import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { CalendarDays, List } from 'lucide-react';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const getPakistaniDate = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
 };
 
-const statusColors = {
-  Pending: 'bg-yellow-100 text-yellow-800',
-  Completed: 'bg-green-100 text-green-800',
-
-};
-
 const Orders = () => {
   const dispatch = useDispatch();
   const { orders, status, error } = useSelector((state) => state.orders);
+  const { user } = useSelector((state) => state.auth);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getPakistaniDate());
   const [showAll, setShowAll] = useState(false);
@@ -43,6 +40,27 @@ const Orders = () => {
   const [page, setPage] = useState(1);
   const limit = 30;
   const totalPages = useSelector((state) => state.orders.totalPages) || 1;
+  const clickTimer = useRef(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const statusColors = {
+    Pending: 'bg-yellow-100 text-yellow-800',
+    Completed: 'bg-green-100 text-green-800',
+
+  };
+
+  const getImageBase64 = (url) =>
+    fetch(url)
+      .then((response) => response.blob())
+      .then(
+        (blob) =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          })
+      );
 
   const handlePackerNameChange = (orderId, name) => {
     setPackerNames((prev) => ({
@@ -150,6 +168,152 @@ useEffect(() => {
         )
       );
     });
+
+  const handleShare = async (order) => {
+    const details = `
+Order #${order._id.slice(-6)}
+Status: ${order.status}
+Amount: Rs. ${order.amount}
+Products:
+${order.products.map((p, i) =>
+  `${i + 1}. ${p.id?.name} (Qty: ${p.quantity}, Price: Rs. ${p.id?.price})`
+).join('\n')}
+Shipping:
+Address: ${order.address}
+City: ${order.city}
+Phone: ${order.phone}
+    `.trim();
+
+    const firstImageUrl = order.products[0]?.id?.picture?.secure_url || '/placeholder-product.jpg';
+
+    if (navigator.canShare && navigator.canShare({ files: [] })) {
+      try {
+        const response = await fetch(firstImageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'order-product.jpg', { type: blob.type });
+
+        await navigator.share({
+          title: `Order #${order._id.slice(-6)}`,
+          text: details,
+          files: [file],
+        });
+      } catch (err) {
+        if (navigator.share) {
+          navigator.share({
+            title: `Order #${order._id.slice(-6)}`,
+            text: details,
+          });
+        } else {
+          navigator.clipboard.writeText(details);
+          toast.success('Order details copied to clipboard!');
+        }
+      }
+    } else if (navigator.share) {
+      navigator.share({
+        title: `Order #${order._id.slice(-6)}`,
+        text: details,
+      });
+    } else {
+      navigator.clipboard.writeText(details);
+      toast.success('Order details copied to clipboard!');
+    }
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(details)}`;
+  };
+
+  const handlePdfClick = (order) => {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    clickTimer.current = setTimeout(async () => {
+      setPdfLoading(true);
+      await handleSharePDF(order, { download: false });
+      setPdfLoading(false);
+    }, 250);
+  };
+
+  const handlePdfDoubleClick = async (order) => {
+    if (clickTimer.current) clearTimeout(clickTimer.current);
+    setPdfLoading(true);
+    await handleSharePDF(order, { download: true });
+    setPdfLoading(false);
+  };
+
+  const handleSharePDF = async (order, { download = false } = {}) => {
+    // 1. Prepare table data with images as base64
+    const tableRows = await Promise.all(
+      order.products.map(async (p) => {
+        const imgUrl = p.id?.picture?.secure_url || "/placeholder-product.jpg";
+        let imgData = "";
+        try {
+          imgData = await getImageBase64(imgUrl);
+        } catch {
+          imgData = ""; // fallback if image fails
+        }
+        return [
+          { content: "", img: imgData }, // image cell
+          p.id?.title || "",
+          p.quantity || "",
+          p.id?.price ? `Rs. ${p.id.price}` : "",
+        ];
+      })
+    );
+
+    // 2. Create PDF and add table
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'bold');
+    doc.text(user?.name || 'Shop Name', doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text(`Amount: Rs. ${order.amount}`, 14, 28);
+    doc.text(`Shipping: ${order.address}, ${order.city}, ${order.phone}`, 14, 34);
+
+    // 3. Add table with images
+    autoTable(doc, {
+      startY: 40,
+      head: [["Image", "Title", "Qty", "Price"]],
+      body: tableRows,
+      didDrawCell: function (data) {
+        if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
+          doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 2, data.cell.y + 2, 45, 45);
+        }
+      },
+      columnStyles: {
+        0: { cellWidth: 49 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 20, halign: "left" },
+        3: { cellWidth: 30, halign: "left" },
+      },
+      styles: { valign: "middle", fontSize: 10, cellPadding: 2, textColor: [0,0,0], halign: "left" },
+      headStyles: { fillColor: [255,255,255], textColor: [0,0,0], fontStyle: 'bold', halign: "left" },
+      bodyStyles: { minCellHeight: 49, halign: "left" },
+      theme: 'grid',
+    });
+
+    // 4. Share or download PDF
+    const pdfBlob = doc.output("blob");
+    const pdfFile = new File([pdfBlob], `Order-${order._id.slice(-6)}.pdf`, { type: "application/pdf" });
+
+    if (!download && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      try {
+        await navigator.share({
+          title: `Order Details`,
+          text: "Order details attached as PDF.",
+          files: [pdfFile],
+        });
+        return;
+      } catch (err) {
+        // fallback to download
+      }
+    }
+    // Always download if double click or share not supported
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Order-${order._id.slice(-6)}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="px-4 py-6 md:px-6 lg:px-8">
@@ -323,6 +487,44 @@ useEffect(() => {
                           Complete information for order #{order._id.slice(-6)}
                         </DialogDescription>
                       </DialogHeader>
+
+                     
+                      {selectedOrder && (
+                        <div className="flex justify-end mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePdfClick(selectedOrder)}
+                            onDoubleClick={() => handlePdfDoubleClick(selectedOrder)}
+                            className="flex items-center gap-2"
+                            disabled={pdfLoading}
+                          >
+                            {pdfLoading ? (
+                              <>
+                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                </svg>
+                                Loading...
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V6M5 12l7-7 7 7" />
+                                </svg>
+                                Share/Download PDF
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {selectedOrder && (
+                        <p className="text-xs text-gray-500 mt-1 text-right">
+                          Single click to share, double click to download PDF
+                        </p>
+                      )}
+
                       {selectedOrder && (
                         <OrderData
                           price={selectedOrder.amount}
