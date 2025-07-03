@@ -546,7 +546,7 @@ Phone: ${order.phone}
           </div>
         )}
 
-        {totalPages > 1 && (
+        {orders.length > 0 && totalPages > 1 && (
           <div className="flex justify-center mt-8 gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
