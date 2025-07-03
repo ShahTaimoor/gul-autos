@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import CartDrawer from "./CartDrawer";
 import { User } from "lucide-react";
 import LogoutToggle from "./LogoutToggle";
 import { useSelector } from "react-redux";
@@ -11,7 +10,7 @@ const Navbar = () => {
  
   
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-md border-b border-white/30 shadow-md px-6 py-2 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-md border-b border-white/30 shadow-md px-2 py-2 flex items-center justify-between">
       {/* Left side: Logo + contact */}
       <div className="flex items-start flex-col">
         <Link to="/">
@@ -28,17 +27,15 @@ const Navbar = () => {
 
       {/* Right side: Cart + Auth controls */}
       <div className="flex items-center gap-4">
-      
 
-       
-
-      
         {user == null ? (
           <Link
             to="/login"
             className="p-1.5 rounded-full hover:bg-white/70 transition"
           >
-            <User size={26} strokeWidth={1.4} className="text-gray-700" />
+            
+            <h1 className="text-gray-700 text-bold  hover:text-gray-400">Login</h1>
+            
           </Link>
         ) : (
           <LogoutToggle user={user} />
