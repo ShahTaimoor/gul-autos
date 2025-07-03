@@ -64,8 +64,9 @@ const getPendingOrderCount = async () => {
   }
 };
 
+
 // Update Order Status
-const updateOrderStatus = async (orderId, {status, packerName}) => {
+const updateOrderStatus = async ({ orderId, status, packerName }) => {
   try {
     const axiosResponse = await axiosInstance.put(
       `/update-order-status/${orderId}`,
@@ -80,7 +81,6 @@ const updateOrderStatus = async (orderId, {status, packerName}) => {
     return Promise.reject(errorMessage);
   }
 };
-
 const orderService = { getAllOrder, addOrder,  getAllOrderAdmin, updateOrderStatus, getPendingOrderCount };
 
 export default orderService;

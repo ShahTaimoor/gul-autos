@@ -37,8 +37,8 @@ export const updateOrderStatus = createAsyncThunk(
   'orders/updateStatus',
   async ({ orderId, status, packerName }, thunkAPI) => {
     try {
-      const res = await orderService.updateOrderStatus(orderId, { status, packerName });
-      return { orderId, status, packerName };
+      const res = await orderService.updateOrderStatus({ orderId, status, packerName });
+      return res; // Return the full response
     } catch (error) {
       return thunkAPI.rejectWithValue(error);
     }
@@ -136,10 +136,10 @@ const ordersSlice = createSlice({
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        // Update the specific order in the state
-        const index = state.orders.findIndex(order => order._id === action.payload.orderId);
+        const updatedOrder = action.payload.data;
+        const index = state.orders.findIndex(order => order._id === updatedOrder._id);
         if (index !== -1) {
-          state.orders[index].status = action.payload.status;
+          state.orders[index] = updatedOrder;
         }
       })
       .addCase(updateOrderStatus.rejected, (state, action) => {

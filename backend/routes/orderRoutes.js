@@ -90,7 +90,7 @@ router.post('/order', isAuthorized, async (req, res) => {
 // @route PUT /api/orders/:id/status
 // @desc Update order status
 // @access Admin
-router.put('/:id/status', isAuthorized, isAdmin, async (req, res) => {
+router.put('/update-order-status/:id', isAuthorized, isAdmin, async (req, res) => {
   try {
     const { status, packerName } = req.body;
     const { id } = req.params;
@@ -111,7 +111,10 @@ router.put('/:id/status', isAuthorized, isAdmin, async (req, res) => {
       id,
       { status, packerName },
       { new: true }
-    );
+    ).populate({
+      path: 'products.id',
+      select: 'title price category picture',
+    });
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });

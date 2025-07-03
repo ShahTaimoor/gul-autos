@@ -18,9 +18,14 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-import { CalendarDays, List } from 'lucide-react';
+import { CalendarDays, List, Share2, FileDown } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
+function capitalizeFirst(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 const getPakistaniDate = () => {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
@@ -77,24 +82,24 @@ const Orders = () => {
         return;
       }
     }
-
+  
     try {
-      const packer = packerNames[orderId] || '';
-      await dispatch(updateOrderStatus({ orderId, status: newStatus, packerName: packer })).unwrap();
+      const result = await dispatch(
+        updateOrderStatus({ 
+          orderId, 
+          status: newStatus, 
+          packerName: packerNames[orderId] || '' 
+        })
+      ).unwrap();
+      
       toast.success(`Order marked as ${newStatus}`);
-
+      
       setLocalOrders((prev) =>
         prev.map((order) =>
-          order._id === orderId
-            ? {
-              ...order,
-              status: newStatus,
-              packerName: newStatus === 'Completed' ? packer : order.packerName,
-            }
-            : order
+          order._id === orderId ? result.data : order
         )
       );
-
+  
       dispatch(fetchPendingOrderCount());
     } catch (error) {
       toast.error(error?.message || 'Failed to update order status');
@@ -221,17 +226,7 @@ Phone: ${order.phone}
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(details)}`;
   };
 
-  const handlePdfClick = (order) => {
-    if (clickTimer.current) clearTimeout(clickTimer.current);
-    clickTimer.current = setTimeout(async () => {
-      setPdfLoading(true);
-      await handleSharePDF(order, { download: false });
-      setPdfLoading(false);
-    }, 250);
-  };
-
-  const handlePdfDoubleClick = async (order) => {
-    if (clickTimer.current) clearTimeout(clickTimer.current);
+  const handlePdfClick = async (order) => {
     setPdfLoading(true);
     await handleSharePDF(order, { download: true });
     setPdfLoading(false);
@@ -375,7 +370,13 @@ Phone: ${order.phone}
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">Order #{order._id.slice(-6)}</CardTitle>
+                      <CardTitle className="text-sm">
+                        {order.userId?.name
+                          ? capitalizeFirst(order.userId.name)
+                          : user?.name
+                            ? capitalizeFirst(user.name)
+                            : "Shop Name"}
+                      </CardTitle>
                       <p className="text-sm text-muted-foreground">
                         {new Date(order.createdAt).toLocaleString('en-US', {
                           timeZone: 'Asia/Karachi',
@@ -488,41 +489,28 @@ Phone: ${order.phone}
                         </DialogDescription>
                       </DialogHeader>
 
-                     
                       {selectedOrder && (
-                        <div className="flex justify-end mb-2">
+                        <div className="flex justify-end gap-2 mb-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShare(selectedOrder)}
+                            className="flex items-center gap-2"
+                          >
+                            <Share2 className="w-4 h-4" />
+                            Share
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handlePdfClick(selectedOrder)}
-                            onDoubleClick={() => handlePdfDoubleClick(selectedOrder)}
                             className="flex items-center gap-2"
                             disabled={pdfLoading}
                           >
-                            {pdfLoading ? (
-                              <>
-                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                                </svg>
-                                Loading...
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V6M5 12l7-7 7 7" />
-                                </svg>
-                                Share/Download PDF
-                              </>
-                            )}
+                            <FileDown className="w-4 h-4" />
+                            Download PDF With Image
                           </Button>
                         </div>
-                      )}
-
-                      {selectedOrder && (
-                        <p className="text-xs text-gray-500 mt-1 text-right">
-                          Single click to share, double click to download PDF
-                        </p>
                       )}
 
                       {selectedOrder && (
