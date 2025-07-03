@@ -66,10 +66,10 @@ const AllProducts = () => {
     if (window.confirm('Mark this product as out of stock?')) {
       const formData = new FormData();
       formData.append('stock', '0');
-      
-      dispatch(updateSingleProduct({ 
-        id: product._id, 
-        inputValues: formData 
+
+      dispatch(updateSingleProduct({
+        id: product._id,
+        inputValues: formData
       })).then((result) => {
         if (result.meta.requestStatus === 'fulfilled') {
           toast.success('Product marked as out of stock');
@@ -84,8 +84,8 @@ const AllProducts = () => {
     stockFilter === 'active'
       ? products.filter((p) => p.stock > 0)
       : stockFilter === 'out-of-stock'
-      ? products.filter((p) => p.stock <= 0)
-      : products;
+        ? products.filter((p) => p.stock <= 0)
+        : products;
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -116,13 +116,13 @@ const AllProducts = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="max-w-7xl mx-auto px-4 sm:px-6 py-8"
     >
-      <motion.h1 
+      <motion.h1
         className='text-2xl mb-5'
         initial={{ x: -20 }}
         animate={{ x: 0 }}
@@ -132,7 +132,7 @@ const AllProducts = () => {
       </motion.h1>
 
       {/* Filter Section */}
-      <motion.div 
+      <motion.div
         className="bg-white rounded-lg shadow-sm p-4 mb-6"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -140,7 +140,7 @@ const AllProducts = () => {
       >
         <div className="flex flex-col sm:flex-row gap-3">
           {/* Search Input */}
-          <motion.div 
+          <motion.div
             className="relative flex-1"
             whileHover={{ scale: 1.01 }}
           >
@@ -204,7 +204,7 @@ const AllProducts = () => {
         </div>
 
         {/* Stock Filter Tabs */}
-        <motion.div 
+        <motion.div
           className="flex gap-3 mt-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -229,7 +229,7 @@ const AllProducts = () => {
 
       {/* Loading Skeleton */}
       {loading && (
-        <motion.div 
+        <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
           variants={container}
           initial="hidden"
@@ -280,7 +280,7 @@ const AllProducts = () => {
       {/* Product Grid */}
       {!loading && filteredProducts.length > 0 && (
         <>
-          <motion.div 
+          <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             variants={container}
             initial="hidden"
@@ -322,13 +322,12 @@ const AllProducts = () => {
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span
-                          className={`inline-block w-2 h-2 rounded-full ${
-                            p.stock > 10
+                          className={`inline-block w-2 h-2 rounded-full ${p.stock > 10
                               ? 'bg-green-500'
                               : p.stock > 0
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
-                          }`}
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
+                            }`}
                         />
                         <span className="text-xs text-muted-foreground">
                           {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
@@ -374,7 +373,7 @@ const AllProducts = () => {
           </motion.div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {products.length > 24 && (
             <motion.div 
               className="mt-8 flex justify-center"
               initial={{ opacity: 0, y: 20 }}
@@ -396,10 +395,10 @@ const AllProducts = () => {
                   let pageNum = totalPages <= 5
                     ? i + 1
                     : page <= 3
-                    ? i + 1
-                    : page >= totalPages - 2
-                    ? totalPages - 4 + i
-                    : page - 2 + i;
+                      ? i + 1
+                      : page >= totalPages - 2
+                        ? totalPages - 4 + i
+                        : page - 2 + i;
 
                   return (
                     <Button
