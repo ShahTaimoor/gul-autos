@@ -1,12 +1,9 @@
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import axiosInstance from '../auth/axiosInstance';
 
 // Get Orders By User ID
 const getAllOrder = async () => {
   try {
-    const axiosResponse = await axios.get(`${API_URL}/get-orders-by-user-id`, {
-      withCredentials: true, // 
+    const axiosResponse = await axiosInstance.get('/get-orders-by-user-id', {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -22,8 +19,7 @@ const getAllOrder = async () => {
 // Add New Order
 const addOrder = async (orderData) => {
   try {
-    const axiosResponse = await axios.post(`${API_URL}/order`, orderData, {
-      withCredentials: true,
+    const axiosResponse = await axiosInstance.post('/order', orderData, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -40,9 +36,8 @@ const addOrder = async (orderData) => {
 // Get Orders By User ID (Admin)
 const getAllOrderAdmin = async (page = 1, limit = 30) => {
   try {
-    const axiosResponse = await axios.get(`${API_URL}/get-all-orders`, {
+    const axiosResponse = await axiosInstance.get('/get-all-orders', {
       params: { page, limit },
-      withCredentials: true, 
       headers: {
         'Content-Type': 'application/json',
       },
@@ -58,8 +53,7 @@ const getAllOrderAdmin = async (page = 1, limit = 30) => {
 // Get Pending Order Count (Admin)
 const getPendingOrderCount = async () => {
   try {
-    const axiosResponse = await axios.get(`${API_URL}/pending-orders-count`, {
-      withCredentials: true,
+    const axiosResponse = await axiosInstance.get('/pending-orders-count', {
       headers: { 'Content-Type': 'application/json' },
     });
     return axiosResponse.data.count;
@@ -73,10 +67,10 @@ const getPendingOrderCount = async () => {
 // Update Order Status
 const updateOrderStatus = async (orderId, {status, packerName}) => {
   try {
-    const axiosResponse = await axios.put(
-      `${API_URL}/${orderId}/status`,
+    const axiosResponse = await axiosInstance.put(
+      `/update-order-status/${orderId}`,
       { status, packerName },
-      { withCredentials: true, headers: { 'Content-Type': 'application/json' } }
+      { headers: { 'Content-Type': 'application/json' } }
     );
     return axiosResponse.data;
   } catch (error) {

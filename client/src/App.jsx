@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 import { Toaster } from "./components/ui/sonner";
+import TokenExpirationHandler from "./components/custom/TokenExpirationHandler";
 
 // Page Imports
 import Home from "./pages/Home";
@@ -84,9 +85,11 @@ const App = () => {
     {
       path: "/profile",
       element: (
-        <RootLayout>
-          <Profile />
-        </RootLayout>
+        <ProtectedRoute>
+          <RootLayout>
+            <Profile />
+          </RootLayout>
+        </ProtectedRoute>
       ),
     },
     {
@@ -97,32 +100,25 @@ const App = () => {
             <CreateProducts />
           </AdminLayout>
         </ProtectedRoute>
-
-
       ),
     },
-   
     {
       path: "/admin/category",
       element: (
         <ProtectedRoute>
-
           <AdminLayout>
             <Category />
           </AdminLayout>
         </ProtectedRoute>
-
       ),
     },
     {
       path: "/admin/dashboard/all-products",
       element: (
         <ProtectedRoute>
-
           <AdminLayout>
             <AllProducts />
           </AdminLayout>
-
         </ProtectedRoute>
       ),
     },
@@ -130,15 +126,12 @@ const App = () => {
       path: "/admin/dashboard/update/:id",
       element: (
         <ProtectedRoute>
-
           <AdminLayout>
             <UpdateProduct />
           </AdminLayout>
-
         </ProtectedRoute>
       ),
     },
-
     {
       path: "/admin/dashboard/users",
       element: (
@@ -147,17 +140,16 @@ const App = () => {
             <Users />
           </AdminLayout>
         </ProtectedRoute>
-
       ),
     },
     {
       path: "/admin/dashboard/orders",
       element: (
-
-        <AdminLayout>
-          <Orders />
-        </AdminLayout>
-
+        <ProtectedRoute>
+          <AdminLayout>
+            <Orders />
+          </AdminLayout>
+        </ProtectedRoute>
       ),
     },
     {
@@ -173,6 +165,7 @@ const App = () => {
   return (
     <Provider store={store}>
       <Toaster />
+      <TokenExpirationHandler />
       <RouterProvider router={router} />
     </Provider>
   );

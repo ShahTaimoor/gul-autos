@@ -373,7 +373,7 @@ const AllProducts = () => {
           </motion.div>
 
           {/* Pagination */}
-          {products.length > 24 && (
+          {products.length > 23 && (
             <motion.div 
               className="mt-8 flex justify-center"
               initial={{ opacity: 0, y: 20 }}

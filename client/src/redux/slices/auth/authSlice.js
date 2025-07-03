@@ -36,27 +36,27 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
-
-
 const authSlice = createSlice({
   name: 'auth',
- initialState,
+  initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
-       state.tokenExpired = false;
+      state.tokenExpired = false;
       localStorage.removeItem('user');
     },
-     setTokenExpired: (state, action) => {
-    state.tokenExpired = true;
-    state.user = null;
-    state.isAuthenticated = false;
-    localStorage.removeItem('user');
-  },
-  clearTokenExpired: (state) => {
-    state.tokenExpired = false;
-  },
+    setTokenExpired: (state, action) => {
+      console.log('setTokenExpired action dispatched');
+      state.tokenExpired = true;
+      state.user = null;
+      state.isAuthenticated = false;
+      localStorage.removeItem('user');
+    },
+    clearTokenExpired: (state) => {
+      console.log('clearTokenExpired action dispatched');
+      state.tokenExpired = false;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -67,6 +67,7 @@ const authSlice = createSlice({
         state.status = 'succeeded';
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.tokenExpired = false; // Clear token expired state on successful login
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(login.rejected, (state, action) => {

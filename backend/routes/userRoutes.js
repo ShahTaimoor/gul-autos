@@ -71,6 +71,19 @@ router.get('/logout', (req, res) => {
   });
 });
 
+// Add POST logout route for consistency
+router.post('/logout', (req, res) => {
+  return res.cookie('token', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    expires: new Date(0),
+  }).status(200).json({
+    success: true,
+    message: 'Logged out successfully',
+  });
+});
+
 // All users
 
 router.get('/all-users', isAuthorized, isAdmin, async (req, res) => {

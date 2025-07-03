@@ -1,8 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
-
-import Login from '@/pages/Login';
 import { clearTokenExpired } from '@/redux/slices/auth/authSlice';
+import LoginPopup from './LoginPopup';
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
@@ -12,19 +11,23 @@ const ProtectedRoute = ({ children }) => {
 
   const publicPaths = ['/login', '/signup'];
 
-  
+  // Handle token expiration - show popup instead of redirecting
   if (tokenExpired) {
+    const handleCloseLoginPopup = () => {
+      dispatch(clearTokenExpired());
+    };
+
     return (
       <>
-        <Login onClose={() => dispatch(clearTokenExpired())} />
-        <div className="pointer-events-none blur-sm">{children}</div>
+        {children}
+        <LoginPopup isOpen={true} onClose={handleCloseLoginPopup} />
       </>
     );
   }
 
-  // Not authenticated and trying to access protected routes
+  // Check if user is not authenticated and trying to access protected route
   if (!isAuthenticated && !publicPaths.includes(pathname)) {
-    return <Navigate to="/login?expired=true" replace state={{ from: pathname }} />;
+    return <Navigate to="/login" replace />;
   }
 
   // Admin trying to revisit /admin/login
@@ -47,6 +50,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
+  console.log('ProtectedRoute - rendering children');
   return children;
 };
 

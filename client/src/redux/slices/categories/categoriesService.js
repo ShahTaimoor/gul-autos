@@ -1,12 +1,11 @@
-import axios from "axios";
+import axiosInstance from '../auth/axiosInstance';
 
 // Create Category
 const createCat = async (inputValues) => {
     try {
-        const axiosResponse = await axios.post(
-            `${import.meta.env.VITE_API_URL}/create-category`,
-            inputValues,
-            { withCredentials: true }
+        const axiosResponse = await axiosInstance.post(
+            '/create-category',
+            inputValues
         );
         return axiosResponse.data;
     } catch (error) {
@@ -23,10 +22,9 @@ const updateCat = async ({ name, slug, picture }) => {
         formData.append('name', name);
         if (picture) formData.append('picture', picture);
 
-        const axiosResponse = await axios.put(
-            `${import.meta.env.VITE_API_URL}/update-category/${slug}`,
-            formData,
-            { withCredentials: true }
+        const axiosResponse = await axiosInstance.put(
+            `/update-category/${slug}`,
+            formData
         );
 
         return axiosResponse.data;
@@ -40,9 +38,9 @@ const updateCat = async ({ name, slug, picture }) => {
 // Delete Category
 const deleteCat = async (slug) => {
     try {
-        const axiosResponse = await axios.delete(
-            `${import.meta.env.VITE_API_URL}/delete-category/${slug}`,
-            { withCredentials: true, headers: { "Content-Type": "application/json" } }
+        const axiosResponse = await axiosInstance.delete(
+            `/delete-category/${slug}`,
+            { headers: { "Content-Type": "application/json" } }
         );
         return axiosResponse.data;
     } catch (error) {
@@ -55,8 +53,8 @@ const deleteCat = async (slug) => {
 // Get All Categories
 const getAllCat = async () => {
     try {
-        const axiosResponse = await axios.get(
-            `${import.meta.env.VITE_API_URL}/all-category`,
+        const axiosResponse = await axiosInstance.get(
+            '/all-category',
             { headers: { 'Content-Type': 'application/json' } }
         );
         return axiosResponse.data;
@@ -70,8 +68,8 @@ const getAllCat = async () => {
 // Get Single Category
 const getSingleCat = async (slug) => {
     try {
-        const axiosResponse = await axios.get(
-            `${import.meta.env.VITE_API_URL}/single-category/${slug}`,
+        const axiosResponse = await axiosInstance.get(
+            `/single-category/${slug}`,
             { headers: { 'Content-Type': 'application/json' } }
         );
         return axiosResponse.data;
@@ -81,7 +79,6 @@ const getSingleCat = async (slug) => {
         return Promise.reject(errorMessage);
     }
 };
-
 
 const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat };
 
