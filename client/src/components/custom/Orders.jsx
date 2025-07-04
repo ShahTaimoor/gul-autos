@@ -524,6 +524,7 @@ Phone: ${order.phone}
                           packerName={selectedOrder.packerName}
                           hideStatus={true}
                           hideCOD={true}
+                           user={user}
                         />
                       )}
                     </DialogContent>

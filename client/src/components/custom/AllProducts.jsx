@@ -43,7 +43,7 @@ const AllProducts = () => {
   const navigate = useNavigate();
 
   const { categories } = useSelector((s) => s.categories);
-  const { products, status, totalPages } = useSelector((s) => s.products);
+  const { products, status, totalPages, currentPage, totalItems } = useSelector((s) => s.products);
 
   const loading = status === 'loading';
   const noProducts = status === 'succeeded' && products.length === 0;
@@ -128,7 +128,7 @@ const AllProducts = () => {
         animate={{ x: 0 }}
         transition={{ delay: 0.1 }}
       >
-        All Products
+        All Products ({totalItems})
       </motion.h1>
 
       {/* Filter Section */}
@@ -373,7 +373,7 @@ const AllProducts = () => {
           </motion.div>
 
           {/* Pagination */}
-          {products.length > 23 && (
+          {totalPages > 1 && (
             <motion.div 
               className="mt-8 flex justify-center"
               initial={{ opacity: 0, y: 20 }}
@@ -391,38 +391,62 @@ const AllProducts = () => {
                   Previous
                 </Button>
 
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = totalPages <= 5
-                    ? i + 1
-                    : page <= 3
-                      ? i + 1
-                      : page >= totalPages - 2
-                        ? totalPages - 4 + i
-                        : page - 2 + i;
+                {/* Always show first page */}
+                {page > 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(1)}
+                  >
+                    1
+                  </Button>
+                )}
 
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={page === pageNum ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handlePageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
+                {/* Show ellipsis if current page is more than 2 pages away from start */}
+                {page > 3 && <span className="px-2">...</span>}
 
-                {totalPages > 5 && page < totalPages - 2 && (
-                  <>
-                    <span className="px-2">...</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(totalPages)}
-                    >
-                      {totalPages}
-                    </Button>
-                  </>
+                {/* Show previous page if not first page */}
+                {page > 2 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    {page - 1}
+                  </Button>
+                )}
+
+                {/* Current page */}
+                <Button
+                  variant="default"
+                  size="sm"
+                >
+                  {page}
+                </Button>
+
+                {/* Show next page if not last page */}
+                {page < totalPages - 1 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    {page + 1}
+                  </Button>
+                )}
+
+                {/* Show ellipsis if current page is more than 2 pages away from end */}
+                {page < totalPages - 2 && <span className="px-2">...</span>}
+
+                {/* Always show last page if not first page */}
+                {page < totalPages && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(totalPages)}
+                  >
+                    {totalPages}
+                  </Button>
                 )}
 
                 <Button

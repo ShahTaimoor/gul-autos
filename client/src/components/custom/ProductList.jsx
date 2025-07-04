@@ -110,9 +110,9 @@ const ProductCard = React.memo(({
           }`}
       >
         <h3 className="font-semibold text-sm line-clamp-2">
-          {product.title.split(' ').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                ).join(' ')}
+          {product.title.split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          ).join(' ')}
         </h3>
         <div className="flex-grow" />
 
@@ -146,9 +146,11 @@ const ProductCard = React.memo(({
                   }
                 }}
                 onFocus={(e) => e.target.select()}
-                className="w-10 text-center bg-transparent focus:outline-none text-sm py-1 appearance-none text-black [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                inputMode="numeric"
-                aria-label="Product quantity"
+                className="w-10 text-center bg-transparent focus:outline-none text-sm py-1 text-black
+  appearance-none 
+  [&::-webkit-outer-spin-button]:appearance-none 
+  [&::-webkit-inner-spin-button]:appearance-none 
+  [&::-moz-appearance]:textfield"
               />
 
               <button
@@ -192,7 +194,7 @@ const ProductList = () => {
   const [sortOrder, setSortOrder] = useState('az');
   const [page, setPage] = useState(1);
   const [previewImage, setPreviewImage] = useState(null);
-  const limit = 31;
+  const limit = 24;
 
   const cartRef = useRef(null);
   const dispatch = useDispatch();
@@ -204,17 +206,17 @@ const ProductList = () => {
   const { cartItems } = useSelector((s) => s.cart);
 
   useEffect(() => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}, [page]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [page]);
 
 
-  
+
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
     ...categories
   ], [categories]);
 
-  
+
   const categoryChunks = useMemo(() => {
     const chunkArray = (array, size) => {
       const result = [];
@@ -237,9 +239,14 @@ const ProductList = () => {
       );
   }, [productList, sortOrder]);
 
-  // Fetch products on filter change
   useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm, page, limit }));
+    dispatch(fetchProducts({ category, searchTerm, page, limit }))
+      .then((res) => {
+        // Go back one page if current page has no results
+        if (res.payload.products?.length === 0 && page > 1) {
+          setPage((prev) => prev - 1);
+        }
+      });
   }, [dispatch, category, searchTerm, page, limit]);
 
   useEffect(() => {
@@ -294,124 +301,123 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="lg:max-w-7xl lg:px-4  py-6">
+    <div className="sm:max-w-7xl lg:px-4  py-6">
       {/* Swiper for categories */}
       <div className="relative px-2 sm:px-10 ">
-  <Swiper
-    pagination={{ clickable: true }}
-    modules={[Pagination, Navigation]}
-    spaceBetween={10}
-    navigation={{ 
-      nextEl: '.custom-swiper-button-next', 
-      prevEl: '.custom-swiper-button-prev' 
-    }}
-    className="mySwiper"
-  >
-    {categoryChunks.map((chunk, idx) => (
-      <SwiperSlide key={idx}>
-        <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
-          {chunk.map((cat, index) => (
-            <motion.div
-              key={cat._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                duration: 0.4,
-                delay: index * 0.05,
-                ease: "easeOut"
-              }}
-              className={`flex flex-col items-center rounded-xl p-1 ${
-                category === cat._id 
-                  ? 'border border-[#FED700] shadow-md' 
-                  : 'hover:shadow-sm'
-              } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all`}
-              onClick={() => setCategory(cat._id)}
-              whileHover={{ 
-                scale: 1.05,
-                boxShadow: "0 4px 8px rgba(254, 215, 0, 0.2)"
-              }}
-              whileTap={{ scale: 0.95 }}
-              role="button"
-              tabIndex="0"
-              aria-label={`Filter by ${cat.name}`}
-              onKeyDown={(e) => e.key === 'Enter' && setCategory(cat._id)}
-            >
-              <motion.div 
-                className="rounded-full p-1"
-                whileHover={{ rotate: 5 }}
-              >
-                <img 
-                  src={cat.image || "/fallback.jpg"} 
-                  alt={cat.name} 
-                  className="w-14 h-14 object-cover rounded-full border-2 border-white/30"
-                  loading="lazy"
-                  width="56"
-                  height="56"
-                />
-              </motion.div>
-              <motion.p 
-                className="text-xs mt-2 font-medium text-gray-700"
-                whileHover={{ color: "#000000" }}
-              >
-                {cat.name.split(' ').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                ).join(' ')}
-              </motion.p>
-            </motion.div>
+        <Swiper
+          pagination={{ clickable: true }}
+          modules={[Pagination, Navigation]}
+          spaceBetween={10}
+          navigation={{
+            nextEl: '.custom-swiper-button-next',
+            prevEl: '.custom-swiper-button-prev'
+          }}
+          className="mySwiper"
+        >
+          {categoryChunks.map((chunk, idx) => (
+            <SwiperSlide key={idx}>
+              <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
+                {chunk.map((cat, index) => (
+                  <motion.div
+                    key={cat._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: index * 0.05,
+                      ease: "easeOut"
+                    }}
+                    className={`flex flex-col items-center rounded-xl p-1 ${category === cat._id
+                      ? 'border border-[#FED700] shadow-md'
+                      : 'hover:shadow-sm'
+                      } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all`}
+                    onClick={() => setCategory(cat._id)}
+                    whileHover={{
+                      scale: 1.05,
+                      boxShadow: "0 4px 8px rgba(254, 215, 0, 0.2)"
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    role="button"
+                    tabIndex="0"
+                    aria-label={`Filter by ${cat.name}`}
+                    onKeyDown={(e) => e.key === 'Enter' && setCategory(cat._id)}
+                  >
+                    <motion.div
+                      className="rounded-full p-1"
+                      whileHover={{ rotate: 5 }}
+                    >
+                      <img
+                        src={cat.image || "/fallback.jpg"}
+                        alt={cat.name}
+                        className="w-14 h-14 object-cover rounded-full border-2 border-white/30"
+                        loading="lazy"
+                        width="56"
+                        height="56"
+                      />
+                    </motion.div>
+                    <motion.p
+                      className="text-xs mt-2 font-medium text-gray-700"
+                      whileHover={{ color: "#000000" }}
+                    >
+                      {cat.name.split(' ').map(word =>
+                        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                      ).join(' ')}
+                    </motion.p>
+                  </motion.div>
+                ))}
+              </div>
+            </SwiperSlide>
           ))}
-        </div>
-      </SwiperSlide>
-    ))}
-  </Swiper>
-  
- <div className="hidden lg:block">
-  {/* Previous Button */}
-  <motion.div
-    className="custom-swiper-button-prev absolute top-[120px] left-0 z-20 -translate-y-1/2 cursor-pointer"
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    initial={{ x: -10, opacity: 0 }}
-    animate={{ x: 0, opacity: 1 }}
-    transition={{ type: "spring", stiffness: 300 }}
-  >
-    <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg  hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
-      <motion.svg 
-        className="w-4 h-4 text-black drop-shadow" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        viewBox="0 0 24 24"
-        whileHover={{ scale: 1.2 }}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-      </motion.svg>
-    </div>
-  </motion.div>
+        </Swiper>
 
-  {/* Next Button */}
-  <motion.div
-    className="custom-swiper-button-next absolute top-[120px]  right-0 z-20 -translate-y-1/2 cursor-pointer"
-    whileHover={{ scale: 1.1 }}
-    whileTap={{ scale: 0.9 }}
-    initial={{ x: 10, opacity: 0 }}
-    animate={{ x: 0, opacity: 1 }}
-    transition={{ type: "spring", stiffness: 300 }}
-  >
-    <div className="p-3 rounded-r-full backdrop-blur-md  bg-white/20 border border-white/30  shadow-lg hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
-      <motion.svg 
-        className="w-4 h-4 text-black drop-shadow" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        viewBox="0 0 24 24"
-        whileHover={{ scale: 1.2 }}
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-      </motion.svg>
-    </div>
-  </motion.div>
-</div>
-</div>
+        <div className="hidden lg:block">
+          {/* Previous Button */}
+          <motion.div
+            className="custom-swiper-button-prev absolute top-[120px] left-0 z-20 -translate-y-1/2 cursor-pointer"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ x: -10, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg  hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
+              <motion.svg
+                className="w-4 h-4 text-black drop-shadow"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                whileHover={{ scale: 1.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </motion.svg>
+            </div>
+          </motion.div>
+
+          {/* Next Button */}
+          <motion.div
+            className="custom-swiper-button-next absolute top-[120px]  right-0 z-20 -translate-y-1/2 cursor-pointer"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ x: 10, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="p-3 rounded-r-full backdrop-blur-md  bg-white/20 border border-white/30  shadow-lg hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
+              <motion.svg
+                className="w-4 h-4 text-black drop-shadow"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                whileHover={{ scale: 1.2 }}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </motion.svg>
+            </div>
+          </motion.div>
+        </div>
+      </div>
 
       {/* Search & Sort */}
       <div className="mb-6">
@@ -440,22 +446,22 @@ const ProductList = () => {
             </div>
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 lg:hidden bg-white/60 shadow-sm backdrop-blur-sm px-1.5 py-1 rounded-full transition">
-              <button 
-                onClick={() => setGridType('grid1')} 
+              <button
+                onClick={() => setGridType('grid1')}
                 className={`p-1 rounded-full ${gridType === 'grid1' ? 'bg-[#FED700] text-white' : ''}`}
                 aria-label="Grid view 1"
               >
                 <Grid3x3 className="h-4 w-4" />
               </button>
-              <button 
-                onClick={() => setGridType('grid2')} 
+              <button
+                onClick={() => setGridType('grid2')}
                 className={`p-1 rounded-full ${gridType === 'grid2' ? 'bg-[#FED700] text-white' : ''}`}
                 aria-label="Grid view 2"
               >
                 <Grid2x2 className="h-4 w-4" />
               </button>
-              <button 
-                onClick={() => setGridType('grid3')} 
+              <button
+                onClick={() => setGridType('grid3')}
                 className={`p-1 rounded-full ${gridType === 'grid3' ? 'bg-[#FED700] text-white' : ''}`}
                 aria-label="Grid view 3"
               >
@@ -583,36 +589,35 @@ const ProductList = () => {
       </div>
 
       {/* Image Preview Modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-9999 bg-black/70 backdrop-blur-sm flex items-center justify-center"
-          onClick={() => setPreviewImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Product image preview"
-        >
-          <div
-            className="relative max-w-[90vw] max-h-[90vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="rounded-lg shadow-lg object-contain w-[1000px] h-[800px]"
-              loading="eager"
-              width="1000"
-              height="800"
-            />
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute hover:bg-red-500 top-56 cursor-pointer right-2 md:top-2 md:right-28 bg-black/70 text-white rounded-full p-1 px-2"
-              aria-label="Close preview"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
+     {previewImage && (
+  <div
+    className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
+    onClick={() => setPreviewImage(null)}
+    role="dialog"
+    aria-modal="true"
+    aria-label="Product image preview"
+  >
+    <div
+      className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={previewImage}
+        alt="Preview"
+        className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
+        loading="eager"
+      />
+      <button
+        onClick={() => setPreviewImage(null)}
+        className="absolute top-2 right-2 md:top-4 md:right-66 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2"
+        aria-label="Close preview"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+)}
+
 
       {/* Cart Drawer */}
       <div className="fixed top-4 right-16 md:right-8 z-50">
@@ -627,16 +632,16 @@ const ProductList = () => {
 
       {/* WhatsApp Button */}
       <div className="fixed animate-bounce bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">
-        <Link 
-          to='https://wa.me/923114000096?text=Hi%20How%20Are%20you%20?' 
+        <Link
+          to='https://wa.me/923114000096?text=Hi%20How%20Are%20you%20?'
           target='_blank'
           rel="noopener noreferrer"
           aria-label="Contact us on WhatsApp"
         >
-          <img 
-            className='w-14 h-14' 
-            src="/WhatsApp.svg.webp" 
-            alt="WhatsApp" 
+          <img
+            className='w-14 h-14'
+            src="/WhatsApp.svg.webp"
+            alt="WhatsApp"
             loading="lazy"
             width="56"
             height="56"

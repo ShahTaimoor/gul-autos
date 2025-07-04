@@ -15,7 +15,7 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, searchTerm, page = 1, limit = 12 }, thunkAPI) => {
+    async ({ category, searchTerm, page = 1, limit = 24 }, thunkAPI) => { // Changed limit to 8
         try {
             const res = await productService.allProduct(category, searchTerm, page, limit);
             return res;

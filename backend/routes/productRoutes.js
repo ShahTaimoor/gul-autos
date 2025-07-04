@@ -1,5 +1,6 @@
 const express = require('express');
 const Product = require('../models/Product');
+const Category = require('../models/Category');
 const router = express.Router();
 const upload = require('../middleware/multer')
 const { deleteImageOnCloudinary, uploadImageOnCloudinary } = require('../utils/cloudinary');
@@ -125,25 +126,32 @@ router.delete('/delete-product/:id', isAuthorized, isAdmin,  async (req, res) =>
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 30 } = req.query;
+    let { category, search, page = 1, limit = 24 } = req.query;
+
     page = parseInt(page);
     limit = parseInt(limit);
 
-    let query = {};
+    const query = {
+      stock: { $gt: 0 } // ✅ Ensure only in-stock products
+    };
 
     // Handle category filter
     if (category && category.trim().toLowerCase() !== 'all') {
       const trimmedCategory = category.trim();
       const isValidObjectId = mongoose.Types.ObjectId.isValid(trimmedCategory);
+
       if (isValidObjectId) {
         query.category = trimmedCategory;
       } else {
         // Lookup category by name if not an ObjectId
-        const matchedCategory = await Category.findOne({ name: new RegExp(`^${trimmedCategory}$`, 'i') });
+        const matchedCategory = await Category.findOne({
+          name: new RegExp(`^${trimmedCategory}$`, 'i'),
+        });
+
         if (matchedCategory) {
           query.category = matchedCategory._id;
         } else {
-          // Category doesn't exist at all
+          // No matching category
           return res.status(200).json({
             success: true,
             message: 'No products found in this category.',
@@ -174,6 +182,7 @@ router.get('/get-products', async (req, res) => {
       .skip((page - 1) * limit)
       .limit(limit);
 
+    // Transform products (attach `image` from picture.secure_url)
     const newProductArray = products.map((product) => {
       const productObj = product.toObject();
       productObj.image = productObj.picture?.secure_url || null;
@@ -181,10 +190,12 @@ router.get('/get-products', async (req, res) => {
       return productObj;
     });
 
-    // Return different messages based on result
-    const message = products.length === 0
-      ? (search ? 'No products found for your search.' : 'No products found in this category.')
-      : 'Products fetched successfully';
+    const message =
+      products.length === 0
+        ? search
+          ? 'No products found for your search.'
+          : 'No products found in this category.'
+        : 'Products fetched successfully';
 
     return res.status(200).json({
       success: true,
@@ -197,12 +208,15 @@ router.get('/get-products', async (req, res) => {
         totalPages: Math.ceil(totalProducts / limit),
       },
     });
-
   } catch (error) {
     console.error('Error while fetching products:', error);
-    res.status(500).json({ success: false, message: 'Server error while fetching products' });
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching products',
+    });
   }
 });
+
 
 
 
