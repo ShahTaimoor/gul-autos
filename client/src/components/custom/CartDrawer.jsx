@@ -296,19 +296,11 @@ const CartDrawer = () => {
       {/* Dialog placed OUTSIDE Sheet */}
       <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
   <DialogContent
-    className="w-full lg:max-w-6xl h-[95vh] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col"
+    className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col"
   >
-    {/* Sticky Header */}
-    <div className="fixed top-0 left-0  right-0 z-9999 bg-white border-b px-4 py-3 sm:px-6">
-      <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-800">
-        Checkout
-      </DialogTitle>
-    </div>
 
-    {/* Scrollable Content */}
-    <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
       <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
-    </div>
+    
   </DialogContent>
 </Dialog>
 

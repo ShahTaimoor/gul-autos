@@ -104,25 +104,9 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b mt-12 from-gray-50 to-white pb-32">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Order</h1>
-          <p className="text-gray-600">Please provide your billing information to proceed</p>
-        </div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-6 animate-in fade-in">
-            <AlertCircle className="w-5 h-5" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-      </div>
-
+    <div className="bg-gradient-to-b from-gray-50 to-white ">
       {/* Fixed Billing Information Card at Bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      <div className=" bg-white pt-3 border-t border-gray-200 shadow-lg z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
             <div className="absolute inset-0 overflow-hidden rounded-2xl">
@@ -132,7 +116,7 @@ const Checkout = () => {
             <div className="relative z-10">
               <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
                 <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
-                Address Information
+                Billing Information
               </h2>
 
               <div className="space-y-6">
