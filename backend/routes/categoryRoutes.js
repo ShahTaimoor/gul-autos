@@ -95,7 +95,7 @@ router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isA
     }
 });
 
-// Delete categor
+// Delete ategory
 router.delete('/delete-category/:slug', isAuthorized, isAdmin, async (req, res) => {
     try {
         const { slug } = req.params;
