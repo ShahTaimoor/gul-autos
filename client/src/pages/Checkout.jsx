@@ -132,7 +132,7 @@ const Checkout = () => {
             <div className="relative z-10">
               <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
                 <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
-                Billing Information
+                Address Information
               </h2>
 
               <div className="space-y-6">
