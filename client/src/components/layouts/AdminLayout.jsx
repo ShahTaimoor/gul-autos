@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { AppSidebar } from "../custom/AppSidebar"
 
+// admin layout component
 
 const AdminLayout = ({ children }) => {
     return (
