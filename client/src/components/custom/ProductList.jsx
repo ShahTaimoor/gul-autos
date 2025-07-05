@@ -301,7 +301,7 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="sm:max-w-7xl  lg:mx-auto lg:px-4  py-6">
+    <div className="max-w-7xl  lg:mx-auto lg:px-4  py-6">
       {/* Swiper for categories */}
       <div className="relative px-2 sm:px-10 ">
         <Swiper
@@ -421,7 +421,7 @@ const ProductList = () => {
       </div>
 
       {/* Search & Sort */}
-      <div className="mb-6">
+      <div className="mb-6 px-2 sm:px-0">
         <div className="flex flex-col lg:flex-row lg:items-center lg:gap-4">
           <div className="relative flex-1">
             <div className="relative w-full group">
@@ -446,7 +446,7 @@ const ProductList = () => {
               </div>
             </div>
 
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 lg:hidden bg-white/60 shadow-sm backdrop-blur-sm px-1.5 py-1 rounded-full transition">
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 lg:hidden bg-white/60 shadow-sm backdrop-blur-sm px-1.5 py-1 rounded-full transition">
               <button
                 onClick={() => setGridType('grid1')}
                 className={`p-1 rounded-full ${gridType === 'grid1' ? 'bg-[#FED700] text-white' : ''}`}
@@ -493,7 +493,7 @@ const ProductList = () => {
       ) : productList.length === 0 || sortedProducts.length === 0 ? (
         <p className="text-center text-lg text-gray-500 mb-10">No products found for your search.</p>
       ) : (
-        <div className={`grid lg:grid-cols-4 gap-6 ${gridType === 'grid1' ? 'grid-cols-1' : gridType === 'grid2' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-6 ${gridType === 'grid1' ? 'grid-cols-1' : gridType === 'grid2' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' : 'grid-cols-1'}`}>
           {sortedProducts.map((product) => {
             const isInCart = cartItems.some((item) => item._id === product._id);
             return (
