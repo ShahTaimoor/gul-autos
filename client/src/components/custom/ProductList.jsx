@@ -301,7 +301,7 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="sm:max-w-7xl lg:px-4  py-6">
+    <div className="sm:max-w-7xl  lg:mx-auto lg:px-4  py-6">
       {/* Swiper for categories */}
       <div className="relative px-2 sm:px-10 ">
         <Swiper
@@ -424,26 +424,26 @@ const ProductList = () => {
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:gap-4">
           <div className="relative flex-1">
-            <div className="relative w-full">
+            <div className="relative w-full group">
               <Input
                 id="search"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder=" "
-                className="peer w-full border border-[#FED700] rounded-2xl pb-2 px-3 pt-3 text-sm bg-white 
-                focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                placeholder=" Search products..."
+                className="w-full border-2 border-[#FED700] rounded-2xl px-4 py-3 text-sm outline-none bg-white/80 backdrop-blur-sm
+                focus:outline-none focus:ring-4 focus:ring-[#EFD700]   focus:border-[#FED700]
+                transition-all duration-300 ease-out shadow-sm hover:shadow-md hover:border-[#EFD700]
+                placeholder:text-gray-400"
                 aria-label="Search products"
               />
-              <label
-                htmlFor="search"
-                className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-                transition-all duration-200 ease-in-out pointer-events-none
-                peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
-                peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-              >
-                Search products…
-              </label>
+              
+              {/* Search icon */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 peer-focus:text-[#efd700] transition-colors duration-300">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
             </div>
 
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 lg:hidden bg-white/60 shadow-sm backdrop-blur-sm px-1.5 py-1 rounded-full transition">
@@ -610,7 +610,7 @@ const ProductList = () => {
             />
             <button
               onClick={() => setPreviewImage(null)}
-              className="absolute top-2 right-2 md:top-4 md:right-66 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2"
+              className="absolute top-2 right-2 md:top-4 md:right-4 lg:right-24 xl:right-24 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2 text-sm md:text-base"
               aria-label="Close preview"
             >
               ✕

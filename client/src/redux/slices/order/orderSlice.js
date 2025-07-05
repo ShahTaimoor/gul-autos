@@ -72,7 +72,18 @@ export const fetchOrdersAdmin = createAsyncThunk(
   }
 );
 
-
+// Delete Order
+export const deleteOrder = createAsyncThunk(
+  'orders/deleteOrder',
+  async (orderId, thunkAPI) => {
+    try {
+      const res = await orderService.deleteOrder(orderId);
+      return { orderId, ...res };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  }
+);
 
 const initialState = {
   orders: [],
@@ -148,6 +159,18 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchPendingOrderCount.fulfilled, (state, action) => {
         state.pendingOrderCount = action.payload;
+      })
+      .addCase(deleteOrder.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(deleteOrder.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        // Remove the deleted order from the orders array
+        state.orders = state.orders.filter(order => order._id !== action.payload.orderId);
+      })
+      .addCase(deleteOrder.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       })
   },
 });

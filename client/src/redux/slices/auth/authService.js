@@ -15,5 +15,12 @@ const updateProfile = async (data) => {
   return response.data.user;
 };
 
-const authService = { loginUser, updateProfile };
+const updateUserRole = async (userId, role) => {
+  const response = await axiosInstance.put(`/update-user-role/${userId}`, { role }, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+const authService = { loginUser, updateProfile, updateUserRole };
 export default authService;

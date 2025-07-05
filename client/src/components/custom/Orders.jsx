@@ -9,16 +9,27 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import OrderData from './OrderData';
-import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount } from '@/redux/slices/order/orderSlice';
+import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount, deleteOrder } from '@/redux/slices/order/orderSlice';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-import { CalendarDays, List, Share2, FileDown } from 'lucide-react';
+import { CalendarDays, List, Share2, FileDown, Trash2 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -103,6 +114,21 @@ const Orders = () => {
       dispatch(fetchPendingOrderCount());
     } catch (error) {
       toast.error(error?.message || 'Failed to update order status');
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      await dispatch(deleteOrder(orderId)).unwrap();
+      toast.success('Order deleted successfully and stock restored');
+      
+      // Update local orders state
+      setLocalOrders((prev) => prev.filter(order => order._id !== orderId));
+      
+      // Refresh pending order count
+      dispatch(fetchPendingOrderCount());
+    } catch (error) {
+      toast.error(error?.message || 'Failed to delete order');
     }
   };
 
@@ -475,60 +501,92 @@ Phone: ${order.phone}
                 </CardContent>
 
                 <CardFooter className="flex flex-col gap-2">
-                  <Dialog onOpenChange={(open) => open && setSelectedOrder(order)}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full">
-                        View Details
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Order Details</DialogTitle>
-                        <DialogDescription>
-                          Complete information for order #{order._id.slice(-6)}
-                        </DialogDescription>
-                      </DialogHeader>
+                  <div className="flex gap-2 w-full">
+                    <Dialog onOpenChange={(open) => open && setSelectedOrder(order)}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex-1">
+                          View Details
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Order Details</DialogTitle>
+                          <DialogDescription>
+                            Complete information for order #{order._id.slice(-6)}
+                          </DialogDescription>
+                        </DialogHeader>
 
-                      {selectedOrder && (
-                        <div className="flex justify-end gap-2 mb-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleShare(selectedOrder)}
-                            className="flex items-center gap-2"
-                          >
-                            <Share2 className="w-4 h-4" />
-                            Share
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePdfClick(selectedOrder)}
-                            className="flex items-center gap-2"
-                            disabled={pdfLoading}
-                          >
-                            <FileDown className="w-4 h-4" />
-                            Download PDF With Image
-                          </Button>
-                        </div>
-                      )}
+                        {selectedOrder && (
+                          <div className="flex justify-end gap-2 mb-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleShare(selectedOrder)}
+                              className="flex items-center gap-2"
+                            >
+                              <Share2 className="w-4 h-4" />
+                              Share
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePdfClick(selectedOrder)}
+                              className="flex items-center gap-2"
+                              disabled={pdfLoading}
+                            >
+                              <FileDown className="w-4 h-4" />
+                              Download PDF With Image
+                            </Button>
+                          </div>
+                        )}
 
-                      {selectedOrder && (
-                        <OrderData
-                          price={selectedOrder.amount}
-                          address={selectedOrder.address}
-                          phone={selectedOrder.phone}
-                          city={selectedOrder.city}
-                          createdAt={selectedOrder.createdAt}
-                          products={selectedOrder.products}
-                          packerName={selectedOrder.packerName}
-                          hideStatus={true}
-                          hideCOD={true}
-                           user={user}
-                        />
-                      )}
-                    </DialogContent>
-                  </Dialog>
+                        {selectedOrder && (
+                          <OrderData
+                            price={selectedOrder.amount}
+                            address={selectedOrder.address}
+                            phone={selectedOrder.phone}
+                            city={selectedOrder.city}
+                            createdAt={selectedOrder.createdAt}
+                            products={selectedOrder.products}
+                            packerName={selectedOrder.packerName}
+                            hideStatus={true}
+                            hideCOD={true}
+                             user={user}
+                          />
+                        )}
+                      </DialogContent>
+                    </Dialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" className="flex-shrink-0">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this order? This action will:
+                            <ul className="list-disc list-inside mt-2 space-y-1">
+                              <li>Permanently remove the order from the system</li>
+                              <li>Restore the product stock that was deducted</li>
+                              <li>This action cannot be undone</li>
+                            </ul>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteOrder(order._id)}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            Delete Order
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </CardFooter>
               </Card>
             ))}

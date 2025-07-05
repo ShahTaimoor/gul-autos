@@ -36,6 +36,17 @@ export const updateProfile = createAsyncThunk(
   }
 );
 
+export const updateUserRole = createAsyncThunk(
+  'auth/updateUserRole',
+  async ({ userId, role }, thunkAPI) => {
+    try {
+      return await authService.updateUserRole(userId, role);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -67,7 +78,7 @@ const authSlice = createSlice({
         state.status = 'succeeded';
         state.user = action.payload.user;
         state.isAuthenticated = true;
-        state.tokenExpired = false; // Clear token expired state on successful login
+        state.tokenExpired = false;
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(login.rejected, (state, action) => {
@@ -83,6 +94,16 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(updateProfile.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(updateUserRole.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updateUserRole.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+      })
+      .addCase(updateUserRole.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });

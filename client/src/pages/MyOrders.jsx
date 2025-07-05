@@ -1,9 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import OrderData from '@/components/custom/OrderData';
-import { fetchOrders } from '@/redux/slices/order/orderSlice';
+import { fetchOrders, deleteOrder } from '@/redux/slices/order/orderSlice';
+import { toast } from 'sonner';
 
 // Helper to get today date in 'yyyy-mm-dd' format for Pakistan timezone
 const getPakistaniDate = () => {
@@ -20,6 +33,15 @@ const MyOrders = () => {
   useEffect(() => {
     dispatch(fetchOrders());
   }, [dispatch]);
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      await dispatch(deleteOrder(orderId)).unwrap();
+      toast.success('Order deleted successfully and stock restored');
+    } catch (error) {
+      toast.error(error?.message || 'Failed to delete order');
+    }
+  };
 
   // Filter orders by selected date based on Pakistan timezone
   const filteredOrders = orders.filter(order => {
@@ -60,7 +82,40 @@ const MyOrders = () => {
             <p className="text-gray-500">No orders found for {selectedDate}.</p>
           ) : (
             filteredOrders.map((order) => (
-              <OrderData key={order._id} {...order} />
+              <div key={order._id} className="relative">
+                <OrderData {...order} />
+                <div className="absolute top-2 right-2">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon" className="h-8 w-8">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Order</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this order? This action will:
+                          <ul className="list-disc list-inside mt-2 space-y-1">
+                            <li>Permanently remove the order from your account</li>
+                            <li>Restore the product stock that was deducted</li>
+                            <li>This action cannot be undone</li>
+                          </ul>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteOrder(order._id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete Order
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
             ))
           )}
         </div>

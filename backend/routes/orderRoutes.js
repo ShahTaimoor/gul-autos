@@ -316,4 +316,93 @@ router.get('/pending-orders-count', isAuthorized, isAdmin, async (req, res) => {
   }
 });
 
+// @route DELETE /api/orders/:id
+// @desc Delete an order (Admin only)
+// @access Admin
+router.delete('/delete-order/:id', isAuthorized, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the order first to get product details for stock restoration
+    const order = await Order.findById(id).populate({
+      path: 'products.id',
+      select: 'title stock'
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    // Restore stock for each product in the order
+    for (const item of order.products) {
+      if (item.id) {
+        const product = await Product.findById(item.id._id);
+        if (product) {
+          product.stock += item.quantity;
+          await product.save();
+        }
+      }
+    }
+
+    // Delete the order
+    await Order.findByIdAndDelete(id);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Order deleted successfully and stock restored'
+    });
+  } catch (error) {
+    console.error('Delete Order Error:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
+// @route DELETE /api/orders/bulk-delete
+// @desc Delete multiple orders (Admin only)
+// @access Admin
+router.delete('/bulk-delete-orders', isAuthorized, isAdmin, async (req, res) => {
+  try {
+    const { orderIds } = req.body;
+
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Order IDs array is required' });
+    }
+
+    // Find all orders to get product details for stock restoration
+    const orders = await Order.find({ _id: { $in: orderIds } }).populate({
+      path: 'products.id',
+      select: 'title stock'
+    });
+
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: 'No orders found' });
+    }
+
+    // Restore stock for each product in all orders
+    for (const order of orders) {
+      for (const item of order.products) {
+        if (item.id) {
+          const product = await Product.findById(item.id._id);
+          if (product) {
+            product.stock += item.quantity;
+            await product.save();
+          }
+        }
+      }
+    }
+
+    // Delete all orders
+    const deleteResult = await Order.deleteMany({ _id: { $in: orderIds } });
+
+    return res.status(200).json({ 
+      success: true, 
+      message: `${deleteResult.deletedCount} orders deleted successfully and stock restored`,
+      deletedCount: deleteResult.deletedCount
+    });
+  } catch (error) {
+    console.error('Bulk Delete Orders Error:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
 module.exports = router;

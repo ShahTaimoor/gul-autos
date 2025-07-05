@@ -133,4 +133,46 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
   }
 });
 
+// Update user role (Admin only)
+router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+
+    if (role === undefined || role === null) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Role is required' 
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    user.role = role;
+    const updatedUser = await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'User role updated successfully',
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+        city: updatedUser.city,
+      },
+    });
+  } catch (error) {
+    console.error('Update User Role Error:', error);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

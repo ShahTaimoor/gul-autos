@@ -81,6 +81,40 @@ const updateOrderStatus = async ({ orderId, status, packerName }) => {
     return Promise.reject(errorMessage);
   }
 };
-const orderService = { getAllOrder, addOrder,  getAllOrderAdmin, updateOrderStatus, getPendingOrderCount };
+
+// Delete Order
+const deleteOrder = async (orderId) => {
+  try {
+    const axiosResponse = await axiosInstance.delete(`/delete-order/${orderId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return axiosResponse.data;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || error.message || 'An unexpected error occurred while deleting the order.';
+    return Promise.reject(errorMessage);
+  }
+};
+
+// Bulk Delete Orders
+const bulkDeleteOrders = async (orderIds) => {
+  try {
+    const axiosResponse = await axiosInstance.delete('/bulk-delete-orders', {
+      data: { orderIds },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return axiosResponse.data;
+  } catch (error) {
+    const errorMessage =
+      error.response?.data?.message || error.message || 'An unexpected error occurred while deleting the orders.';
+    return Promise.reject(errorMessage);
+  }
+};
+
+const orderService = { getAllOrder, addOrder, getAllOrderAdmin, updateOrderStatus, getPendingOrderCount, deleteOrder, bulkDeleteOrders };
 
 export default orderService;
