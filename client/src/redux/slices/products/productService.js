@@ -19,12 +19,12 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 24) => { // Changed limit to 8
+const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 24, stockFilter ) => {
     try {
       const response = await axiosInstance.get(
         '/get-products',
         {
-          params: { category, search: searchTerm, page, limit },
+          params: { category, search: searchTerm, page, limit, stockFilter },
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -34,7 +34,7 @@ const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 2
         error.response?.data?.message || error.message || 'Something went wrong';
       return Promise.reject(errorMessage);
     }
-  };
+};
 
 // single product
 const getSingleProd = async (id) => {

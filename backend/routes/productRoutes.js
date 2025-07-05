@@ -126,14 +126,17 @@ router.delete('/delete-product/:id', isAuthorized, isAdmin,  async (req, res) =>
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 24 } = req.query;
+    let { category, search, page = 1, limit = 24, stockFilter = 'all' } = req.query;
 
     page = parseInt(page);
     limit = parseInt(limit);
 
-    const query = {
-      stock: { $gt: 0 } // ✅ Ensure only in-stock products
-    };
+    const query = {};
+    if (stockFilter === 'active') {
+      query.stock = { $gt: 0 };
+    } else if (stockFilter === 'out-of-stock') {
+      query.stock = { $lte: 0 };
+    }
 
     // Handle category filter
     if (category && category.trim().toLowerCase() !== 'all') {
@@ -143,7 +146,6 @@ router.get('/get-products', async (req, res) => {
       if (isValidObjectId) {
         query.category = trimmedCategory;
       } else {
-        // Lookup category by name if not an ObjectId
         const matchedCategory = await Category.findOne({
           name: new RegExp(`^${trimmedCategory}$`, 'i'),
         });
@@ -151,7 +153,6 @@ router.get('/get-products', async (req, res) => {
         if (matchedCategory) {
           query.category = matchedCategory._id;
         } else {
-          // No matching category
           return res.status(200).json({
             success: true,
             message: 'No products found in this category.',
@@ -172,7 +173,6 @@ router.get('/get-products', async (req, res) => {
       query.title = { $regex: search, $options: 'i' };
     }
 
-    // Count total for pagination
     const totalProducts = await Product.countDocuments(query);
 
     const products = await Product.find(query)
@@ -182,7 +182,6 @@ router.get('/get-products', async (req, res) => {
       .skip((page - 1) * limit)
       .limit(limit);
 
-    // Transform products (attach `image` from picture.secure_url)
     const newProductArray = products.map((product) => {
       const productObj = product.toObject();
       productObj.image = productObj.picture?.secure_url || null;
@@ -216,6 +215,7 @@ router.get('/get-products', async (req, res) => {
     });
   }
 });
+
 
 
 

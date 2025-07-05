@@ -53,39 +53,62 @@ const AllProducts = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm, page, limit }));
-  }, [category, searchTerm, page, limit, dispatch]);
-
+  dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
+}, [category, searchTerm, page, limit, stockFilter, dispatch]);
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       dispatch(deleteSingleProduct(id));
     }
   };
 
-  const handleOutOfStock = (product) => {
-    if (window.confirm('Mark this product as out of stock?')) {
-      const formData = new FormData();
-      formData.append('stock', '0');
-
-      dispatch(updateSingleProduct({
-        id: product._id,
-        inputValues: formData
-      })).then((result) => {
-        if (result.meta.requestStatus === 'fulfilled') {
-          toast.success('Product marked as out of stock');
-        } else {
-          toast.error('Failed to update product');
-        }
-      });
-    }
-  };
-
   const filteredProducts =
-    stockFilter === 'active'
-      ? products.filter((p) => p.stock > 0)
-      : stockFilter === 'out-of-stock'
-        ? products.filter((p) => p.stock <= 0)
-        : products;
+  stockFilter === 'active'
+    ? products.filter((p) => p.stock > 0)
+    : stockFilter === 'out-of-stock'
+    ? products.filter((p) => p.stock <= 0)
+    : products;
+
+const handleOutOfStock = (product) => {
+  if (window.confirm('Mark this product as out of stock?')) {
+    const formData = new FormData();
+    formData.append('stock', '0');
+
+    
+    const updatedProducts = products.map(p => 
+      p._id === product._id ? { ...p, stock: 0 } : p
+    );
+
+    dispatch(updateSingleProduct({
+      id: product._id,
+      inputValues: formData
+    })).then((result) => {
+      if (result.meta.requestStatus === 'fulfilled') {
+        toast.success('Product marked as out of stock');
+        
+        if (stockFilter === 'out-of-stock') {
+          dispatch(fetchProducts({ 
+            category, 
+            searchTerm, 
+            page, 
+            limit, 
+            stockFilter: 'out-of-stock' // Explicitly maintain the filter
+          }));
+        }
+      } else {
+        toast.error('Failed to update product');
+        // Revert the optimistic update if failed
+        dispatch(fetchProducts({ 
+          category, 
+          searchTerm, 
+          page, 
+          limit, 
+          stockFilter 
+        }));
+      }
+    });
+  }
+};
+
 
   const handlePageChange = (newPage) => {
     setPage(newPage);

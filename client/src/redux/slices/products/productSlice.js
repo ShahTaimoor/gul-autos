@@ -15,9 +15,9 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, searchTerm, page = 1, limit = 24 }, thunkAPI) => { // Changed limit to 8
+    async ({ category, searchTerm, page = 1, limit = 24, stockFilter  }, thunkAPI) => {
         try {
-            const res = await productService.allProduct(category, searchTerm, page, limit);
+            const res = await productService.allProduct(category, searchTerm, page, limit, stockFilter);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
@@ -118,21 +118,21 @@ export const productsSlice = createSlice({
                 state.status = 'loading';
                 state.error = null;
             })
-            .addCase(updateSingleProduct.fulfilled, (state, action) => {
-                state.status = 'succeeded';
-                const updatedProduct = action.payload.product;
+           .addCase(updateSingleProduct.fulfilled, (state, action) => {
+  state.status = 'succeeded';
+  const updatedProduct = action.payload.product;
 
-                // Transform the product to match the expected structure (like get-products endpoint)
-                const transformedProduct = {
-                    ...updatedProduct,
-                    image: updatedProduct.picture?.secure_url || null
-                };
+  const transformedProduct = {
+    ...updatedProduct,
+    image: updatedProduct.picture?.secure_url || null
+  };
 
-                // Update the product in the array instead of replacing the whole list
-                state.products = state.products.map((prod) =>
-                    prod._id === updatedProduct._id ? transformedProduct : prod
-                );
-            })
+  // Find and update the product in the current list
+  const index = state.products.findIndex(p => p._id === updatedProduct._id);
+  if (index !== -1) {
+    state.products[index] = transformedProduct;
+  }
+})
             .addCase(updateSingleProduct.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;

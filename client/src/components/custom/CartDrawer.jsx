@@ -20,6 +20,8 @@ import {
   SheetFooter,
   SheetClose,
 } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import Checkout from '@/pages/Checkout';
 
 const CartProduct = ({ _id, name, price, quantity, image, stock, onValidationChange }) => {
   const dispatch = useDispatch();
@@ -188,6 +190,7 @@ const CartProduct = ({ _id, name, price, quantity, image, stock, onValidationCha
 const CartDrawer = () => {
   const { cartItems, totalQuantity } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
+
   const navigate = useNavigate();
 
   const [stockErrors, setStockErrors] = useState([]);
@@ -200,6 +203,7 @@ const CartDrawer = () => {
     }));
   };
 
+  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const handleBuyNow = () => {
     if (!user) {
       return navigate('/login');
@@ -218,73 +222,98 @@ const CartDrawer = () => {
     }
 
     setStockErrors([]);
-    navigate('/checkout');
+    setOpenCheckoutDialog(true);
   };
 
   return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="outline" className="relative">
-          {totalQuantity > 0 && (
-            <Badge className="absolute -top-2 -right-2 text-xs px-1 py-0.5">
-              {totalQuantity}
-            </Badge>
+    <>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="outline" className="relative">
+            {totalQuantity > 0 && (
+              <Badge className="absolute -top-2 -right-2 text-xs px-1 py-0.5">
+                {totalQuantity}
+              </Badge>
+            )}
+            <ShoppingCart
+              strokeWidth={1.3}
+              size={28}
+              className="text-gray-800 hover:scale-105 transition-all ease-in-out"
+            />
+          </Button>
+        </SheetTrigger>
+
+        <SheetContent className="w-full sm:w-[400px]">
+          <SheetHeader>
+            <SheetTitle className="text-xl font-bold">Your Cart</SheetTitle>
+            <SheetDescription>Total Quantity: {totalQuantity}</SheetDescription>
+          </SheetHeader>
+
+          {stockErrors.length > 0 && (
+            <div className="px-4 py-2 bg-red-50 text-red-700 mt-2 rounded">
+              <p className="font-medium mb-1">Stock issues:</p>
+              {stockErrors.map((error, i) => (
+                <p key={i}>
+                  {error.name}: Only {error.available} available
+                </p>
+              ))}
+            </div>
           )}
-          <ShoppingCart
-            strokeWidth={1.3}
-            size={28}
-            className="text-gray-800 hover:scale-105 transition-all ease-in-out"
-          />
-        </Button>
-      </SheetTrigger>
 
-      <SheetContent className="w-full sm:w-[400px]">
-        <SheetHeader>
-          <SheetTitle className="text-xl font-bold">Your Cart</SheetTitle>
-          <SheetDescription>Total Quantity: {totalQuantity}</SheetDescription>
-        </SheetHeader>
-
-        {stockErrors.length > 0 && (
-          <div className="px-4 py-2 bg-red-50 text-red-700 mt-2 rounded">
-            <p className="font-medium mb-1">Stock issues:</p>
-            {stockErrors.map((error, i) => (
-              <p key={i}>
-                {error.name}: Only {error.available} available
-              </p>
-            ))}
+          <div className="mt-4 max-h-[60vh] overflow-y-auto">
+            {cartItems.length > 0 ? (
+              cartItems.map((item) => (
+                <CartProduct
+                  key={item._id}
+                  {...item}
+                  onValidationChange={handleValidationChange}
+                />
+              ))
+            ) : (
+              <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
+            )}
           </div>
-        )}
 
-        <div className="mt-4 max-h-[60vh] overflow-y-auto">
-          {cartItems.length > 0 ? (
-            cartItems.map((item) => (
-              <CartProduct
-                key={item._id}
-                {...item}
-                onValidationChange={handleValidationChange}
-              />
-            ))
-          ) : (
-            <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
-          )}
-        </div>
+          <SheetFooter className="mt-6">
+            <SheetClose asChild>
+              <Button
+                onClick={handleBuyNow}
+                disabled={
+                  cartItems.length === 0 ||
+                  Object.values(validationMap).includes(false)
+                }
+                className="w-full"
+              >
+                Checkout
 
-        <SheetFooter className="mt-6">
-          <SheetClose asChild>
-            <Button
-              onClick={handleBuyNow}
-              disabled={
-                cartItems.length === 0 ||
-                Object.values(validationMap).includes(false)
-              }
-              className="w-full"
-            >
-              Checkout
-            </Button>
-          </SheetClose>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+              </Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {/* Dialog placed OUTSIDE Sheet */}
+      <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
+  <DialogContent
+    className="w-full lg:max-w-6xl h-[95vh] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col"
+  >
+    {/* Sticky Header */}
+    <div className="fixed top-0 left-0  right-0 z-9999 bg-white border-b px-4 py-3 sm:px-6">
+      <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-800">
+        Checkout
+      </DialogTitle>
+    </div>
+
+    {/* Scrollable Content */}
+    <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+      <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
+    </div>
+  </DialogContent>
+</Dialog>
+
+
+    </>
   );
 };
 export default CartDrawer;

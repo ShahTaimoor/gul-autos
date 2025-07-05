@@ -240,7 +240,7 @@ const ProductList = () => {
   }, [productList, sortOrder]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm, page, limit }))
+    dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter: 'active' }))
       .then((res) => {
         // Go back one page if current page has no results
         if (res.payload.products?.length === 0 && page > 1) {
@@ -417,6 +417,7 @@ const ProductList = () => {
             </div>
           </motion.div>
         </div>
+
       </div>
 
       {/* Search & Sort */}
@@ -589,34 +590,34 @@ const ProductList = () => {
       </div>
 
       {/* Image Preview Modal */}
-     {previewImage && (
-  <div
-    className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
-    onClick={() => setPreviewImage(null)}
-    role="dialog"
-    aria-modal="true"
-    aria-label="Product image preview"
-  >
-    <div
-      className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <img
-        src={previewImage}
-        alt="Preview"
-        className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
-        loading="eager"
-      />
-      <button
-        onClick={() => setPreviewImage(null)}
-        className="absolute top-2 right-2 md:top-4 md:right-66 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2"
-        aria-label="Close preview"
-      >
-        ✕
-      </button>
-    </div>
-  </div>
-)}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setPreviewImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product image preview"
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
+              loading="eager"
+            />
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-2 right-2 md:top-4 md:right-66 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2"
+              aria-label="Close preview"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
 
       {/* Cart Drawer */}
