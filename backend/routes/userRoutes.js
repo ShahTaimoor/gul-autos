@@ -44,8 +44,8 @@ router.post('/login', async (req, res) => {
 
     return res.cookie('token', token, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
       maxAge: 365 * 24 * 60 * 60 * 1000,
     }).status(200).json({
       success: true,
@@ -62,8 +62,8 @@ router.post('/login', async (req, res) => {
 router.get('/logout', (req, res) => {
   return res.cookie('token', '', {
     httpOnly: true,
-    secure: true,
-    sameSite: 'None',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     expires: new Date(0),
   }).status(200).json({
     success: true,
@@ -75,8 +75,8 @@ router.get('/logout', (req, res) => {
 router.post('/logout', (req, res) => {
   return res.cookie('token', '', {
     httpOnly: true,
-    secure: true,
-    sameSite: 'None',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     expires: new Date(0),
   }).status(200).json({
     success: true,
