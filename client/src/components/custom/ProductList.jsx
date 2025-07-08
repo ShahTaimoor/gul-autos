@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '../ui/input';
-import { addToCart } from '@/redux/slices/cartSlice';
+import { addToCart } from '@/redux/slices/cart/cartSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate } from 'react-router-dom';
@@ -189,7 +189,7 @@ const ProductList = () => {
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [quantities, setQuantities] = useState({});
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [addingProductId, setAddingProductId] = useState(null);
   const [gridType, setGridType] = useState('grid2');
   const [sortOrder, setSortOrder] = useState('az');
   const [page, setPage] = useState(1);
@@ -203,7 +203,7 @@ const ProductList = () => {
   const { categories } = useSelector((s) => s.categories);
   const { products: productList = [], status, totalPages } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
-  const { cartItems } = useSelector((s) => s.cart);
+  const { items: cartItems = [] } = useSelector((s) => s.cart);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -284,18 +284,14 @@ const ProductList = () => {
       return;
     }
 
-    setIsAddingToCart(true);
+    setAddingProductId(product._id);
     dispatch(addToCart({
-      _id: product._id,
-      name: product.title,
-      price: product.price,
-      stock: product.stock,
-      quantity: qty,
-      image: product.image
-    }));
-    setIsAddingToCart(false);
-    toast.success('Product added to cart');
-    setQuantities((prev) => ({ ...prev, [product._id]: 1 }));
+      productId: product._id,
+      quantity: qty
+    })).then(() => {
+      toast.success('Product added to cart');
+      setQuantities((prev) => ({ ...prev, [product._id]: 1 }));
+    }).finally(() => setAddingProductId(null));
   }, [dispatch, navigate, quantities, user]);
 
   const loadingProducts = status === 'loading';
@@ -495,7 +491,7 @@ const ProductList = () => {
       ) : (
         <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-6 ${gridType === 'grid1' ? 'grid-cols-1' : gridType === 'grid2' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' : 'grid-cols-1'}`}>
           {sortedProducts.map((product) => {
-            const isInCart = cartItems.some((item) => item._id === product._id);
+            const isInCart = cartItems.some((item) => (item.product?._id || item.product) === product._id);
             return (
               <ProductCard
                 key={product._id}
@@ -503,7 +499,7 @@ const ProductList = () => {
                 quantity={quantities[product._id]}
                 onQuantityChange={handleQuantityChange}
                 onAddToCart={handleAddToCart}
-                isAddingToCart={isAddingToCart}
+                isAddingToCart={addingProductId === product._id}
                 isInCart={isInCart}
                 gridType={gridType}
                 cartRef={cartRef}

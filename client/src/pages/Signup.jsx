@@ -51,7 +51,7 @@ const Signup = () => {
   };
 
   return (
-    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
+    <div className='w-full mt-5 flex flex-col '>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
           <img src="/logos.png" alt="" />
@@ -109,10 +109,7 @@ const Signup = () => {
           )}
         </Button>
 
-        <p className='mt-6 text-center text-sm'>
-          Already have an account?
-          <Link to='/login' className='text-blue-500 ml-1'>Login</Link>
-        </p>
+       
       </form>
     </div>
   );

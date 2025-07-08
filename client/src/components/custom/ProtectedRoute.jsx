@@ -1,6 +1,8 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { clearTokenExpired } from '@/redux/slices/auth/authSlice';
+import { fetchCart } from '@/redux/slices/cart/cartSlice';
 import LoginPopup from './LoginPopup';
 
 const ProtectedRoute = ({ children }) => {
@@ -8,6 +10,12 @@ const ProtectedRoute = ({ children }) => {
   const { pathname } = useLocation();
   const { user, isAuthenticated, tokenExpired } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.cart);
+
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, user, isAuthenticated]);
 
   const publicPaths = ['/login', '/signup'];
 

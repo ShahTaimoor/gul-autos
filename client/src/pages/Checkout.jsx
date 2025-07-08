@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { addOrder } from '@/redux/slices/order/orderSlice';
-import { emptyCart } from '@/redux/slices/cartSlice';
+import { emptyCart } from '@/redux/slices/cart/cartSlice';
 import { updateProfile } from '@/redux/slices/auth/authSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Checkout = () => {
-  const { cartItems, totalPrice } = useSelector((state) => state.cart);
+  const { items: cartItems = [] } = useSelector((state) => state.cart);
   const { user, status } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
@@ -69,8 +69,10 @@ const Checkout = () => {
       return toast('Please fill out all fields');
     }
 
+    const totalPrice = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
     const productArray = cartItems.map((item) => ({
-      id: item._id,
+      id: item.product._id || item.product,
       quantity: item.quantity,
     }));
 

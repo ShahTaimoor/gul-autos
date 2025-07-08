@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
+import Signup from './Signup';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -23,15 +25,16 @@ const Login = () => {
     name: '',
     password: ''
   });
+  const [showSignup, setShowSignup] = useState(false);
 
-useEffect(() => {
-  if (expired) {
-    const timer = setTimeout(() => {
-      toast.error("Session expired. Please login again.");
-    }, 100); // Small delay to avoid duplicates
-    return () => clearTimeout(timer);
-  }
-}, [expired]);
+  useEffect(() => {
+    if (expired) {
+      const timer = setTimeout(() => {
+        toast.error("Session expired. Please login again.");
+      }, 100); // Small delay to avoid duplicates
+      return () => clearTimeout(timer);
+    }
+  }, [expired]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,9 +141,22 @@ useEffect(() => {
 
         <p className='mt-6 text-center text-sm'>
           Don't have an account?
-          <Link to='/signup' className='text-blue-500 ml-1'>Sign Up</Link>
+          <button
+            type="button"
+            className='text-blue-500 ml-1 underline'
+            onClick={() => setShowSignup(true)}
+          >
+            Sign Up
+          </button>
         </p>
       </form>
+      {showSignup && (
+        <Dialog open={showSignup} onOpenChange={setShowSignup}>
+          <DialogContent>
+            <Signup onSuccess={() => setShowSignup(false)} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
