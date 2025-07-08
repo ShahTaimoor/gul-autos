@@ -33,21 +33,7 @@ const Footer = () => {
       </div>
     </motion.div>
 
-    {/* Address */}
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-      className="backdrop-blur-sm bg-white/70 p-6 rounded-xl shadow-sm"
-    >
-      <h3 className="text-xl font-bold mb-3 text-gray-800">Address</h3>
-      <p className="text-sm text-gray-600 leading-relaxed">
-        Grand Dil jan Plaza,<br />
-        Block A, Shop #7,8,9, Opposite Fahad CNG Pump,<br />
-        Near Toyota Khyber, Ring Road<br />
-        Peshawar, KPK, Pakistan
-      </p>
-    </motion.div>
+ 
 
     {/* Contact */}
     <motion.div 
@@ -79,7 +65,21 @@ const Footer = () => {
       </div>
     </motion.div>
 
-    
+       {/* Address */}
+       <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="backdrop-blur-sm bg-white/70 p-6 rounded-xl shadow-sm"
+    >
+      <h3 className="text-xl font-bold mb-3 text-gray-800">Address</h3>
+      <p className="text-sm text-gray-600 leading-relaxed">
+        Grand Dil jan Plaza,<br />
+        Block A, Shop #7,8,9, Opposite Fahad CNG Pump,<br />
+        Near Toyota Khyber, Ring Road<br />
+        Peshawar, KPK, Pakistan
+      </p>
+    </motion.div>
 
     {/* Map */}
     <motion.div 
