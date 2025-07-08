@@ -14,10 +14,13 @@ const app = express();
 
 app.use(express.static('public'));
 // Middleware
-app.use(cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true
-}));
+const corsOptions = {
+  origin: process.env.CLIENT_URL, // e.g., 'https://your-frontend.com'
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookirParser())
 // Connect to Database
