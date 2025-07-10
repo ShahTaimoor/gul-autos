@@ -327,7 +327,7 @@ const AllProducts = () => {
                       setShowCategoryDropdown(false);
                     }}
                   >
-                    All Categori
+                    All Categorie
                   </li>
                   {filteredCategories.map((cat) => (
                     <li
