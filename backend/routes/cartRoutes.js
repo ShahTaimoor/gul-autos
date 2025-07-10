@@ -23,7 +23,6 @@ router.post('/add', isAuthorized, async (req, res) => {
     cart.items.push({ product: productId, quantity });
   }
   await cart.save();
-  // Populate after save
   cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
   res.json({ items: cart.items });
 });
