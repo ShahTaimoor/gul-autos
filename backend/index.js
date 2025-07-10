@@ -6,7 +6,7 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const categoryRoute = require('./routes/categoryRoutes')
-const cookirParser = require('cookie-parser')
+const cookieParser = require('cookie-parser')
 const cartRoutes = require('./routes/cartRoutes');
 dotenv.config();
 
@@ -22,7 +22,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cookirParser())
+app.use(cookieParser())
 // Connect to Database
 connectDB();
 

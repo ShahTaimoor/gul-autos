@@ -44,8 +44,8 @@ router.post('/login', async (req, res) => {
 
     return res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // true for HTTPS
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      secure: true, 
+      sameSite: 'None',
       maxAge: 365 * 24 * 60 * 60 * 1000,
     }).status(200).json({
       success: true,
@@ -140,17 +140,17 @@ router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) 
     const { role } = req.body;
 
     if (role === undefined || role === null) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Role is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Role is required'
       });
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
       });
     }
 
