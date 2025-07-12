@@ -9,6 +9,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
 import Signup from './Signup';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { fetchCart } from '@/redux/slices/cart/cartSlice';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -52,6 +53,7 @@ const Login = () => {
         if (response?.user) {
           toast.success('Login successful');
           setInputValues({ name: '', password: '' });
+          dispatch(fetchCart());
           navigate(from, { replace: true });
         } else {
           setErrorMsg('Login failed');
