@@ -1,35 +1,35 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { Provider } from "react-redux";
-import { store } from "./redux/store";
-import { Toaster } from "./components/ui/sonner";
-import TokenExpirationHandler from "./components/custom/TokenExpirationHandler";
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './redux/store';
+import { Toaster } from './components/ui/sonner';
+import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
+import { Suspense, lazy } from 'react';
 
-// Page Imports
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Checkout from "./pages/Checkout";
-import MyOrders from "./pages/MyOrders";
-import Success from "./pages/Success";
-import Error from "./pages/Error";
-// Admin Pages
-import AdminLayout from "./components/layouts/AdminLayout";
-import CreateProducts from "./components/custom/CreateProducts";
-import AllProducts from "./components/custom/AllProducts";
-import Orders from "./components/custom/Orders";
-// Layouts
-import RootLayout from "./components/layouts/RootLayout";
-// Custom Components
-import ProtectedRoute from "./components/custom/ProtectedRoute";
-import Category from "./pages/Category";
-import Users from "./pages/Users";
-import UpdateProduct from "./components/custom/UpdateProduct";
-import Profile from "./pages/Profile";
+// Lazy-load pages
+const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
+const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'));
+const ProtectedRoute = lazy(() => import('./components/custom/ProtectedRoute'));
+
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const MyOrders = lazy(() => import('./pages/MyOrders'));
+const Success = lazy(() => import('./pages/Success'));
+const ErrorPage = lazy(() => import('./pages/Error'));
+const Category = lazy(() => import('./pages/Category'));
+const Users = lazy(() => import('./pages/Users'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+const CreateProducts = lazy(() => import('./components/custom/CreateProducts'));
+const AllProducts = lazy(() => import('./components/custom/AllProducts'));
+const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
+const Orders = lazy(() => import('./components/custom/Orders'));
 
 const App = () => {
   const router = createBrowserRouter([
     {
-      path: "/",
+      path: '/',
       element: (
         <RootLayout>
           <ProtectedRoute>
@@ -39,7 +39,7 @@ const App = () => {
       ),
     },
     {
-      path: "/login",
+      path: '/login',
       element: (
         <RootLayout>
           <Login />
@@ -47,7 +47,7 @@ const App = () => {
       ),
     },
     {
-      path: "/signup",
+      path: '/signup',
       element: (
         <RootLayout>
           <Signup />
@@ -55,7 +55,7 @@ const App = () => {
       ),
     },
     {
-      path: "/checkout",
+      path: '/checkout',
       element: (
         <ProtectedRoute>
           <RootLayout>
@@ -65,7 +65,7 @@ const App = () => {
       ),
     },
     {
-      path: "/orders",
+      path: '/orders',
       element: (
         <ProtectedRoute>
           <RootLayout>
@@ -75,7 +75,7 @@ const App = () => {
       ),
     },
     {
-      path: "/success",
+      path: '/success',
       element: (
         <RootLayout>
           <Success />
@@ -83,7 +83,7 @@ const App = () => {
       ),
     },
     {
-      path: "/profile",
+      path: '/profile',
       element: (
         <ProtectedRoute>
           <RootLayout>
@@ -93,7 +93,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/dashboard",
+      path: '/admin/dashboard',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -103,7 +103,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/category",
+      path: '/admin/category',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -113,7 +113,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/dashboard/all-products",
+      path: '/admin/dashboard/all-products',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -123,7 +123,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/dashboard/update/:id",
+      path: '/admin/dashboard/update/:id',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -133,7 +133,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/dashboard/users",
+      path: '/admin/dashboard/users',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -143,7 +143,7 @@ const App = () => {
       ),
     },
     {
-      path: "/admin/dashboard/orders",
+      path: '/admin/dashboard/orders',
       element: (
         <ProtectedRoute>
           <AdminLayout>
@@ -153,10 +153,10 @@ const App = () => {
       ),
     },
     {
-      path: "*",
+      path: '*',
       element: (
         <RootLayout>
-          <Error />
+          <ErrorPage />
         </RootLayout>
       ),
     },
@@ -166,7 +166,9 @@ const App = () => {
     <Provider store={store}>
       <Toaster />
       <TokenExpirationHandler />
-      <RouterProvider router={router} />
+      <Suspense fallback={<div className="text-center mt-20 text-lg">Loading...</div>}>
+        <RouterProvider router={router} />
+      </Suspense>
     </Provider>
   );
 };
