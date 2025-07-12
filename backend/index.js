@@ -31,7 +31,7 @@ app.use('/api', userRoutes);
 app.use('/api', productRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', categoryRoute);
-app.use('/api', cartRoutes);
+app.use('/api/cart', cartRoutes);
 
 
 // Test Route
