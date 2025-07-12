@@ -73,7 +73,7 @@ const cartSlice = createSlice({
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.items = action.payload.items || [];
       })
-      .addCase(emptyCart.fulfilled, (state, action) => {
+      .addCase(emptyCart.fulfilled, (state) => {
         state.items = [];
       })
       .addCase(updateCartQuantity.fulfilled, (state, action) => {

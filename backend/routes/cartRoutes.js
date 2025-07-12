@@ -3,7 +3,7 @@ const Cart = require('../models/Cart');
 const { isAuthorized } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Get current user's car
+// Get current user's cart
 router.get('/', isAuthorized, async (req, res) => {
   const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
   res.json({ items: cart ? cart.items : [] });
@@ -35,7 +35,8 @@ router.post('/remove', isAuthorized, async (req, res) => {
   cart.items = cart.items.filter(i => i.product.toString() !== productId);
   cart.updatedAt = new Date();
   await cart.save();
-  res.json(cart);
+  cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
+  res.json({ items: cart.items });
 });
 
 // Empty cart
@@ -61,7 +62,8 @@ router.post('/update', isAuthorized, async (req, res) => {
   cart.items[itemIndex].quantity = quantity;
   cart.updatedAt = new Date();
   await cart.save();
-  res.json(cart);
+  cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
+  res.json({ items: cart.items });
 });
 
 module.exports = router;

@@ -185,22 +185,34 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
 
 const CartDrawer = () => {
   const { items: cartItems = [] } = useSelector((state) => state.cart);
-  console.log(cartItems);
-  
   const { user } = useSelector((state) => state.auth);
-  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [stockErrors, setStockErrors] = useState([]);
+  
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const [validationMap, setValidationMap] = useState({});
+  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
 
-  const handleValidationChange = (id, isValid) => {
+  const handleValidationChange = (productId, isValid) => {
     setValidationMap((prev) => ({
       ...prev,
-      [id]: isValid,
+      [productId]: isValid,
     }));
   };
 
-  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+  const handleRemove = (productId) => {
+    dispatch(removeFromCart(productId))
+      .unwrap()
+      .then(() => toast.success('Product removed from cart'))
+      .catch((err) => toast.error(err));
+  };
+
+  const handleQuantityChange = (productId, newQuantity) => {
+    dispatch(updateCartQuantity({ productId, quantity: newQuantity }))
+      .unwrap()
+      .catch((err) => toast.error(err));
+  };
+
   const handleBuyNow = () => {
     if (!user) {
       return navigate('/login');
@@ -214,7 +226,6 @@ const CartDrawer = () => {
       toast.error('Fix invalid quantities in cart before checkout.');
       return;
     }
-    setStockErrors([]);
     setOpenCheckoutDialog(true);
   };
 
@@ -240,20 +251,10 @@ const CartDrawer = () => {
             <SheetTitle className="text-xl font-bold">Your Cart</SheetTitle>
             <SheetDescription>Total Quantity: {totalQuantity}</SheetDescription>
           </SheetHeader>
-          {stockErrors.length > 0 && (
-            <div className="px-4 py-2 bg-red-50 text-red-700 mt-2 rounded">
-              <p className="font-medium mb-1">Stock issues:</p>
-              {stockErrors.map((error, i) => (
-                <p key={i}>
-                  {error.name}: Only {error.available} available
-                </p>
-              ))}
-            </div>
-          )}
           <div className="mt-4 max-h-[60vh] overflow-y-auto">
             {cartItems.length > 0 ? (
               cartItems.map((item) => (
-                <div key={item.product._id} className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50 cursor-pointer transition">
+                <div key={item.product._id} className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50">
                   <div className="flex items-center gap-4">
                     <img
                       src={item.product.picture?.secure_url || '/fallback.jpg'}
@@ -262,16 +263,18 @@ const CartDrawer = () => {
                     />
                     <div className="max-w-[200px]">
                       <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">{item.product.title}</h4>
-                      <p className="text-sm text-gray-500 line-clamp-2">{item.product.description}</p>
+                      <p className="text-sm font-medium">${item.product.price}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-auto">
                     <div className="flex items-center gap-1 border rounded-full shadow-sm border-gray-300">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (item.quantity > 1) handleQuantityChange(item.quantity - 1);
-                          else toast.error('Quantity cannot be less than 1');
+                        onClick={() => {
+                          if (item.quantity > 1) {
+                            handleQuantityChange(item.product._id, item.quantity - 1);
+                          } else {
+                            toast.error('Quantity cannot be less than 1');
+                          }
                         }}
                         className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
                         disabled={item.quantity <= 1}
@@ -280,25 +283,24 @@ const CartDrawer = () => {
                       </button>
                       <input
                         type="number"
-                        value={item.quantity === '' ? '' : item.quantity}
+                        value={item.quantity}
                         onChange={(e) => {
-                          e.stopPropagation();
-                          handleInputChange(e);
+                          const newQty = parseInt(e.target.value);
+                          if (!isNaN(newQty)) {
+                            handleQuantityChange(item.product._id, newQty);
+                          }
                         }}
-                        onBlur={(e) => {
-                          e.stopPropagation();
-                          handleInputBlur();
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        max={item.product.stock}
                         min={1}
-                        className={`w-10 text-center text-sm focus:outline-none bg-transparent appearance-none`}
+                        max={item.product.stock}
+                        className="w-10 text-center text-sm focus:outline-none bg-transparent appearance-none"
                       />
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (item.quantity < item.product.stock) handleQuantityChange(item.quantity + 1);
-                          else toast.error(`Only ${item.product.stock} items in stock`);
+                        onClick={() => {
+                          if (item.quantity < item.product.stock) {
+                            handleQuantityChange(item.product._id, item.quantity + 1);
+                          } else {
+                            toast.error(`Only ${item.product.stock} items in stock`);
+                          }
                         }}
                         className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-100"
                         disabled={item.quantity >= item.product.stock}
@@ -307,10 +309,7 @@ const CartDrawer = () => {
                       </button>
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemove(e);
-                      }}
+                      onClick={() => handleRemove(item.product._id)}
                       className="text-red-500 hover:text-red-600 transition"
                       title="Remove from cart"
                     >
@@ -339,11 +338,9 @@ const CartDrawer = () => {
           </SheetFooter>
         </SheetContent>
       </Sheet>
-      {/* Dialog placed OUTSIDE Sheet */}
+      
       <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
-        <DialogContent
-          className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col"
-        >
+        <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
           <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
         </DialogContent>
       </Dialog>
