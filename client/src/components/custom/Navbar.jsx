@@ -16,7 +16,7 @@ const Navbar = () => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
 
@@ -54,7 +54,7 @@ const Navbar = () => {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       console.log('User accepted the install prompt');
     } else {
@@ -80,14 +80,12 @@ const Navbar = () => {
           Contact: +92 311 4000096
         </p>
       </div>
-
-      {/* Right side: PWA Install + Auth controls */}
-      <div className="flex items-center gap-3">
+      <div>
         {/* PWA Install Button - Always visible on mobile */}
         {isMobile && (
           <button
             onClick={handleInstallClick}
-            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="flex items-center mr-10 gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
             title="Install App on Home Screen"
           >
             <Smartphone size={16} />
@@ -100,14 +98,16 @@ const Navbar = () => {
         {!isMobile && showInstallButton && (
           <button
             onClick={handleInstallClick}
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="flex items-center mr-10 gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-sm font-medium"
             title="Install App"
           >
             <Download size={16} />
             <span>Install</span>
           </button>
         )}
-
+      </div>
+      {/* Right side: PWA Install + Auth controls */}
+      <div className="flex items-center gap-3">
         {user == null ? (
           <Link
             to="/login"
