@@ -8,6 +8,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const categoryRoute = require('./routes/categoryRoutes')
 const cookieParser = require('cookie-parser')
 const cartRoutes = require('./routes/cartRoutes');
+
 dotenv.config();
 
 const app = express();
@@ -31,7 +32,7 @@ app.use('/api', userRoutes);
 app.use('/api', productRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', categoryRoute);
-app.use('/api/cart', cartRoutes);
+app.use('/api', cartRoutes);
 
 
 // Test Route

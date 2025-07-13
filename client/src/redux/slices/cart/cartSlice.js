@@ -7,7 +7,8 @@ const initialState = {
   error: null,
 };
 
-export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, thunkAPI) => {
+// Fetch cart items
+export const fetchCart = createAsyncThunk('fetchCart', async (_, thunkAPI) => {
   try {
     return await cartService.fetchCart();
   } catch (err) {
@@ -15,7 +16,8 @@ export const fetchCart = createAsyncThunk('cart/fetchCart', async (_, thunkAPI) 
   }
 });
 
-export const addToCart = createAsyncThunk('cart/addToCart', async ({ productId, quantity }, thunkAPI) => {
+// Add item to cart
+export const addToCart = createAsyncThunk('addToCart', async ({ productId, quantity }, thunkAPI) => {
   try {
     return await cartService.addToCart({ productId, quantity });
   } catch (err) {
@@ -23,7 +25,8 @@ export const addToCart = createAsyncThunk('cart/addToCart', async ({ productId, 
   }
 });
 
-export const removeFromCart = createAsyncThunk('cart/removeFromCart', async (productId, thunkAPI) => {
+// Remove item from cart
+export const removeFromCart = createAsyncThunk('removeFromCart', async (productId, thunkAPI) => {
   try {
     return await cartService.removeFromCart(productId);
   } catch (err) {
@@ -31,7 +34,8 @@ export const removeFromCart = createAsyncThunk('cart/removeFromCart', async (pro
   }
 });
 
-export const emptyCart = createAsyncThunk('cart/emptyCart', async (_, thunkAPI) => {
+// Empty cart
+export const emptyCart = createAsyncThunk('emptyCart', async (_, thunkAPI) => {
   try {
     return await cartService.emptyCart();
   } catch (err) {
@@ -39,6 +43,7 @@ export const emptyCart = createAsyncThunk('cart/emptyCart', async (_, thunkAPI) 
   }
 });
 
+// Update cart item quantity
 export const updateCartQuantity = createAsyncThunk(
   'cart/updateCartQuantity',
   async ({ productId, quantity }, thunkAPI) => {
@@ -56,6 +61,7 @@ const cartSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch Cart
       .addCase(fetchCart.pending, (state) => {
         state.status = 'loading';
       })
@@ -67,15 +73,23 @@ const cartSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
+      
+      // Add to Cart
       .addCase(addToCart.fulfilled, (state, action) => {
         state.items = action.payload.items || [];
       })
+      
+      // Remove from Cart
       .addCase(removeFromCart.fulfilled, (state, action) => {
         state.items = action.payload.items || [];
       })
+      
+      // Empty Cart
       .addCase(emptyCart.fulfilled, (state) => {
         state.items = [];
       })
+      
+      // Update Cart Quantity
       .addCase(updateCartQuantity.fulfilled, (state, action) => {
         state.items = action.payload.items || [];
       });

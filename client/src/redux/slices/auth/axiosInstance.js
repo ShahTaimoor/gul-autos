@@ -10,7 +10,7 @@ console.log('API_URL:', API_URL);
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: true, // if you use cookies for auth
 });
 
 axiosInstance.interceptors.response.use(

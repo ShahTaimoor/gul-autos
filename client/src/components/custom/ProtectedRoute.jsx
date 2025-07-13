@@ -9,7 +9,7 @@ const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const { pathname } = useLocation();
   const { user, isAuthenticated, tokenExpired } = useSelector((state) => state.auth);
-  const { cartItems } = useSelector((state) => state.cart);
+  const { items: cartItems = [] } = useSelector((state) => state.cart); // Fix this line
 
   useEffect(() => {
     if (user && isAuthenticated) {
@@ -62,4 +62,4 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-export default ProtectedRoute
+export default ProtectedRoute;
