@@ -11,7 +11,7 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 import {
-  Loader2,
+ 
   Trash2,
   Edit,
   Search,
