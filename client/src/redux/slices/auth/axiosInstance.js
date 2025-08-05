@@ -10,7 +10,7 @@ console.log('API_URL:', API_URL);
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // if you use cookies for auth
+  withCredentials: true,
 });
 
 axiosInstance.interceptors.response.use(
@@ -21,11 +21,21 @@ axiosInstance.interceptors.response.use(
     console.log('Axios interceptor error:', {
       status: error.response?.status,
       url: error.config?.url,
+      method: error.config?.method,
       retry: originalRequest._retry
     });
 
+    // Check if it's a login POST request
+    const isLoginRequest = error.config?.url?.includes('/login') && error.config?.method === 'post';
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      // If it's a login request, don't treat it as token expiry
+      if (isLoginRequest) {
+        console.log('Login failed - invalid credentials');
+        return Promise.reject(error); // Pass the original error
+      }
 
       console.log('Token expired - dispatching actions');
 

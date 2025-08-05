@@ -128,8 +128,12 @@ router.get('/get-products', async (req, res) => {
   try {
     let { category, search, page = 1, limit = 24, stockFilter = 'all' } = req.query;
 
+    if (limit === 'all') {
+      limit = 0; 
+    } else {
+      limit = parseInt(limit);
+    }
     page = parseInt(page);
-    limit = parseInt(limit);
 
     const query = {};
     if (stockFilter === 'active') {
@@ -179,8 +183,8 @@ router.get('/get-products', async (req, res) => {
       .select('title picture price description stock')
       .populate('user', 'name')
       .populate('category', 'name')
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .skip((page - 1) * (limit || 1))
+      .limit(limit || undefined);
 
     const newProductArray = products.map((product) => {
       const productObj = product.toObject();
@@ -215,8 +219,6 @@ router.get('/get-products', async (req, res) => {
     });
   }
 });
-
-
 
 
 
