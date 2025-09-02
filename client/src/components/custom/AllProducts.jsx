@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '../ui/input';
@@ -11,7 +11,6 @@ import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 import {
- 
   Trash2,
   Edit,
   Search,
@@ -37,11 +36,295 @@ const capitalizeAllWords = (str) => {
     .join(' ');
 };
 
+// Memoized Product Card Component
+const ProductCard = React.memo(({ 
+  product, 
+  onEdit, 
+  onDelete, 
+  onOutOfStock, 
+  confirmDelete, 
+  confirmMarkOutOfStock 
+}) => {
+  const { _id, title, price, stock, category, image } = product;
+
+  return (
+    <div className="group transition-all duration-300 hover:scale-105 hover:shadow-lg">
+      <Card className="overflow-hidden">
+        <motion.div className="relative aspect-square bg-gray-50 overflow-hidden" whileHover={{ scale: 1.05 }}>
+          <img
+            src={image || '/placeholder-product.jpg'}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300"
+            onError={(e) => { e.currentTarget.src = '/placeholder-product.jpg'; }}
+          />
+          {stock <= 0 && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
+              <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
+                Out of Stock
+              </Badge>
+            </div>
+          )}
+        </motion.div>
+
+        <div className="flex flex-col p-4 flex-1">
+          <div className="space-y-1 mb-2">
+            <h2 className="text-base font-semibold line-clamp-2">
+              {capitalizeAllWords(title)}
+            </h2>
+          </div>
+          <div className="mt-auto pt-2">
+            <div className="flex justify-between gap-3.5 items-center">
+              <Badge variant="outline">Rs {price}</Badge>
+              {category?.name && (
+                <span className="text-sm text-muted-foreground">
+                  {capitalizeAllWords(category.name)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${stock > 10
+                    ? 'bg-green-500'
+                    : stock > 0
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
+                  }`}
+              />
+              <span className="text-xs text-muted-foreground">
+                {stock > 0 ? `${stock} in stock` : 'Out of stock'}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => onEdit(product)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      onClick={() => onDelete(product)}
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1 gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete <strong>"{capitalizeAllWords(title)}"</strong>? 
+                        This action will:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Permanently remove the product from the system</li>
+                          <li>Delete the product image</li>
+                          <li>This action cannot be undone</li>
+                        </ul>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={confirmDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete Product
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    onClick={() => onOutOfStock(product)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    disabled={stock <= 0}
+                  >
+                    <PackageX className="w-4 h-4" />
+                    {stock <= 0 ? 'Already Out of Stock' : 'Mark Out of Stock'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Mark Out of Stock</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to mark <strong>"{capitalizeAllWords(title)}"</strong> as out of stock? 
+                      This will:
+                      <ul className="list-disc list-inside mt-2 space-y-1">
+                        <li>Set the product stock to 0</li>
+                        <li>Hide the product from active stock filters</li>
+                        <li>You can re-enable it later by updating the stock</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={confirmMarkOutOfStock}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      Mark Out of Stock
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+});
+
+// Memoized Loading Skeleton Component
+const LoadingSkeleton = React.memo(() => {
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.05 }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
+  return (
+    <motion.div
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
+      {[...Array(8)].map((_, i) => (
+        <motion.div key={i} variants={item}>
+          <Card className="overflow-hidden">
+            <Skeleton className="h-48 w-full" />
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex justify-between">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+});
+
+// Memoized Pagination Component
+const Pagination = React.memo(({ currentPage, totalPages, onPageChange }) => {
+  const handlePageChange = useCallback((newPage) => {
+    onPageChange(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [onPageChange]);
+
+  return (
+    <motion.div 
+      className="mt-8 flex justify-center"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+    >
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+
+        {currentPage > 1 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(1)}
+          >
+            1
+          </Button>
+        )}
+
+        {currentPage > 3 && <span className="px-2">...</span>}
+
+        {currentPage > 2 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            {currentPage - 1}
+          </Button>
+        )}
+
+        <Button variant="default" size="sm">
+          {currentPage}
+        </Button>
+
+        {currentPage < totalPages - 1 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            {currentPage + 1}
+          </Button>
+        )}
+
+        {currentPage < totalPages - 2 && <span className="px-2">...</span>}
+
+        {currentPage < totalPages && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(totalPages)}
+          >
+            {totalPages}
+          </Button>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+});
+
 const AllProducts = () => {
   const [category, setCategory] = useState('all');
   const [categoryInput, setCategoryInput] = useState('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
   const [searchTerm, setSearchTerm] = useState('');
   const [stockFilter, setStockFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -71,26 +354,27 @@ const AllProducts = () => {
   const loading = status === 'loading';
   const noProducts = status === 'succeeded' && products.length === 0;
 
-  useEffect(() => {
-    dispatch(AllCategory());
-  }, [dispatch]);
+  // Memoized filtered data
+  const filteredCategories = useMemo(() => 
+    categories.filter((cat) =>
+      cat.name.toLowerCase().includes(categoryInput.toLowerCase())
+    ), [categories, categoryInput]
+  );
 
-  useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
-  }, [category, searchTerm, page, limit, stockFilter, dispatch]);
+  const filteredProducts = useMemo(() => 
+    stockFilter === 'active'
+      ? products.filter((p) => p.stock > 0)
+      : stockFilter === 'out-of-stock'
+      ? products.filter((p) => p.stock <= 0)
+      : products, [products, stockFilter]
+  );
 
-  // Add this new useEffect to ensure page resets when stock filter changes
-  useEffect(() => {
-    if (page !== 1) {
-      setPage(1);
-    }
-  }, [stockFilter]);
-
-  const handleDelete = (product) => {
+  // Memoized handlers
+  const handleDelete = useCallback((product) => {
     setProductToDelete(product);
-  };
+  }, []);
 
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
     if (!productToDelete) return;
 
     dispatch(deleteSingleProduct(productToDelete._id))
@@ -104,13 +388,13 @@ const AllProducts = () => {
       .finally(() => {
         setProductToDelete(null);
       });
-  };
+  }, [productToDelete, dispatch]);
 
-  const handleOutOfStock = (product) => {
+  const handleOutOfStock = useCallback((product) => {
     setProductToMarkOutOfStock(product);
-  };
+  }, []);
 
-  const confirmMarkOutOfStock = () => {
+  const confirmMarkOutOfStock = useCallback(() => {
     if (!productToMarkOutOfStock) return;
 
     const formData = new FormData();
@@ -145,9 +429,9 @@ const AllProducts = () => {
     }).finally(() => {
       setProductToMarkOutOfStock(null);
     });
-  };
+  }, [productToMarkOutOfStock, dispatch, stockFilter, category, searchTerm, page, limit]);
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setSelectedProduct(product);
     setEditFormData({
       title: product.title || '',
@@ -158,16 +442,16 @@ const AllProducts = () => {
       image: null
     });
     setIsEditDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditFormChange = (field, value) => {
+  const handleEditFormChange = useCallback((field, value) => {
     setEditFormData(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
-  const handleImageChange = (e) => {
+  const handleImageChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setEditFormData(prev => ({
@@ -175,12 +459,10 @@ const AllProducts = () => {
         image: file
       }));
     }
-  };
+  }, []);
 
-  const handleUpdateProduct = async () => {
+  const handleUpdateProduct = useCallback(async () => {
     if (!selectedProduct) return;
-
-   
 
     setIsUpdating(true);
 
@@ -213,7 +495,6 @@ const AllProducts = () => {
           category: '',
           image: null
         });
-        // Refresh the products list
         dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
       } else {
         toast.error(result.message || 'Failed to update product');
@@ -223,23 +504,25 @@ const AllProducts = () => {
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [selectedProduct, editFormData, dispatch, category, searchTerm, page, limit, stockFilter]);
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = useCallback((newPage) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(categoryInput.toLowerCase())
-  );
+  useEffect(() => {
+    dispatch(AllCategory());
+  }, [dispatch]);
 
-  const filteredProducts =
-    stockFilter === 'active'
-      ? products.filter((p) => p.stock > 0)
-      : stockFilter === 'out-of-stock'
-      ? products.filter((p) => p.stock <= 0)
-      : products;
+  useEffect(() => {
+    dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
+  }, [category, searchTerm, page, limit, stockFilter, dispatch]);
+
+  useEffect(() => {
+    if (page !== 1) {
+      setPage(1);
+    }
+  }, [stockFilter]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -252,12 +535,6 @@ const AllProducts = () => {
   const item = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-  };
-
-  const hoverEffect = {
-    scale: 1.02,
-    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-    transition: { duration: 0.2 }
   };
 
   return (
@@ -284,11 +561,7 @@ const AllProducts = () => {
         transition={{ delay: 0.2 }}
       >
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search Input */}
-          <motion.div
-            className="relative flex-1"
-            whileHover={{ scale: 1.01 }}
-          >
+          <motion.div className="relative flex-1" whileHover={{ scale: 1.01 }}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               value={searchTerm}
@@ -298,7 +571,6 @@ const AllProducts = () => {
             />
           </motion.div>
 
-          {/* Category Dropdown */}
           <div className="relative w-[180px]">
             <Input
               placeholder="Search category"
@@ -327,7 +599,7 @@ const AllProducts = () => {
                       setShowCategoryDropdown(false);
                     }}
                   >
-                    All Categorie
+                    All Categories
                   </li>
                   {filteredCategories.map((cat) => (
                     <li
@@ -348,7 +620,6 @@ const AllProducts = () => {
           </div>
         </div>
 
-        {/* Stock Filter Tabs */}
         <motion.div
           className="flex gap-3 mt-4"
           initial={{ opacity: 0 }}
@@ -373,34 +644,7 @@ const AllProducts = () => {
       </motion.div>
 
       {/* Loading Skeleton */}
-      {loading && (
-        <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
-          {[...Array(8)].map((_, i) => (
-            <motion.div key={i} variants={item}>
-              <Card className="overflow-hidden">
-                <Skeleton className="h-48 w-full" />
-                <div className="p-4 space-y-3">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                  <div className="flex justify-between">
-                    <Skeleton className="h-4 w-16" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    <Skeleton className="h-9 w-full" />
-                    <Skeleton className="h-9 w-full" />
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+      {loading && <LoadingSkeleton />}
 
       {/* No Products Found */}
       <AnimatePresence>
@@ -431,236 +675,27 @@ const AllProducts = () => {
             initial="hidden"
             animate="show"
           >
-            {filteredProducts.map((p) => (
-              <motion.div key={p._id} variants={item} whileHover={hoverEffect}>
-                <Card className="group transition-all duration-300 border hover:shadow-xl rounded-2xl overflow-hidden flex flex-col h-full">
-                  <motion.div className="relative aspect-square bg-gray-50 overflow-hidden" whileHover={{ scale: 1.05 }}>
-                    <img
-                      src={p.image || '/placeholder-product.jpg'}
-                      alt={p.title}
-                      className="w-full h-full object-cover transition-transform duration-300"
-                      onError={(e) => { e.currentTarget.src = '/placeholder-product.jpg'; }}
-                    />
-                    {p.stock <= 0 && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                        <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
-                          Out of Stock
-                        </Badge>
-                      </div>
-                    )}
-                  </motion.div>
-
-                  <div className="flex flex-col p-4 flex-1">
-                    <div className="space-y-1 mb-2">
-                      <h2 className="text-base font-semibold line-clamp-2">
-                        {capitalizeAllWords(p.title)}
-                      </h2>
-                    </div>
-                    <div className="mt-auto pt-2">
-                      <div className="flex justify-between gap-3.5 items-center">
-                        <Badge variant="outline">Rs {p.price}</Badge>
-                        {p.category?.name && (
-                          <span className="text-sm text-muted-foreground">
-                            {capitalizeAllWords(p.category.name)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full ${p.stock > 10
-                              ? 'bg-green-500'
-                              : p.stock > 0
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                            }`}
-                        />
-                        <span className="text-xs text-muted-foreground">
-                          {p.stock > 0 ? `${p.stock} in stock` : 'Out of stock'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-2 mt-2">
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleEdit(p)}
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 gap-2"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Edit
-                          </Button>
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                onClick={() => handleDelete(p)}
-                                variant="destructive"
-                                size="sm"
-                                className="flex-1 gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete <strong>"{capitalizeAllWords(p.title)}"</strong>? 
-                                  This action will:
-                                  <ul className="list-disc list-inside mt-2 space-y-1">
-                                    <li>Permanently remove the product from the system</li>
-                                    <li>Delete the product image</li>
-                                    <li>This action cannot be undone</li>
-                                  </ul>
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={confirmDelete}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete Product
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              onClick={() => handleOutOfStock(p)}
-                              variant="outline"
-                              size="sm"
-                              className="w-full gap-2"
-                              disabled={p.stock <= 0}
-                            >
-                              <PackageX className="w-4 h-4" />
-                              {p.stock <= 0 ? 'Already Out of Stock' : 'Mark Out of Stock'}
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Mark Out of Stock</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to mark <strong>"{capitalizeAllWords(p.title)}"</strong> as out of stock? 
-                                This will:
-                                <ul className="list-disc list-inside mt-2 space-y-1">
-                                  <li>Set the product stock to 0</li>
-                                  <li>Hide the product from active stock filters</li>
-                                  <li>You can re-enable it later by updating the stock</li>
-                                </ul>
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={confirmMarkOutOfStock}
-                                className="bg-orange-600 hover:bg-orange-700"
-                              >
-                                Mark Out of Stock
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+            {filteredProducts.map((product) => (
+              <motion.div key={product._id} variants={item}>
+                <ProductCard
+                  product={product}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onOutOfStock={handleOutOfStock}
+                  confirmDelete={confirmDelete}
+                  confirmMarkOutOfStock={confirmMarkOutOfStock}
+                />
               </motion.div>
             ))}
           </motion.div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <motion.div 
-              className="mt-8 flex justify-center"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </Button>
-
-                {/* Always show first page */}
-                {page > 1 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(1)}
-                  >
-                    1
-                  </Button>
-                )}
-
-                {/* Show ellipsis if current page is more than 2 pages away from start */}
-                {page > 3 && <span className="px-2">...</span>}
-
-                {/* Show previous page if not first page */}
-                {page > 2 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(page - 1)}
-                  >
-                    {page - 1}
-                  </Button>
-                )}
-
-                {/* Current page */}
-                <Button
-                  variant="default"
-                  size="sm"
-                >
-                  {page}
-                </Button>
-
-                {/* Show next page if not last page */}
-                {page < totalPages - 1 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(page + 1)}
-                  >
-                    {page + 1}
-                  </Button>
-                )}
-
-                {/* Show ellipsis if current page is more than 2 pages away from end */}
-                {page < totalPages - 2 && <span className="px-2">...</span>}
-
-                {/* Always show last page if not first page */}
-                {page < totalPages && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(totalPages)}
-                  >
-                    {totalPages}
-                  </Button>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages}
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </motion.div>
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           )}
         </>
       )}
@@ -677,7 +712,6 @@ const AllProducts = () => {
           
           {selectedProduct && (
             <div className="space-y-6">
-              {/* Current Product Preview */}
               <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
                 <img
                   src={selectedProduct.image || '/placeholder-product.jpg'}
@@ -692,9 +726,7 @@ const AllProducts = () => {
                 </div>
               </div>
 
-              {/* Edit Form */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Product Name */}
                 <div className="space-y-2">
                   <Label htmlFor="title">Product Name </Label>
                   <Input
@@ -705,7 +737,6 @@ const AllProducts = () => {
                   />
                 </div>
 
-                {/* Price */}
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (Rs) *</Label>
                   <Input
@@ -717,7 +748,6 @@ const AllProducts = () => {
                   />
                 </div>
 
-                {/* Stock */}
                 <div className="space-y-2">
                   <Label htmlFor="stock">Stock Quantity </Label>
                   <Input
@@ -729,7 +759,6 @@ const AllProducts = () => {
                   />
                 </div>
 
-                {/* Category */}
                 <div className="space-y-2">
                   <Label htmlFor="category">Category </Label>
                   <Select
@@ -749,7 +778,6 @@ const AllProducts = () => {
                   </Select>
                 </div>
 
-                {/* Description */}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="description">Description</Label>
                   <Textarea
@@ -761,7 +789,6 @@ const AllProducts = () => {
                   />
                 </div>
 
-                {/* Image Upload */}
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="image">Product Image</Label>
                   <div className="flex items-center gap-4">
@@ -786,8 +813,8 @@ const AllProducts = () => {
                 </div>
               </div>
             </div>
+    
           )}
-          
           <DialogFooter>
             <Button
               variant="outline"
@@ -808,4 +835,4 @@ const AllProducts = () => {
   );
 };
 
-export default AllProducts;
+export default React.memo(AllProducts);

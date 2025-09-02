@@ -183,6 +183,7 @@ router.get('/get-products', async (req, res) => {
       .select('title picture price description stock')
       .populate('user', 'name')
       .populate('category', 'name')
+      .sort({ stock: -1, name: 1 })
       .skip((page - 1) * (limit || 1))
       .limit(limit || undefined);
 

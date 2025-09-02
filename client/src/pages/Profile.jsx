@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 
-const Profile = () => {
+const Profile = React.memo(() => {
   const dispatch = useDispatch();
   const { user, status } = useSelector((state) => state.auth);
 
@@ -32,13 +32,13 @@ const Profile = () => {
     });
   }, [user]);
 
-  const handleChange = (e) => {
+  // ✅ Memoize handlers
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
-
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     dispatch(updateProfile(formData))
       .unwrap()
       .then(() => {
@@ -49,7 +49,12 @@ const Profile = () => {
         console.error(err);
         toast.error(err || 'Update failed');
       });
-  };
+  }, [dispatch, formData]);
+
+  // ✅ Memoize expensive computations
+  const isFormValid = useMemo(() => {
+    return formData.address.trim() && formData.phone.trim() && formData.city.trim();
+  }, [formData]);
 
   if (!user) {
     return (
@@ -241,6 +246,6 @@ const Profile = () => {
       </Card>
     </div>
   );
-};
+});
 
 export default Profile;

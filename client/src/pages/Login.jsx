@@ -1,17 +1,13 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
-import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 
 const Login = () => {
-  usePerformanceMonitor('Login');
-  
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -126,7 +122,7 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
+    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p12'>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
           <img src="/logos.png" alt="Logo" loading="eager" />
