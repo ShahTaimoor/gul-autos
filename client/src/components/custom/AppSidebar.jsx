@@ -11,7 +11,7 @@ import {
   ChartBar,
   UserCheck,
   ShoppingCart,
-
+  User,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,6 +35,7 @@ const items = [
   { title: "All Products", url: "/admin/dashboard/all-products", icon: GalleryVerticalEnd },
   { title: "Orders", url: "/admin/dashboard/orders", icon: PackageSearch, showBadge: true },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
+  { title: "Admin Profile", url: "/admin/profile", icon: User },
   { title: "Customer View", url: "/", icon: ShoppingCart }, 
   
 ];

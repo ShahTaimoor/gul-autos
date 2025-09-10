@@ -1,9 +1,13 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { store } from './redux/store';
 import { Toaster } from './components/ui/sonner';
 import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
+import ErrorBoundary from './components/custom/ErrorBoundary';
 import { Suspense, lazy } from 'react';
+import { useTokenValidation, useTokenRefresh } from './hooks/use-token-validation';
+import { PageLoader } from './components/ui/unified-loader';
+import ScrollOptimizer from './components/ui/ScrollOptimizer';
 
 // Lazy-load pages
 const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
@@ -20,13 +24,21 @@ const ErrorPage = lazy(() => import('./pages/Error'));
 const Category = lazy(() => import('./pages/Category'));
 const Users = lazy(() => import('./pages/Users'));
 const Profile = lazy(() => import('./pages/Profile'));
+const AdminProfile = lazy(() => import('./pages/AdminProfile'));
 
 const CreateProducts = lazy(() => import('./components/custom/CreateProducts'));
 const AllProducts = lazy(() => import('./components/custom/AllProducts'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 
-const App = () => {
+const AppContent = () => {
+  // Initialize token validation and refresh
+  useTokenValidation();
+  useTokenRefresh();
+  
+  // Get user state to conditionally apply navbar-present class
+  const user = useSelector((state) => state.auth.user);
+
   const router = createBrowserRouter([
     {
       path: '/',
@@ -89,6 +101,16 @@ const App = () => {
           <RootLayout>
             <Profile />
           </RootLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/profile',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <AdminProfile />
+          </AdminLayout>
         </ProtectedRoute>
       ),
     },
@@ -163,12 +185,24 @@ const App = () => {
   ]);
 
   return (
+    <div className={user ? 'navbar-present' : ''}>
+      <ErrorBoundary>
+        <Toaster />
+        <TokenExpirationHandler />
+        <Suspense fallback={<PageLoader message="Loading Application" />}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </ErrorBoundary>
+    </div>
+  );
+};
+
+const App = () => {
+  return (
     <Provider store={store}>
-      <Toaster />
-      <TokenExpirationHandler />
-      <Suspense fallback={<div className="text-center mt-20 text-lg">Loading...</div>}>
-        <RouterProvider router={router} />
-      </Suspense>
+      <ScrollOptimizer>
+        <AppContent />
+      </ScrollOptimizer>
     </Provider>
   );
 };

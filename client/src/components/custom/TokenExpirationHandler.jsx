@@ -1,23 +1,21 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { useEffect } from 'react';
 import { clearTokenExpired } from '@/redux/slices/auth/authSlice';
-import LoginPopup from './LoginPopup';
 
 const TokenExpirationHandler = () => {
   const dispatch = useDispatch();
   const { tokenExpired } = useSelector((state) => state.auth);
 
-  const handleCloseLoginPopup = () => {
-    console.log('Closing login popup');
-    dispatch(clearTokenExpired());
-  };
+  useEffect(() => {
+    if (tokenExpired) {
+      console.log('Token expired - redirecting to login page');
+      dispatch(clearTokenExpired());
+      // Use window.location.href for reliable redirect outside Router context
+      window.location.href = '/login';
+    }
+  }, [tokenExpired, dispatch]);
 
-  if (!tokenExpired) {
-    return null;
-  }
-
-  return (
-    <LoginPopup isOpen={true} onClose={handleCloseLoginPopup} />
-  );
+  return null; // This component doesn't render anything
 };
 
 export default TokenExpirationHandler; 

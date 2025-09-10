@@ -1,4 +1,4 @@
-// pages/Category.jsx
+// pages/UpdateCategory.jsx
 import React, { useEffect, useState } from 'react';
 import {
     CardContent,
@@ -11,15 +11,14 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
+import { ButtonLoader } from '@/components/ui/unified-loader';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SingleCategory, updateCategory } from '@/redux/slices/categories/categoriesSlice';
-import { TableCell, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 
 
 const UpdateCategory = () => {
     const dispatch = useDispatch();
-    const [catName, setCatName] = useState({})
+    const [catName, setCatName] = useState('')
 
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false);
@@ -69,55 +68,31 @@ const UpdateCategory = () => {
 
     return (
         <div className="w-full max-w-2xl mx-auto p-4">
+            <CardHeader>
+                <CardTitle>Update Category</CardTitle>
+                <CardDescription>Edit the category name</CardDescription>
+            </CardHeader>
+            
             <form onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-4">
-                    <CardContent className="w-full">
-                        <div className="space-y-2 mt-2">
-                            {categories.map((category) => (
-                                <TableRow key={category._id}>
-                                    <TableCell className="font-medium">
-                                        {editingCategory?.slug === category.slug ? (
-                                            <span className="text-primary">{category.name}</span>
-                                        ) : (
-                                            category.name
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{category.slug}</Badge>
-                                    </TableCell>
-                                    <TableCell className="flex justify-end space-x-2">
-                                        <Button
-                                            variant={editingCategory?.slug === category.slug ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => startEditing(category)}
-                                            disabled={loading}
-                                        >
-                                            <Edit className="mr-2 h-4 w-4" />
-                                            Edit
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDelete(category.slug, category.name)}
-                                            disabled={loading || editingCategory?.slug === category.slug}
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </div>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="categoryName">Category Name</Label>
+                        <Input
+                            id="categoryName"
+                            type="text"
+                            value={catName}
+                            onChange={(e) => setCatName(e.target.value)}
+                            placeholder="Enter category name"
+                            required
+                            disabled={loading}
+                        />
+                    </div>
 
-                        <Button className="mt-4" disabled={loading}>
-                            {loading ? 'Updating...' : 'Update Category'}
-                        </Button>
-                    </CardContent>
-                </div>
+                    <Button type="submit" disabled={loading} className="w-full">
+                        {loading ? <ButtonLoader /> : 'Update Category'}
+                    </Button>
+                </CardContent>
             </form>
-
-
-
         </div>
     );
 };

@@ -15,6 +15,7 @@ import {
   SelectValue
 } from '../ui/select';
 import { toast } from 'sonner';
+import { ButtonLoader } from '@/components/ui/unified-loader';
 import { Loader2 } from 'lucide-react';
 
 const UpdateProduct = () => {
@@ -84,7 +85,18 @@ const UpdateProduct = () => {
     e.preventDefault();
     setLoading(true);
 
-    dispatch(updateSingleProduct({ inputValues: inputValue, id }))
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('title', inputValue.title);
+    formData.append('description', inputValue.description);
+    formData.append('price', inputValue.price);
+    formData.append('category', inputValue.category);
+    formData.append('stock', inputValue.stock);
+    if (inputValue.picture && typeof inputValue.picture === 'object') {
+      formData.append('picture', inputValue.picture);
+    }
+
+    dispatch(updateSingleProduct({ inputValues: formData, id }))
       .unwrap()
       .then((response) => {
         if (response?.success) {
@@ -228,10 +240,7 @@ const UpdateProduct = () => {
             <div className="flex gap-4">
               <Button type="submit" disabled={loading}>
                 {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
+                  <ButtonLoader />
                 ) : (
                   'Update Product'
                 )}

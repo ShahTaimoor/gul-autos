@@ -74,12 +74,31 @@ const categoriesSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(AddCategory.pending, (state) => { state.status = 'loading'; })
-            .addCase(AddCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories.push(action.payload.data); })
+            .addCase(AddCategory.fulfilled, (state, action) => { 
+                state.status = 'succeeded'; 
+                
+                // Transform the category to match the expected structure
+                const newCategory = action.payload.data;
+                const transformedCategory = {
+                    ...newCategory,
+                    image: newCategory.picture?.secure_url || newCategory.image || null
+                };
+                
+                state.categories.push(transformedCategory); 
+            })
 
             .addCase(AddCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(AllCategory.pending, (state) => { state.status = 'loading'; })
-            .addCase(AllCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })
-            .addCase(AllCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
+            .addCase(AllCategory.fulfilled, (state, action) => { 
+                state.status = 'succeeded'; 
+                
+                
+                state.categories = action.payload.data; 
+            })
+            .addCase(AllCategory.rejected, (state, action) => { 
+                state.status = 'failed'; 
+                state.error = action.payload; 
+            })
             .addCase(SingleCategory.pending, (state) => { state.status = 'loading'; })
             .addCase(SingleCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })
             .addCase(SingleCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
@@ -94,12 +113,17 @@ const categoriesSlice = createSlice({
             .addCase(updateCategory.fulfilled, (state, action) => {
                 state.status = 'succeeded';
 
-
                 const updatedCategory = action.payload.data;
+                
+                // Transform the category to match the expected structure
+                const transformedCategory = {
+                    ...updatedCategory,
+                    image: updatedCategory.picture?.secure_url || updatedCategory.image || null
+                };
 
                 // Update the category in the array instead of replacing the whole list
                 state.categories = state.categories.map((prod) =>
-                    prod._id === updatedCategory._id ? updatedCategory : prod
+                    prod._id === updatedCategory._id ? transformedCategory : prod
                 );
 
             })

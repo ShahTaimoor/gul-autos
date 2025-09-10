@@ -105,6 +105,8 @@ export const productsSlice = createSlice({
             .addCase(fetchProducts.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 const { data, pagination } = action.payload || {};
+                
+                
                 state.products = data || [];
                 state.currentPage = pagination?.page || 1;
                 state.totalPages = pagination?.totalPages || 1;

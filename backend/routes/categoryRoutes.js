@@ -126,10 +126,13 @@ router.get('/all-category', async (req, res) => {
             return res.status(404).json({ success: false, message: 'No categories found' });
         }
 
-        const newCategoryArray = categories.map((category) => {
+        const newCategoryArray = categories.map((category, index) => {
             const categoryObj = category.toObject();
+            // Keep both image and picture fields for compatibility
             categoryObj.image = categoryObj.picture?.secure_url || null;
-            delete categoryObj.picture;
+            // Don't delete picture field, keep it for backward compatibility
+            
+            
             return categoryObj;
         });
 

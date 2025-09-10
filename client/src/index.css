@@ -129,8 +129,18 @@
   }
 }
 
+/* Enhanced smooth scrolling with performance optimizations */
 * {
   scroll-behavior: smooth;
+  scroll-padding-top: 10px; /* No navbar when not logged in */
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Enable hardware acceleration for smooth scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Optimize scrolling performance */
+  scroll-snap-type: y proximity;
 }
 
 body {
@@ -139,7 +149,14 @@ body {
   font-weight: 400;
   font-style: normal;
   overflow-x: hidden;
-
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Improve scroll performance */
+  overscroll-behavior: contain;
 }
 .product-title {
   white-space: normal; /* Allows wrapping */
@@ -200,11 +217,238 @@ html{
   will-change: transform, opacity;
 }
 
+/* Scroll performance optimizations */
+.scroll-container {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize scrolling */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Improve rendering */
+  will-change: scroll-position;
+}
+
+/* Smooth scroll for specific elements */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  scroll-padding-top: 0px;
+}
+
+/* Dynamic scroll padding when navbar is present */
+.navbar-present {
+  scroll-padding-top: 50px;
+}
+
+.navbar-present .smooth-scroll {
+  scroll-padding-top: 50px;
+}
+
+/* Optimize images during scroll */
+img {
+
+
+  /* Optimize rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Optimize cards and containers */
+.card, .product-card {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize transitions */
+  will-change: transform, opacity;
+  /* Improve rendering */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimize fixed elements */
+.fixed, .sticky {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize rendering */
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimize animations for 60fps */
+@keyframes smooth-fade-in {
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 10px, 0);
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-smooth-fade-in {
+  animation: smooth-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* 60fps optimized animations */
+@keyframes fade-in-60fps {
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 0, 0);
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slide-up-60fps {
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 20px, 0);
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes scale-in-60fps {
+  from { 
+    opacity: 0; 
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  to { 
+    opacity: 1; 
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.animate-60fps-fade-in {
+  animation: fade-in-60fps 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-60fps-slide-up {
+  animation: slide-up-60fps 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.animate-60fps-scale-in {
+  animation: scale-in-60fps 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .smooth-scroll {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 60fps Performance Optimizations */
+.performance-optimized {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize rendering */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Improve compositing */
+  contain: layout style paint;
+}
+
+/* Optimize all interactive elements */
+button, a, input, select, textarea {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Optimize hover effects */
+.hover-optimized {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.hover-optimized:hover {
+  transform: translateZ(0) scale(1.05);
+}
+
+/* Optimize scroll containers */
+.scroll-optimized {
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Optimize scrolling */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* Improve rendering */
+  will-change: scroll-position;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  /* Enable GPU compositing */
+  contain: layout style paint;
+}
+
+/* Mobile scroll optimizations */
+@media (max-width: 768px) {
+  html {
+    /* Disable smooth scroll on mobile for better performance */
+    scroll-behavior: auto;
+  }
+  
+  * {
+    scroll-behavior: auto;
+  }
+  
+  body {
+    /* Optimize touch scrolling */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Enable hardware acceleration */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  /* Optimize mobile animations */
+  .animate-60fps-fade-in {
+    animation-duration: 0.2s;
+  }
+  
+  .animate-60fps-slide-up {
+    animation-duration: 0.3s;
+  }
+  
+  .animate-60fps-scale-in {
+    animation-duration: 0.2s;
   }
 }

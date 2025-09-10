@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { ButtonLoader } from '@/components/ui/unified-loader';
 import { toast } from 'sonner';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
 
@@ -11,6 +12,7 @@ const Login = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   
   const params = new URLSearchParams(location.search);
   const expired = params.get('expired');
@@ -55,6 +57,16 @@ const Login = () => {
     }
   }, [expired]);
 
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    console.log('Login component - isAuthenticated:', isAuthenticated, 'user:', user);
+    if (isAuthenticated && user) {
+      const redirectPath = user.role === 1 ? '/admin/dashboard' : '/';
+      console.log('Redirecting to:', redirectPath);
+      navigate(redirectPath, { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setInputValues((prev) => ({ ...prev, [name]: value }));
@@ -80,11 +92,13 @@ const Login = () => {
 
     try {
       const response = await dispatch(login(inputValue)).unwrap();
+      console.log('Login response:', response);
       
       if (response?.user) {
         toast.success('Login successful');
         setInputValues({ name: '', password: '' });
-        navigate(from, { replace: true });
+        console.log('Login successful, user:', response.user);
+        // The useEffect will handle the redirect when isAuthenticated becomes true
       } else {
         setErrorMsg({ name: 'Login failed', password: 'Login failed' });
         toast.error('Login failed');
@@ -179,10 +193,7 @@ const Login = () => {
           type='submit'
         >
           {loading ? (
-            <>
-              <Loader2 className='animate-spin mr-2 h-4 w-4' />
-              Logging in...
-            </>
+            <ButtonLoader />
           ) : (
             'Login'
           )}

@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { updateUserRole } from '../redux/slices/auth/authSlice';
 import { toast } from 'sonner';
 import { Loader2, Shield, User } from 'lucide-react';
+import { InlineLoader } from '@/components/ui/unified-loader';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -82,8 +83,8 @@ const Users = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="h-64">
+        <InlineLoader message="Loading Users..." />
       </div>
     );
   }

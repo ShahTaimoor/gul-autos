@@ -22,5 +22,26 @@ const updateUserRole = async (userId, role) => {
   return response.data;
 };
 
-const authService = { loginUser, updateProfile, updateUserRole };
+const refreshToken = async () => {
+  const response = await axiosInstance.post('/refresh', {}, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+const validateToken = async () => {
+  const response = await axiosInstance.get('/validate-token', {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+const changePassword = async (passwordData) => {
+  const response = await axiosInstance.put('/change-password', passwordData, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+const authService = { loginUser, updateProfile, updateUserRole, refreshToken, validateToken, changePassword };
 export default authService;

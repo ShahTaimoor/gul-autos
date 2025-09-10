@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ButtonLoader } from '@/components/ui/unified-loader';
 
 const Checkout = () => {
   const { items: cartItems = [] } = useSelector((state) => state.cart);
@@ -89,18 +90,27 @@ const Checkout = () => {
       };
 
       const res = await dispatch(addOrder(orderData)).unwrap();
+      console.log('Order response:', res);
 
-      if (res.success) {
+      if (res && res.success === true) {
+        console.log('Order successful, navigating to success page...');
         dispatch(emptyCart());
-        navigate('/success');
-        toast.success('Order placed successfully!');
+        
+        // Set loading to false before navigation
+        setLoading(false);
+        
+        // Use window.location for guaranteed navigation
+        setTimeout(() => {
+          window.location.href = '/success';
+        }, 100);
       } else {
+        console.log('Order failed:', res);
         toast.error('Failed to place order');
+        setLoading(false);
       }
     } catch (err) {
       setError(err?.message || 'Something went wrong!');
       toast.error('Something went wrong!');
-    } finally {
       setLoading(false);
     }
   };
@@ -260,15 +270,13 @@ const Checkout = () => {
                         Edit Profile Info
                       </Button>
                       <Button
+                        type="button"
                         onClick={handleCheckout}
                         disabled={loading}
                         className="flex-1 bg-black text-white flex items-center gap-2"
                       >
                         {loading ? (
-                          <>
-                            <Loader2 className="animate-spin w-5 h-5" />
-                            Processing...
-                          </>
+                          <ButtonLoader />
                         ) : (
                           <>
                             <ShoppingCart className="w-5 h-5" />

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Loader2, Trash2 } from 'lucide-react';
+import { PageLoader } from '@/components/ui/unified-loader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -52,8 +53,8 @@ const MyOrders = () => {
 
   if (status === 'loading') {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={48} />
+      <div className="w-full h-full">
+        <PageLoader message="Loading Orders..." />
       </div>
     );
   }

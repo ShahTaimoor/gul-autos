@@ -15,10 +15,23 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
   try {
     const { title, description, price, category, stock } = req.body;
 
+    console.log('Product creation request:', { title, description, price, category, stock, hasFile: !!req.file });
+
     if (!title || !price || !category || !stock || !req.file) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'All fields are required including image',
+        missing: {
+          title: !title,
+          price: !price,
+          category: !category,
+          stock: !stock,
+          image: !req.file
+        }
+      });
     }
 
+    console.log('Uploading to Cloudinary...');
     const { secure_url, public_id } = await uploadImageOnCloudinary(req.file.buffer, 'products');
 
     if (!secure_url || !public_id) {
@@ -28,6 +41,7 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
       });
     }
 
+    console.log('Creating product in database...');
     const product = await Product.create({
       title,
       description,
@@ -38,6 +52,7 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
       picture: { secure_url, public_id }
     });
 
+    console.log('Product created successfully:', product._id);
     return res.status(201).json({
       success: true,
       message: 'Product Added Successfully',
@@ -45,7 +60,11 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
     });
   } catch (error) {
     console.error('Error creating product:', error);
-    return res.status(500).json({ success: false, message: 'Server error in create Product' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error in create Product',
+      error: error.message 
+    });
   }
 });
 
@@ -187,10 +206,13 @@ router.get('/get-products', async (req, res) => {
       .skip((page - 1) * (limit || 1))
       .limit(limit || undefined);
 
-    const newProductArray = products.map((product) => {
+    const newProductArray = products.map((product, index) => {
       const productObj = product.toObject();
+      // Keep both image and picture fields for compatibility
       productObj.image = productObj.picture?.secure_url || null;
-      delete productObj.picture;
+      // Don't delete picture field, keep it for backward compatibility
+      
+      
       return productObj;
     });
 

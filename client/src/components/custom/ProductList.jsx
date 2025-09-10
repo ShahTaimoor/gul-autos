@@ -11,8 +11,8 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import { Navigation, Pagination } from 'swiper/modules';
 import { Loader2, LayoutPanelLeft, Grid2x2, Grid3x3 } from 'lucide-react';
+import { InlineLoader, CardLoader } from '@/components/ui/unified-loader';
 import { flyToCart } from './FlyToCart';
-import CartDrawer from './CartDrawer';
 import { shallowEqual } from 'react-redux';
 
 // Memoized ProductCard component to prevent unnecessary re-renders
@@ -24,7 +24,6 @@ const ProductCard = React.memo(({
   isAddingToCart,
   isInCart,
   gridType,
-  cartRef,
   setPreviewImage
 }) => {
   const imgRef = useRef(null);
@@ -32,9 +31,13 @@ const ProductCard = React.memo(({
 
   useEffect(() => {
     clickAudioRef.current = new Audio('/sounds/click.mp3');
+    clickAudioRef.current.preload = 'auto';
+    clickAudioRef.current.volume = 0.3;
+    
     return () => {
       if (clickAudioRef.current) {
         clickAudioRef.current.pause();
+        clickAudioRef.current.src = '';
         clickAudioRef.current = null;
       }
     };
@@ -43,16 +46,21 @@ const ProductCard = React.memo(({
   const handleAddClick = useCallback(() => {
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
-      clickAudioRef.current.play();
+      clickAudioRef.current.play().catch(() => {
+        // Silently handle audio play errors (user interaction required)
+      });
     }
 
     onAddToCart(product);
-    flyToCart(imgRef, cartRef);
-  }, [onAddToCart, product, cartRef]);
+    flyToCart(imgRef, null);
+  }, [onAddToCart, product]);
+
+  // Get image URL
+  const imageUrl = product.image || product.picture?.secure_url || '/logos.png';
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col h-full ${gridType === 'grid3' ? 'sm:flex-col flex-row items-stretch' : ''
+      className={`border rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col h-full performance-optimized hover-optimized ${gridType === 'grid3' ? 'sm:flex-col flex-row items-stretch' : ''
         }`}
     >
       <div
@@ -61,19 +69,23 @@ const ProductCard = React.memo(({
       >
         <img
           ref={imgRef}
-          src={product.image || '/placeholder-product.jpg'}
+          src={imageUrl}
           alt={product.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-          onClick={() => setPreviewImage(product.image || '/placeholder-product.jpg')}
-          onError={(e) => (e.currentTarget.src = '/placeholder-product.jpg')}
+          onClick={() => setPreviewImage(imageUrl)}
+          onError={(e) => {
+            e.currentTarget.src = '/logos.png';
+          }}
           loading="lazy"
           width="300"
           height="300"
+          decoding="async"
+          fetchPriority="low"
         />
 
         <div
           className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-          onClick={() => setPreviewImage(product.image || '/placeholder-product.jpg')}
+          onClick={() => setPreviewImage(imageUrl)}
           aria-label="View product image"
         >
           <svg
@@ -189,7 +201,6 @@ const ProductList = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const limit = 24;
 
-  const cartRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -200,11 +211,18 @@ const ProductList = () => {
   const { items: cartItems = [] } = useSelector((s) => s.cart, shallowEqual);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Use optimized scroll to top
+    window.scrollTo({ 
+      top: 0, 
+      behavior: 'smooth',
+      // Add performance optimizations
+      block: 'start',
+      inline: 'nearest'
+    });
   }, [page]);
 
   const combinedCategories = useMemo(() => [
-    { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
+    { _id: 'all', name: 'All', picture: { secure_url: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' } },
     ...categories
   ], [categories]);
 
@@ -261,6 +279,11 @@ const ProductList = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // ✅ Memoize expensive calculations
+  const cartItemsMap = useMemo(() => {
+    return new Map(cartItems.map(item => [item.product._id || item.product, item.quantity]));
+  }, [cartItems]);
+
   useEffect(() => {
     dispatch(fetchProducts({ category, searchTerm: debouncedSearchTerm, page, limit, stockFilter: 'active' }))
       .then((res) => {
@@ -273,6 +296,7 @@ const ProductList = () => {
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
+
 
   const handleQuantityChange = useCallback((productId, value, stock) => {
     if (value === '') {
@@ -318,7 +342,7 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="max-w-7xl lg:mx-auto lg:px-4 py-6">
+    <div className="max-w-7xl lg:mx-auto lg:px-4 py-6 scroll-container performance-optimized">
       {/* Swiper for categories */}
       <div className="relative px-2 sm:px-10">
         <Swiper
@@ -349,12 +373,15 @@ const ProductList = () => {
                   >
                     <div className="rounded-full p-1 transition-transform duration-200 hover:rotate-5">
                       <img
-                        src={cat.image || "/fallback.jpg"}
+                        src={cat.image || cat.picture?.secure_url || "/logos.png"}
                         alt={cat.name}
                         className="w-14 h-14 object-cover rounded-full border-2 border-white/30"
                         loading="lazy"
                         width="56"
                         height="56"
+                        onError={(e) => {
+                          e.currentTarget.src = '/logos.png';
+                        }}
                       />
                     </div>
                     <p className="text-xs mt-2 font-medium text-gray-700 transition-colors duration-200 hover:text-black">
@@ -469,15 +496,15 @@ const ProductList = () => {
 
       {/* Product Grid */}
       {loadingProducts ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="animate-spin" size={32} />
+        <div className="py-10">
+          <InlineLoader message="Loading Products..." />
         </div>
       ) : productList.length === 0 || sortedProducts.length === 0 ? (
         <p className="text-center text-lg text-gray-500 mb-10">No products found for your search.</p>
       ) : (
         <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-6 ${gridType === 'grid1' ? 'grid-cols-1' : gridType === 'grid2' ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' : 'grid-cols-1'}`}>
           {sortedProducts.map((product) => {
-            const isInCart = cartItems.some((item) => (item.product?._id || item.product) === product._id);
+            const isInCart = cartItemsMap.has(product._id);
             return (
               <ProductCard
                 key={product._id}
@@ -488,7 +515,6 @@ const ProductList = () => {
                 isAddingToCart={addingProductId === product._id}
                 isInCart={isInCart}
                 gridType={gridType}
-                cartRef={cartRef}
                 setPreviewImage={setPreviewImage}
               />
             );
@@ -584,16 +610,6 @@ const ProductList = () => {
         </div>
       )}
 
-      {/* Cart Drawer */}
-      <div className="fixed top-4 right-16 md:right-8 z-50">
-        <div
-          ref={cartRef}
-          className={`relative transition-all duration-300 ${cartItems.length > 0 ? 'animate-bounce' : ''
-            }`}
-        >
-          <CartDrawer />
-        </div>
-      </div>
 
       {/* WhatsApp Button */}
       <div className="fixed animate-bounce bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">

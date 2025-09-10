@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { clearTokenExpired } from '@/redux/slices/auth/authSlice';
 import { fetchCart } from '@/redux/slices/cart/cartSlice';
-import LoginPopup from './LoginPopup';
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
@@ -25,18 +24,10 @@ const ProtectedRoute = ({ children }) => {
   // Public path check karne ke liye safe way
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
-  // ✅ Token expire ho gaya ho toh login popup dikhao, lekin children render hone do
+  // ✅ Token expire ho gaya ho toh login page par redirect karo
   if (tokenExpired) {
-    const handleCloseLoginPopup = () => {
-      dispatch(clearTokenExpired());
-    };
-
-    return (
-      <>
-        {children}
-        <LoginPopup isOpen={true} onClose={handleCloseLoginPopup} />
-      </>
-    );
+    dispatch(clearTokenExpired());
+    return <Navigate to="/login" replace />;
   }
 
   // ✅ Agar user login nahi hai aur protected page par ja raha hai → login page par bhejo
@@ -56,6 +47,7 @@ const ProtectedRoute = ({ children }) => {
 
   // ✅ Agar login ya signup page par user already authenticated ho → redirect karo homepage ya admin dashboard par
   if (isAuthenticated && isPublicPath) {
+    console.log('ProtectedRoute: User is authenticated on public path, redirecting...', { user, pathname });
     return <Navigate to={user?.role === 1 ? '/admin/dashboard' : '/'} replace />;
   }
 

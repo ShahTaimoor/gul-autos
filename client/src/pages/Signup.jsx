@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react'; // Add Eye and EyeOff icons
+import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { ButtonLoader } from '@/components/ui/unified-loader'; // Add Eye and EyeOff icons
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -37,7 +38,7 @@ const Signup = () => {
       );
 
       toast.success('Signup successful! Please login.');
-      navigate('/');
+      navigate('/login');
     } catch (err) {
       console.error(err);
       toast.error('User already exists. Please choose another name.');
@@ -100,10 +101,7 @@ const Signup = () => {
 
         <Button className='w-full mt-4' disabled={loading}>
           {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing Up...
-            </>
+            <ButtonLoader />
           ) : (
             'Sign Up'
           )}

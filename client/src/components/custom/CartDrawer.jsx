@@ -55,7 +55,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     }
     
     updateTimeoutRef.current = setTimeout(() => {
-      if (newQuantity !== quantity) {
+      if (newQuantity !== quantity && newQuantity > 0 && newQuantity <= stock) {
         setIsUpdating(true);
         dispatch(updateCartQuantity({ productId: _id, quantity: newQuantity }))
           .unwrap()
@@ -65,8 +65,8 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
           })
           .finally(() => setIsUpdating(false));
       }
-    }, 300); // 300ms debounce
-  }, [dispatch, _id, quantity]);
+    }, 500); // Increased to 500ms for better UX
+  }, [dispatch, _id, quantity, stock]);
 
   const handleQuantityChange = useCallback((newQty) => {
     if (newQty === '' || isNaN(newQty)) {

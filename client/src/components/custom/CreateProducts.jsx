@@ -10,6 +10,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
+import { ButtonLoader } from '@/components/ui/unified-loader';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -52,9 +53,27 @@ const CreateProducts = () => {
     e.preventDefault();
     setLoading(true);
 
-    dispatch(AddProduct(inputValues))
+    // Create FormData for file upload
+    const formData = new FormData();
+    formData.append('title', inputValues.title);
+    formData.append('description', inputValues.description);
+    formData.append('price', inputValues.price);
+    formData.append('category', inputValues.category);
+    formData.append('stock', inputValues.stock);
+    if (inputValues.picture) {
+      formData.append('picture', inputValues.picture);
+    }
+
+    // Debug: Log form data
+    console.log('Form data being sent:');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+
+    dispatch(AddProduct(formData))
       .unwrap()
       .then((response) => {
+        console.log('Product creation response:', response);
         if (response?.success) {
           toast.success(response?.message);
           setInputValues(initialValues);
@@ -64,6 +83,7 @@ const CreateProducts = () => {
         setLoading(false);
       })
       .catch((error) => {
+        console.error('Product creation error:', error);
         toast.error(error || 'Failed to add product');
         setLoading(false);
       });
@@ -224,7 +244,7 @@ const CreateProducts = () => {
             className="mt-6 w-full sm:w-auto"
             disabled={loading}
           >
-            {loading ? 'Adding...' : 'Add Product'}
+            {loading ? <ButtonLoader /> : 'Add Product'}
           </Button>
         </form>
       </CardContent>

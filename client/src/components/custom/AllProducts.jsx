@@ -5,6 +5,7 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
+import { PageLoader, CardLoader } from '../ui/unified-loader';
 import { Badge } from '../ui/badge';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
@@ -15,823 +16,535 @@ import {
   Edit,
   Search,
   PackageSearch,
-  ChevronLeft,
-  ChevronRight,
-  PackageX,
-  Save,
+  Plus,
   X,
+  Filter,
+  Grid3X3,
+  List,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts, deleteSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
+
 import { toast } from 'sonner';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-
-const capitalizeAllWords = (str) => {
-  if (!str) return '';
-  return str
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
-
-// Memoized Product Card Component
-const ProductCard = React.memo(({ 
-  product, 
-  onEdit, 
-  onDelete, 
-  onOutOfStock, 
-  confirmDelete, 
-  confirmMarkOutOfStock 
-}) => {
-  const { _id, title, price, stock, category, image } = product;
-
-  return (
-    <div className="group transition-all duration-300 hover:scale-105 hover:shadow-lg">
-      <Card className="overflow-hidden">
-        <motion.div className="relative aspect-square bg-gray-50 overflow-hidden" whileHover={{ scale: 1.05 }}>
-          <img
-            src={image || '/placeholder-product.jpg'}
-            alt={title}
-            className="w-full h-full object-cover transition-transform duration-300"
-            onError={(e) => { e.currentTarget.src = '/placeholder-product.jpg'; }}
-          />
-          {stock <= 0 && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-              <Badge variant="destructive" className="text-xs py-1 px-2 rounded-full">
-                Out of Stock
-              </Badge>
-            </div>
-          )}
-        </motion.div>
-
-        <div className="flex flex-col p-4 flex-1">
-          <div className="space-y-1 mb-2">
-            <h2 className="text-base font-semibold line-clamp-2">
-              {capitalizeAllWords(title)}
-            </h2>
-          </div>
-          <div className="mt-auto pt-2">
-            <div className="flex justify-between gap-3.5 items-center">
-              <Badge variant="outline">Rs {price}</Badge>
-              {category?.name && (
-                <span className="text-sm text-muted-foreground">
-                  {capitalizeAllWords(category.name)}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span
-                className={`inline-block w-2 h-2 rounded-full ${stock > 10
-                    ? 'bg-green-500'
-                    : stock > 0
-                      ? 'bg-yellow-500'
-                      : 'bg-red-500'
-                  }`}
-              />
-              <span className="text-xs text-muted-foreground">
-                {stock > 0 ? `${stock} in stock` : 'Out of stock'}
-              </span>
-            </div>
-            <div className="flex flex-col gap-2 mt-2">
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => onEdit(product)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  Edit
-                </Button>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      onClick={() => onDelete(product)}
-                      variant="destructive"
-                      size="sm"
-                      className="flex-1 gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete <strong>"{capitalizeAllWords(title)}"</strong>? 
-                        This action will:
-                        <ul className="list-disc list-inside mt-2 space-y-1">
-                          <li>Permanently remove the product from the system</li>
-                          <li>Delete the product image</li>
-                          <li>This action cannot be undone</li>
-                        </ul>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={confirmDelete}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        Delete Product
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    onClick={() => onOutOfStock(product)}
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    disabled={stock <= 0}
-                  >
-                    <PackageX className="w-4 h-4" />
-                    {stock <= 0 ? 'Already Out of Stock' : 'Mark Out of Stock'}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Mark Out of Stock</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to mark <strong>"{capitalizeAllWords(title)}"</strong> as out of stock? 
-                      This will:
-                      <ul className="list-disc list-inside mt-2 space-y-1">
-                        <li>Set the product stock to 0</li>
-                        <li>Hide the product from active stock filters</li>
-                        <li>You can re-enable it later by updating the stock</li>
-                      </ul>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={confirmMarkOutOfStock}
-                      className="bg-orange-600 hover:bg-orange-700"
-                    >
-                      Mark Out of Stock
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-});
-
-// Memoized Loading Skeleton Component
-const LoadingSkeleton = React.memo(() => {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-  };
-
-  return (
-    <motion.div
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-      variants={container}
-      initial="hidden"
-      animate="show"
-    >
-      {[...Array(8)].map((_, i) => (
-        <motion.div key={i} variants={item}>
-          <Card className="overflow-hidden">
-            <Skeleton className="h-48 w-full" />
-            <div className="p-4 space-y-3">
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <div className="flex justify-between">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-              <div className="flex gap-2 pt-2">
-                <Skeleton className="h-9 w-full" />
-                <Skeleton className="h-9 w-full" />
-              </div>
-            </div>
-          </Card>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-});
-
-// Memoized Pagination Component
-const Pagination = React.memo(({ currentPage, totalPages, onPageChange }) => {
-  const handlePageChange = useCallback((newPage) => {
-    onPageChange(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [onPageChange]);
-
-  return (
-    <motion.div 
-      className="mt-8 flex justify-center"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-    >
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Button>
-
-        {currentPage > 1 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(1)}
-          >
-            1
-          </Button>
-        )}
-
-        {currentPage > 3 && <span className="px-2">...</span>}
-
-        {currentPage > 2 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage - 1)}
-          >
-            {currentPage - 1}
-          </Button>
-        )}
-
-        <Button variant="default" size="sm">
-          {currentPage}
-        </Button>
-
-        {currentPage < totalPages - 1 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            {currentPage + 1}
-          </Button>
-        )}
-
-        {currentPage < totalPages - 2 && <span className="px-2">...</span>}
-
-        {currentPage < totalPages && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(totalPages)}
-          >
-            {totalPages}
-          </Button>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </motion.div>
-  );
-});
+import { AddProduct, deleteSingleProduct, updateSingleProduct, fetchProducts } from '@/redux/slices/products/productSlice';
+import { AllCategory, AddCategory, deleteCategory, updateCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
-  const [category, setCategory] = useState('all');
-  const [categoryInput, setCategoryInput] = useState('');
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stockFilter, setStockFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const [limit] = useState(24);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { products, status } = useSelector((state) => state.products);
+  const { categories } = useSelector((state) => state.categories);
 
-  // Dialog states
-  const [productToDelete, setProductToDelete] = useState(null);
-  const [productToMarkOutOfStock, setProductToMarkOutOfStock] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [stockFilter, setStockFilter] = useState('all');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editFormData, setEditFormData] = useState({
+  const [gridView, setGridView] = useState('grid');
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
-    stock: '',
     category: '',
-    image: null
+    stock: ''
   });
-  const [isUpdating, setIsUpdating] = useState(false);
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    description: ''
+  });
 
-  const { categories } = useSelector((s) => s.categories);
-  const { products, status, totalPages, currentPage, totalItems } = useSelector((s) => s.products);
-
-  const loading = status === 'loading';
-  const noProducts = status === 'succeeded' && products.length === 0;
-
-  // Memoized filtered data
-  const filteredCategories = useMemo(() => 
-    categories.filter((cat) =>
-      cat.name.toLowerCase().includes(categoryInput.toLowerCase())
-    ), [categories, categoryInput]
-  );
-
-  const filteredProducts = useMemo(() => 
-    stockFilter === 'active'
-      ? products.filter((p) => p.stock > 0)
-      : stockFilter === 'out-of-stock'
-      ? products.filter((p) => p.stock <= 0)
-      : products, [products, stockFilter]
-  );
-
-  // Memoized handlers
-  const handleDelete = useCallback((product) => {
-    setProductToDelete(product);
-  }, []);
-
-  const confirmDelete = useCallback(() => {
-    if (!productToDelete) return;
-
-    dispatch(deleteSingleProduct(productToDelete._id))
-      .then((result) => {
-        if (result.meta.requestStatus === 'fulfilled') {
-          toast.success('Product deleted successfully');
-        } else {
-          toast.error('Failed to delete product');
-        }
-      })
-      .finally(() => {
-        setProductToDelete(null);
-      });
-  }, [productToDelete, dispatch]);
-
-  const handleOutOfStock = useCallback((product) => {
-    setProductToMarkOutOfStock(product);
-  }, []);
-
-  const confirmMarkOutOfStock = useCallback(() => {
-    if (!productToMarkOutOfStock) return;
-
-    const formData = new FormData();
-    formData.append('stock', '0');
-
-    dispatch(updateSingleProduct({
-      id: productToMarkOutOfStock._id,
-      inputValues: formData
-    })).then((result) => {
-      if (result.meta.requestStatus === 'fulfilled') {
-        toast.success('Product marked as out of stock');
-        
-        if (stockFilter === 'out-of-stock') {
-          dispatch(fetchProducts({ 
-            category, 
-            searchTerm, 
-            page, 
-            limit, 
-            stockFilter: 'out-of-stock'
-          }));
-        }
-      } else {
-        toast.error('Failed to update product');
-        dispatch(fetchProducts({ 
-          category, 
-          searchTerm, 
-          page, 
-          limit, 
-          stockFilter 
-        }));
-      }
-    }).finally(() => {
-      setProductToMarkOutOfStock(null);
-    });
-  }, [productToMarkOutOfStock, dispatch, stockFilter, category, searchTerm, page, limit]);
-
-  const handleEdit = useCallback((product) => {
-    setSelectedProduct(product);
-    setEditFormData({
-      title: product.title || '',
-      description: product.description || '',
-      price: product.price || '',
-      stock: product.stock || '',
-      category: product.category?._id || '',
-      image: null
-    });
-    setIsEditDialogOpen(true);
-  }, []);
-
-  const handleEditFormChange = useCallback((field, value) => {
-    setEditFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  }, []);
-
-  const handleImageChange = useCallback((e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setEditFormData(prev => ({
-        ...prev,
-        image: file
-      }));
-    }
-  }, []);
-
-  const handleUpdateProduct = useCallback(async () => {
-    if (!selectedProduct) return;
-
-    setIsUpdating(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('title', editFormData.title);
-      formData.append('description', editFormData.description);
-      formData.append('price', editFormData.price);
-      formData.append('stock', editFormData.stock);
-      formData.append('category', editFormData.category);
-      
-      if (editFormData.image) {
-        formData.append('image', editFormData.image);
-      }
-
-      const result = await dispatch(updateSingleProduct({
-        id: selectedProduct._id,
-        inputValues: formData
-      })).unwrap();
-
-      if (result.success) {
-        toast.success('Product updated successfully');
-        setIsEditDialogOpen(false);
-        setSelectedProduct(null);
-        setEditFormData({
-          title: '',
-          description: '',
-          price: '',
-          stock: '',
-          category: '',
-          image: null
-        });
-        dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
-      } else {
-        toast.error(result.message || 'Failed to update product');
-      }
-    } catch (error) {
-      toast.error(error || 'Failed to update product');
-    } finally {
-      setIsUpdating(false);
-    }
-  }, [selectedProduct, editFormData, dispatch, category, searchTerm, page, limit, stockFilter]);
-
-  const handlePageChange = useCallback((newPage) => {
-    setPage(newPage);
-  }, []);
-
+  // Fetch products and categories on component mount
   useEffect(() => {
+    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 100 }));
     dispatch(AllCategory());
   }, [dispatch]);
 
-  useEffect(() => {
-    dispatch(fetchProducts({ category, searchTerm, page, limit, stockFilter }));
-  }, [category, searchTerm, page, limit, stockFilter, dispatch]);
+  // Filter products based on search, category, and stock
+  const filteredProducts = useMemo(() => {
+    let filtered = products || [];
 
-  useEffect(() => {
-    if (page !== 1) {
-      setPage(1);
+    if (searchTerm) {
+      filtered = filtered.filter(product =>
+        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
-  }, [stockFilter]);
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 }
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(product => product.category?.name === selectedCategory);
     }
-  };
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-  };
+    if (stockFilter === 'active') {
+      filtered = filtered.filter(product => product.stock > 0);
+    } else if (stockFilter === 'out-of-stock') {
+      filtered = filtered.filter(product => product.stock <= 0);
+    }
+
+    return filtered;
+  }, [products, searchTerm, selectedCategory, stockFilter]);
+
+  // Handle form submission
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const formDataObj = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== '') {
+          formDataObj.append(key, formData[key]);
+        }
+      });
+
+      if (showUpdateForm && selectedProduct) {
+        await dispatch(updateSingleProduct({ id: selectedProduct._id, inputValues: formDataObj })).unwrap();
+        toast.success('Product updated successfully!');
+        setShowUpdateForm(false);
+      } else {
+        await dispatch(AddProduct(formDataObj)).unwrap();
+        toast.success('Product added successfully!');
+        setShowCreateForm(false);
+      }
+
+      setFormData({ title: '', description: '', price: '', category: '', stock: '' });
+      setSelectedProduct(null);
+    } catch (error) {
+      toast.error(error.message || 'Something went wrong!');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [dispatch, formData, showUpdateForm, selectedProduct, isSubmitting]);
+
+  // Handle category form submission
+  const handleCategorySubmit = useCallback(async (e) => {
+    e.preventDefault();
+    try {
+      if (showUpdateForm && selectedProduct?.name) {
+        await dispatch(updateCategory({ id: selectedProduct._id, inputValues: categoryFormData })).unwrap();
+        toast.success('Category updated successfully!');
+        setShowUpdateForm(false);
+      } else {
+        await dispatch(AddCategory(categoryFormData)).unwrap();
+        toast.success('Category created successfully!');
+        setShowCategoryForm(false);
+      }
+
+      setCategoryFormData({ name: '', description: '' });
+      setSelectedProduct(null);
+    } catch (error) {
+      toast.error(error.message || 'Something went wrong!');
+    }
+  }, [dispatch, categoryFormData, showUpdateForm, selectedProduct]);
+
+  // Handle product deletion
+  const handleDelete = useCallback(async (productId) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await dispatch(deleteSingleProduct(productId)).unwrap();
+        toast.success('Product deleted successfully!');
+      } catch (error) {
+        toast.error(error.message || 'Something went wrong!');
+      }
+    }
+  }, [dispatch]);
+
+  // Handle category deletion
+  const handleCategoryDelete = useCallback(async (categoryId) => {
+    if (window.confirm('Are you sure you want to delete this category?')) {
+      try {
+        await dispatch(deleteCategory(categoryId)).unwrap();
+        toast.success('Category deleted successfully!');
+      } catch (error) {
+        toast.error(error.message || 'Something went wrong!');
+      }
+    }
+  }, [dispatch]);
+
+  // Handle edit product
+  const handleEdit = useCallback((product) => {
+    setSelectedProduct(product);
+    setFormData({
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      category: product.category?._id || '',
+      stock: product.stock
+    });
+    setShowUpdateForm(true);
+  }, []);
+
+  // Handle edit category
+  const handleCategoryEdit = useCallback((category) => {
+    setSelectedProduct(category);
+    setCategoryFormData({
+      name: category.name,
+      description: category.description
+    });
+    setShowUpdateForm(true);
+  }, []);
+
+  if (status === 'loading') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <PageLoader message="Loading Products..." />
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-7xl mx-auto px-4 sm:px-6 py-8"
-    >
-      <motion.h1
-        className='text-2xl mb-5'
-        initial={{ x: -20 }}
-        animate={{ x: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        All Products ({totalItems})
-      </motion.h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">All Products</h1>
+          <p className="text-gray-600 mt-2">Manage your product catalog</p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowCategoryForm(true)}
+            variant="outline"
+            className="transition-all duration-200 hover:bg-gray-50"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
+          
+          <Button
+            onClick={() => setShowCreateForm(true)}
+            className="transition-all duration-200 hover:scale-105"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Product
+          </Button>
+        </div>
+      </div>
 
-      {/* Filter Section */}
-      <motion.div
-        className="bg-white rounded-lg shadow-sm p-4 mb-6"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="flex flex-col sm:flex-row gap-3">
-          <motion.div className="relative flex-1" whileHover={{ scale: 1.01 }}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search products by name..."
-              className="pl-9"
-            />
-          </motion.div>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
 
-          <div className="relative w-[180px]">
-            <Input
-              placeholder="Search category"
-              value={categoryInput}
-              onChange={(e) => {
-                setCategoryInput(e.target.value);
-                setShowCategoryDropdown(true);
-              }}
-              onFocus={() => setShowCategoryDropdown(true)}
-              onBlur={() => setTimeout(() => setShowCategoryDropdown(false), 150)}
-              className="w-full"
-            />
-            <AnimatePresence>
-              {showCategoryDropdown && (
-                <motion.ul
-                  className="absolute z-50 w-full mt-1 bg-white text-black shadow-lg rounded-md border max-h-60 overflow-y-auto"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <li
-                    className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                    onClick={() => {
-                      setCategory('all');
-                      setCategoryInput('');
-                      setShowCategoryDropdown(false);
-                    }}
-                  >
-                    All Categories
-                  </li>
-                  {filteredCategories.map((cat) => (
-                    <li
-                      key={cat._id}
-                      className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
-                      onClick={() => {
-                        setCategory(cat._id);
-                        setCategoryInput(cat.name);
-                        setShowCategoryDropdown(false);
-                      }}
-                    >
-                      {cat.name}
-                    </li>
-                  ))}
-                </motion.ul>
-              )}
-            </AnimatePresence>
+          {/* Category Filter */}
+          <div className="w-full lg:w-48">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories?.map((category) => (
+                  <SelectItem key={category._id} value={category.name}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Stock Filter */}
+          <div className="w-full lg:w-48">
+            <Select value={stockFilter} onValueChange={setStockFilter}>
+              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
+                <SelectValue placeholder="Filter by stock" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Stock</SelectItem>
+                <SelectItem value="active">In Stock</SelectItem>
+                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* View Toggle */}
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
+            <Button
+              variant={gridView === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setGridView('grid')}
+              className="transition-all duration-200"
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={gridView === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setGridView('list')}
+              className="transition-all duration-200"
+            >
+              <List className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+      </div>
 
-        <motion.div
-          className="flex gap-3 mt-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          {['all', 'active', 'out-of-stock'].map((tab) => (
-            <motion.div key={tab} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                variant={stockFilter === tab ? 'default' : 'outline'}
-                onClick={() => {
-                  setPage(1);
-                  setStockFilter(tab);
-                }}
-                size="sm"
-              >
-                {tab === 'all' ? 'All' : tab === 'active' ? 'In Stock' : 'Out of Stock'}
-              </Button>
-            </motion.div>
-          ))}
-        </motion.div>
-      </motion.div>
-
-      {/* Loading Skeleton */}
-      {loading && <LoadingSkeleton />}
-
-      {/* No Products Found */}
-      <AnimatePresence>
-        {noProducts && !loading && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="flex flex-col items-center justify-center py-16 gap-4 text-center"
+      {/* Products Grid */}
+      <div className={`grid gap-6 ${
+        gridView === 'grid' 
+          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+          : 'grid-cols-1'
+      }`}>
+        {filteredProducts.map((product) => (
+          <Card 
+            key={product._id} 
+            className={`p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+              gridView === 'list' ? 'flex flex-row items-center gap-4' : ''
+            }`}
           >
-            <PackageSearch className="h-12 w-12 text-muted-foreground" />
-            <h3 className="text-lg font-medium">No products found</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchTerm
-                ? 'Try adjusting your search or filter'
-                : 'Add a new product to get started'}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Product Image */}
+            <div className={`relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 ${
+              gridView === 'list' ? 'w-24 h-24 flex-shrink-0' : 'w-full'
+            }`}>
+              <img
+                src={product.image || '/placeholder-product.jpg'}
+                alt={product.title}
+                className="w-full h-full object-cover"
+                onError={(e) => (e.currentTarget.src = '/placeholder-product.jpg')}
+              />
+              
+              {/* Stock Badge */}
+              <div className="absolute top-2 right-2">
+                <Badge variant={product.stock > 0 ? 'default' : 'destructive'}>
+                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                </Badge>
+              </div>
+            </div>
 
-      {/* Product Grid */}
-      {!loading && filteredProducts.length > 0 && (
-        <>
-          <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
-            {filteredProducts.map((product) => (
-              <motion.div key={product._id} variants={item}>
-                <ProductCard
-                  product={product}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onOutOfStock={handleOutOfStock}
-                  confirmDelete={confirmDelete}
-                  confirmMarkOutOfStock={confirmMarkOutOfStock}
-                />
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          )}
-        </>
-      )}
-
-      {/* Edit Product Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>
-              Update product details for "{selectedProduct?.title}"
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedProduct && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                <img
-                  src={selectedProduct.image || '/placeholder-product.jpg'}
-                  alt={selectedProduct.title}
-                  className="w-20 h-20 object-cover rounded"
-                />
-                <div>
-                  <h3 className="font-semibold">{capitalizeAllWords(selectedProduct.title)}</h3>
-                  <p className="text-sm text-gray-600">Rs {selectedProduct.price}</p>
-                  <p className="text-sm text-gray-600">{selectedProduct.stock} in stock</p>
-                  <p className="text-sm text-gray-600">{selectedProduct.category?.name}</p>
-                </div>
+            {/* Product Info */}
+            <div className={`mt-4 ${gridView === 'list' ? 'flex-1' : ''}`}>
+              <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
+                {product.title}
+              </h3>
+              
+              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                {product.description}
+              </p>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-2xl font-bold text-blue-600">
+                  PKR {product.price}
+                </span>
+                <span className="text-sm text-gray-500">
+                  Stock: {product.stock}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Product Name </Label>
-                  <Input
-                    id="title"
-                    value={editFormData.title}
-                    onChange={(e) => handleEditFormChange('title', e.target.value)}
-                    placeholder="Enter product name"
-                  />
-                </div>
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEdit(product)}
+                  className="flex-1 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(product._id)}
+                  className="transition-all duration-200 hover:bg-red-600"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price (Rs) *</Label>
+      {/* Empty State */}
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12">
+          <PackageSearch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+          <p className="text-gray-500 mb-6">
+            {searchTerm || selectedCategory !== 'all' || stockFilter !== 'all'
+              ? 'Try adjusting your filters or search terms'
+              : 'Get started by adding your first product'}
+          </p>
+          {!searchTerm && selectedCategory === 'all' && stockFilter === 'all' && (
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Create/Update Product Modal */}
+      {(showCreateForm || showUpdateForm) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                {showUpdateForm ? 'Update Product' : 'Create Product'}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowCreateForm(false);
+                  setShowUpdateForm(false);
+                  setSelectedProduct(null);
+                  setFormData({ title: '', description: '', price: '', category: '', stock: '' });
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">Price</Label>
                   <Input
                     id="price"
                     type="number"
-                    value={editFormData.price}
-                    onChange={(e) => handleEditFormChange('price', e.target.value)}
-                    placeholder="Enter price"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    required
+                    className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="stock">Stock Quantity </Label>
+                <div>
+                  <Label htmlFor="stock">Stock</Label>
                   <Input
                     id="stock"
                     type="number"
-                    value={editFormData.stock}
-                    onChange={(e) => handleEditFormChange('stock', e.target.value)}
-                    placeholder="Enter stock quantity"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    required
+                    className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category </Label>
-                  <Select
-                    value={editFormData.category}
-                    onValueChange={(value) => handleEditFormChange('category', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat._id} value={cat._id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={editFormData.description}
-                    onChange={(e) => handleEditFormChange('description', e.target.value)}
-                    placeholder="Enter product description"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="image">Product Image</Label>
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={editFormData.image ? URL.createObjectURL(editFormData.image) : (selectedProduct.image || '/placeholder-product.jpg')}
-                      alt="Product preview"
-                      className="w-20 h-20 object-cover rounded border"
-                    />
-                    <div className="flex-1">
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="cursor-pointer"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Leave empty to keep current image
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-blue-500">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category._id} value={category._id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="w-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Processing...' : (showUpdateForm ? 'Update Product' : 'Create Product')}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Update Category Modal */}
+      {(showCategoryForm || (showUpdateForm && selectedProduct?.name)) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                {showUpdateForm ? 'Update Category' : 'Create Category'}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowCategoryForm(false);
+                  setShowUpdateForm(false);
+                  setSelectedProduct(null);
+                  setCategoryFormData({ name: '', description: '' });
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-    
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdateProduct}
-              disabled={isUpdating}
-            >
-              {isUpdating ? 'Updating...' : 'Update Product'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </motion.div>
+
+            <form onSubmit={handleCategorySubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="categoryName">Name</Label>
+                <Input
+                  id="categoryName"
+                  value={categoryFormData.name}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                  required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="categoryDescription">Description</Label>
+                <Textarea
+                  id="categoryDescription"
+                  value={categoryFormData.description}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                  required
+                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <Button type="submit" className="w-full transition-all duration-200 hover:scale-105">
+                {showUpdateForm ? 'Update Category' : 'Create Category'}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
