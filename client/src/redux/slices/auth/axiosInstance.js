@@ -4,7 +4,7 @@ import {store} from '../../store';
 import { logout, setTokenExpired, refreshToken } from './authSlice';
 import { toast } from 'sonner';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://api.gultraders.com/api');
 
 console.log('API_URL:', API_URL);
 

@@ -201,6 +201,23 @@ const ProductList = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const limit = 24;
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (previewImage) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '0px'; // Prevent layout shift
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = '0px';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.paddingRight = '0px';
+    };
+  }, [previewImage]);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -583,7 +600,7 @@ const ProductList = () => {
       {/* Image Preview Modal */}
       {previewImage && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 transition-opacity duration-300"
+          className="fixed z-[9999] lg:py-5 lg:top-0 lg:left-0 lg:right-0 lg:bottom-0 py-50 top-0 left-0 right-0 bottom-0 bg-black/70 backdrop-blur-sm lg:px-30 transition-opacity duration-300"
           onClick={() => setPreviewImage(null)}
           role="dialog"
           aria-modal="true"

@@ -19,7 +19,9 @@ const Navbar = () => {
   useEffect(() => {
     // Check if user is on mobile
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const mobile = window.innerWidth <= 768;
+      console.log('Mobile check:', mobile, 'Width:', window.innerWidth);
+      setIsMobile(mobile);
     };
 
     checkMobile();
@@ -27,6 +29,7 @@ const Navbar = () => {
 
     // Listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e) => {
+      console.log('beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstallButton(true);
@@ -34,18 +37,39 @@ const Navbar = () => {
 
     // Listen for the appinstalled event
     const handleAppInstalled = () => {
+      console.log('PWA was installed');
       setShowInstallButton(false);
       setDeferredPrompt(null);
-      console.log('PWA was installed');
     };
+
+    // Check if app is already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isInApp = window.navigator.standalone === true;
+    console.log('Is standalone mode:', isStandalone);
+    console.log('Is in app:', isInApp);
+    
+    if (isStandalone || isInApp) {
+      setShowInstallButton(false);
+    } else {
+      // Always show install button for mobile devices
+      // For desktop, show if beforeinstallprompt is supported or if we're in development
+      const shouldShow = window.innerWidth <= 768 || 
+                        'onbeforeinstallprompt' in window || 
+                        process.env.NODE_ENV === 'development';
+      
+      if (shouldShow) {
+        setShowInstallButton(true);
+      }
+    }
+
+    // Debug PWA support
+    console.log('Service Worker support:', 'serviceWorker' in navigator);
+    console.log('BeforeInstallPrompt support:', 'onbeforeinstallprompt' in window);
+    console.log('Current showInstallButton state:', showInstallButton);
+    console.log('Current isMobile state:', isMobile);
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallButton(false);
-    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -55,19 +79,51 @@ const Navbar = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    // Check if we have a deferred prompt (Chrome, Edge, etc.)
+    if (deferredPrompt) {
+      try {
+        // Show the install prompt
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
+        if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          setShowInstallButton(false);
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+      } catch (error) {
+        console.error('Error showing install prompt:', error);
+      }
+      
+      setDeferredPrompt(null);
+      return;
     }
 
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
+    // For browsers that don't support beforeinstallprompt (Safari, some mobile browsers)
+    // Try to trigger installation through other means
+    if (isMobile) {
+      // For iOS Safari - this will show the "Add to Home Screen" option
+      if (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
+        // iOS Safari - show native add to home screen
+        window.location.href = 'data:text/html,<script>window.close()</script>';
+        return;
+      }
+      
+      // For Android Chrome - try to trigger install banner
+      if (navigator.userAgent.includes('Chrome')) {
+        // Force refresh to potentially trigger install banner
+        window.location.reload();
+        return;
+      }
+    }
+
+    // For desktop browsers without beforeinstallprompt
+    // Try to open in a new window to trigger install prompt
+    const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600');
+    if (newWindow) {
+      newWindow.focus();
+    }
   };
 
   // Only show navbar if user is logged in
@@ -76,7 +132,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-md border-b border-white/30 shadow-md px-2 py-4 flex items-center justify-between h-15">
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-white/30 shadow-lg px-2 py-4 flex items-center justify-between h-16">
       {/* Left side: Logo + contact */}
       <div className="flex items-center gap-3">
         <Link to="/">
@@ -91,26 +147,18 @@ const Navbar = () => {
         </p>
       </div>
       <div>
-        {/* PWA Install Button - Always visible on mobile */}
-        {isMobile && (
+        {/* PWA Install Button - Show when available */}
+        {showInstallButton && (
           <button
             onClick={handleInstallClick}
-            className="flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-xs font-medium shadow-md"
-            title="Install App on Home Screen"
+            className={`flex items-center gap-1 px-3 py-2 text-white rounded-md transition-all duration-200 text-xs font-medium shadow-md ${
+              isMobile 
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            title={isMobile ? "Install App on Home Screen" : "Install App"}
           >
-            <Smartphone size={14} />
-            <span className="hidden sm:inline">Install</span>
-          </button>
-        )}
-
-        {/* PWA Install Button for Desktop - only when available */}
-        {!isMobile && showInstallButton && (
-          <button
-            onClick={handleInstallClick}
-            className="flex items-center gap-1 px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-xs font-medium"
-            title="Install App"
-          >
-            <Download size={14} />
+            {isMobile ? <Smartphone size={14} /> : <Download size={14} />}
             <span>Install</span>
           </button>
         )}

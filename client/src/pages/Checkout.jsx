@@ -116,189 +116,187 @@ const Checkout = () => {
   };
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white ">
-      {/* Fixed Billing Information Card at Bottom */}
-      <div className=" bg-white pt-3 border-t border-gray-200 shadow-lg z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
-            <div className="absolute inset-0 overflow-hidden rounded-2xl">
-              <div className="absolute -top-5 -left-5 w-32 h-32 bg-teal-100 rounded-full filter blur-3xl opacity-20"></div>
-            </div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-20">
+      {/* Main Content Container */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+          <div className="absolute inset-0 overflow-hidden rounded-2xl">
+            <div className="absolute -top-5 -left-5 w-32 h-32 bg-teal-100 rounded-full filter blur-3xl opacity-20"></div>
+          </div>
 
-            <div className="relative z-10">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
-                <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
-                Billing Information
-              </h2>
+          <div className="relative z-10">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
+              <CreditCard className="w-5 h-5 mr-2 text-teal-600" />
+              Billing Information
+            </h2>
 
-              <div className="space-y-6">
-                {!showForm ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-700">Contact</h3>
-                        <Check className="w-4 h-4 text-green-500" />
-                      </div>
-                      <p className="text-sm text-gray-600">{user?.email}</p>
-                      <p className="text-sm text-gray-600">{user?.phone}</p>
+            <div className="space-y-6">
+              {!showForm ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-700">Contact</h3>
+                      <Check className="w-4 h-4 text-green-500" />
                     </div>
-
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-700">Shipping Address</h3>
-                        <Check className="w-4 h-4 text-green-500" />
-                      </div>
-                      <p className="text-sm text-gray-600">{user?.name}</p>
-                      <p className="text-sm text-gray-600">{user?.address}</p>
-                      <p className="text-sm text-gray-600">{user?.city}</p>
-                    </div>
+                    <p className="text-sm text-gray-600">{user?.email}</p>
+                    <p className="text-sm text-gray-600">{user?.phone}</p>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Phone */}
-                    <div className="relative w-full">
-                      <input
-                        type="text"
-                        name="phone"
-                        id="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        placeholder=" "
-                        required
-                        className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                      />
-                      <label
-                        htmlFor="phone"
-                        className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
-                      >
-                        <Phone className="w-4 h-4" /> Phone
-                      </label>
-                    </div>
-                    {/* City */}
-                    <div className="relative w-full">
-                      <input
-                        type="text"
-                        name="city"
-                        id="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        placeholder=" "
-                        required
-                        className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                      />
-                      <label
-                        htmlFor="city"
-                        className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
-                      >
-                        <MapPin className="w-4 h-4" /> City
-                      </label>
-                    </div>
-                  </div>
-                )}
 
-                {/* Address - Full Width */}
-                {showForm && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-gray-700">Shipping Address</h3>
+                      <Check className="w-4 h-4 text-green-500" />
+                    </div>
+                    <p className="text-sm text-gray-600">{user?.name}</p>
+                    <p className="text-sm text-gray-600">{user?.address}</p>
+                    <p className="text-sm text-gray-600">{user?.city}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Phone */}
                   <div className="relative w-full">
-                    <textarea
-                      name="address"
-                      id="address"
-                      value={formData.address}
+                    <input
+                      type="text"
+                      name="phone"
+                      id="phone"
+                      value={formData.phone}
                       onChange={handleChange}
                       placeholder=" "
-                      rows={3}
                       required
                       className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
         focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                     />
                     <label
-                      htmlFor="address"
+                      htmlFor="phone"
                       className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
         transition-all duration-200 ease-in-out pointer-events-none
         peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
         peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
                     >
-                      <Home className="w-4 h-4" /> Address
+                      <Phone className="w-4 h-4" /> Phone
                     </label>
                   </div>
+                  {/* City */}
+                  <div className="relative w-full">
+                    <input
+                      type="text"
+                      name="city"
+                      id="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder=" "
+                      required
+                      className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                    />
+                    <label
+                      htmlFor="city"
+                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
+                    >
+                      <MapPin className="w-4 h-4" /> City
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Address - Full Width */}
+              {showForm && (
+                <div className="relative w-full">
+                  <textarea
+                    name="address"
+                    id="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder=" "
+                    rows={3}
+                    required
+                    className="peer w-full border border-gray-300 rounded-md pb-2 px-3 pt-3 text-sm bg-white 
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                  />
+                  <label
+                    htmlFor="address"
+                    className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700] flex items-center gap-1"
+                  >
+                    <Home className="w-4 h-4" /> Address
+                  </label>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                {showForm ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                      className="flex-1 border-gray-300 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleProfileUpdate}
+                      disabled={status === 'loading'}
+                      className="flex-1 bg-black text-white"
+                    >
+                      {status === 'loading' ? (
+                        <>
+                          <Loader2 className="animate-spin w-4 h-4" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Save Info
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowForm(true)}
+                      className="flex-1 border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Profile Info
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCheckout}
+                      disabled={loading}
+                      className="flex-1 bg-black text-white flex items-center gap-2"
+                    >
+                      {loading ? (
+                        <ButtonLoader />
+                      ) : (
+                        <>
+                          <ShoppingCart className="w-5 h-5" />
+                          Place Order
+                        </>
+                      )}
+                    </Button>
+                  </>
                 )}
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-2">
-                  {showForm ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowForm(false)}
-                        className="flex-1 border-gray-300 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleProfileUpdate}
-                        disabled={status === 'loading'}
-                        className="flex-1 bg-black text-white"
-                      >
-                        {status === 'loading' ? (
-                          <>
-                            <Loader2 className="animate-spin w-4 h-4" />
-                            Saving...
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4" />
-                            Save Info
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowForm(true)}
-                        className="flex-1 border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit Profile Info
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleCheckout}
-                        disabled={loading}
-                        className="flex-1 bg-black text-white flex items-center gap-2"
-                      >
-                        {loading ? (
-                          <ButtonLoader />
-                        ) : (
-                          <>
-                            <ShoppingCart className="w-5 h-5" />
-                            Place Order
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                <div className="text-xs text-gray-500 text-center pt-2">
-                  By placing your order, you agree to our{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-blue-600 hover:underline">
-                    Privacy Policy
-                  </a>
-                  .
-                </div>
+              <div className="text-xs text-gray-500 text-center pt-2">
+                By placing your order, you agree to our{' '}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a href="#" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </a>
+                .
               </div>
             </div>
           </div>

@@ -22,19 +22,27 @@ export default defineConfig({
         short_name: "Gul Autos",
         start_url: "/",
         display: "standalone",
-        background_color: "#000000",
-        theme_color: "#FED700", // Updated to match your theme
+        background_color: "#ffffff",
+        theme_color: "#3b82f6", // Blue theme to match your install button
+        description: "Gul Autos - Your trusted automotive partner",
         icons: [
           {
-            src: "maskable.png",
-            sizes: "196x196",
+            src: "logos.png",
+            sizes: "192x192",
             type: "image/png",
-            purpose: "any maskable"
+            purpose: "any"
           },
           {
-            src: "logo.jpg",
+            src: "logos.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "logos.png",
             sizes: "192x192",
-            type: "image/jpeg"
+            type: "image/png",
+            purpose: "maskable"
           }
         ]
       },

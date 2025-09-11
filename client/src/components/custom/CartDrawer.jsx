@@ -20,8 +20,6 @@ import {
   SheetFooter,
   SheetClose,
 } from '@/components/ui/sheet';
-import { Dialog, DialogContent } from '../ui/dialog';
-import Checkout from '@/pages/Checkout';
 
 // Optimized CartProduct component with optimistic updates
 const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
@@ -84,13 +82,10 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     toast.success('Product removed from cart');
   }, [dispatch, _id]);
 
-  const handleBuyNow = useCallback(() => {
-    if (localQuantity > stock || localQuantity <= 0) {
-      toast.error('Invalid product quantity');
-      return;
-    }
+  const handleProductClick = useCallback(() => {
+    // Navigate to product details or home page
     navigate('/');
-  }, [localQuantity, stock, navigate]);
+  }, [navigate]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -115,7 +110,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
       `}</style>
       <div
         className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50 cursor-pointer transition-all duration-200 ease-in-out"
-        onClick={handleBuyNow}
+        onClick={handleProductClick}
       >
         <div className="flex items-center gap-4">
           <img
@@ -225,7 +220,6 @@ const CartDrawer = () => {
   );
   
   const [validationMap, setValidationMap] = useState({});
-  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
 
   const handleValidationChange = useCallback((productId, isValid) => {
     setValidationMap((prev) => ({
@@ -241,9 +235,11 @@ const CartDrawer = () => {
       .catch((err) => toast.error(err));
   }, [dispatch]);
 
-  const handleBuyNow = useCallback(() => {
+  const handleCheckout = useCallback(() => {
     if (!user) {
-      return navigate('/login');
+      toast.error('Please login to checkout');
+      navigate('/login');
+      return;
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.');
@@ -254,68 +250,61 @@ const CartDrawer = () => {
       toast.error('Fix invalid quantities in cart before checkout.');
       return;
     }
-    setOpenCheckoutDialog(true);
+    // Navigate to checkout page instead of opening popup
+    navigate('/checkout');
   }, [user, navigate, cartItems.length, validationMap]);
 
   return (
-    <>
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline" className="relative">
-            {totalQuantity > 0 && (
-              <Badge className="absolute -top-2 -right-2 text-xs px-1 py-0.5">
-                {totalQuantity}
-              </Badge>
-            )}
-            <ShoppingCart
-              strokeWidth={1.3}
-              size={28}
-              className="text-gray-800 hover:scale-105 transition-all duration-200 ease-in-out"
-            />
-          </Button>
-        </SheetTrigger>
-        <SheetContent className="w-full sm:w-[400px]">
-          <SheetHeader>
-            <SheetTitle className="text-xl font-bold">Your Cart</SheetTitle>
-            <SheetDescription>Total Quantity: {totalQuantity}</SheetDescription>
-          </SheetHeader>
-          <div className="mt-4 max-h-[60vh] overflow-y-auto">
-            {cartItems.length > 0 ? (
-              cartItems.map((item) => (
-                <CartProduct
-                  key={item.product._id}
-                  product={item.product}
-                  quantity={item.quantity}
-                  onValidationChange={handleValidationChange}
-                />
-              ))
-            ) : (
-              <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
-            )}
-          </div>
-          <SheetFooter className="mt-6">
-            <SheetClose asChild>
-              <Button
-                onClick={handleBuyNow}
-                disabled={
-                  cartItems.length === 0 ||
-                  Object.values(validationMap).includes(false)
-                }
-                className="w-full"
-              >
-                Checkout
-              </Button>
-            </SheetClose>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-      
-      <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
-        <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
-          <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
-        </DialogContent>
-      </Dialog>
-    </>
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" className="relative">
+          {totalQuantity > 0 && (
+            <Badge className="absolute -top-2 -right-2 text-xs px-1 py-0.5">
+              {totalQuantity}
+            </Badge>
+          )}
+          <ShoppingCart
+            strokeWidth={1.3}
+            size={28}
+            className="text-gray-800 hover:scale-105 transition-all duration-200 ease-in-out"
+          />
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full sm:w-[400px]">
+        <SheetHeader>
+          <SheetTitle className="text-xl font-bold">Your Cart</SheetTitle>
+          <SheetDescription>Total Quantity: {totalQuantity}</SheetDescription>
+        </SheetHeader>
+        <div className="mt-4 max-h-[60vh] overflow-y-auto">
+          {cartItems.length > 0 ? (
+            cartItems.map((item) => (
+              <CartProduct
+                key={item.product._id}
+                product={item.product}
+                quantity={item.quantity}
+                onValidationChange={handleValidationChange}
+              />
+            ))
+          ) : (
+            <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
+          )}
+        </div>
+        <SheetFooter className="mt-6">
+          <SheetClose asChild>
+            <Button
+              onClick={handleCheckout}
+              disabled={
+                cartItems.length === 0 ||
+                Object.values(validationMap).includes(false)
+              }
+              className="w-full"
+            >
+              Checkout
+            </Button>
+          </SheetClose>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };
 

@@ -4,7 +4,7 @@ import { store } from './redux/store';
 import { Toaster } from './components/ui/sonner';
 import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
 import ErrorBoundary from './components/custom/ErrorBoundary';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { useTokenValidation, useTokenRefresh } from './hooks/use-token-validation';
 import { PageLoader } from './components/ui/unified-loader';
 import ScrollOptimizer from './components/ui/ScrollOptimizer';
@@ -38,6 +38,23 @@ const AppContent = () => {
   
   // Get user state to conditionally apply navbar-present class
   const user = useSelector((state) => state.auth.user);
+
+  // Apply navbar-present class to body when user is logged in
+  useEffect(() => {
+    console.log('User state changed:', user);
+    if (user) {
+      document.body.classList.add('navbar-present');
+      console.log('Added navbar-present class to body');
+    } else {
+      document.body.classList.remove('navbar-present');
+      console.log('Removed navbar-present class from body');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('navbar-present');
+    };
+  }, [user]);
 
   const router = createBrowserRouter([
     {
@@ -185,15 +202,13 @@ const AppContent = () => {
   ]);
 
   return (
-    <div className={user ? 'navbar-present' : ''}>
-      <ErrorBoundary>
-        <Toaster />
-        <TokenExpirationHandler />
-        <Suspense fallback={<PageLoader message="Loading Application" />}>
-          <RouterProvider router={router} />
-        </Suspense>
-      </ErrorBoundary>
-    </div>
+    <ErrorBoundary>
+      <Toaster />
+      <TokenExpirationHandler />
+      <Suspense fallback={<PageLoader message="Loading Application" />}>
+        <RouterProvider router={router} />
+      </Suspense>
+    </ErrorBoundary>
   );
 };
 
