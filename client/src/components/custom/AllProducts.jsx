@@ -26,8 +26,8 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
-import { AddProduct, deleteSingleProduct, updateSingleProduct, fetchProducts } from '@/redux/slices/products/productSlice';
-import { AllCategory, AddCategory, deleteCategory, updateCategory } from '@/redux/slices/categories/categoriesSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts } from '@/redux/slices/products/productSlice';
+import { AllCategory, AddCategory, deleteCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
@@ -39,7 +39,6 @@ const AllProducts = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [gridView, setGridView] = useState('grid');
@@ -104,45 +103,31 @@ const AllProducts = () => {
         }
       });
 
-      if (showUpdateForm && selectedProduct) {
-        await dispatch(updateSingleProduct({ id: selectedProduct._id, inputValues: formDataObj })).unwrap();
-        toast.success('Product updated successfully!');
-        setShowUpdateForm(false);
-      } else {
-        await dispatch(AddProduct(formDataObj)).unwrap();
-        toast.success('Product added successfully!');
-        setShowCreateForm(false);
-      }
+      await dispatch(AddProduct(formDataObj)).unwrap();
+      toast.success('Product added successfully!');
+      setShowCreateForm(false);
 
       setFormData({ title: '', description: '', price: '', category: '', stock: '' });
-      setSelectedProduct(null);
     } catch (error) {
       toast.error(error.message || 'Something went wrong!');
     } finally {
       setIsSubmitting(false);
     }
-  }, [dispatch, formData, showUpdateForm, selectedProduct, isSubmitting]);
+  }, [dispatch, formData, isSubmitting]);
 
   // Handle category form submission
   const handleCategorySubmit = useCallback(async (e) => {
     e.preventDefault();
     try {
-      if (showUpdateForm && selectedProduct?.name) {
-        await dispatch(updateCategory({ id: selectedProduct._id, inputValues: categoryFormData })).unwrap();
-        toast.success('Category updated successfully!');
-        setShowUpdateForm(false);
-      } else {
-        await dispatch(AddCategory(categoryFormData)).unwrap();
-        toast.success('Category created successfully!');
-        setShowCategoryForm(false);
-      }
+      await dispatch(AddCategory(categoryFormData)).unwrap();
+      toast.success('Category created successfully!');
+      setShowCategoryForm(false);
 
       setCategoryFormData({ name: '', description: '' });
-      setSelectedProduct(null);
     } catch (error) {
       toast.error(error.message || 'Something went wrong!');
     }
-  }, [dispatch, categoryFormData, showUpdateForm, selectedProduct]);
+  }, [dispatch, categoryFormData]);
 
   // Handle product deletion
   const handleDelete = useCallback(async (productId) => {
@@ -170,16 +155,8 @@ const AllProducts = () => {
 
   // Handle edit product
   const handleEdit = useCallback((product) => {
-    setSelectedProduct(product);
-    setFormData({
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      category: product.category?._id || '',
-      stock: product.stock
-    });
-    setShowUpdateForm(true);
-  }, []);
+    navigate(`/admin/dashboard/update/${product._id}`);
+  }, [navigate]);
 
   // Handle edit category
   const handleCategoryEdit = useCallback((category) => {
@@ -188,7 +165,7 @@ const AllProducts = () => {
       name: category.name,
       description: category.description
     });
-    setShowUpdateForm(true);
+    setShowCategoryForm(true);
   }, []);
 
   if (status === 'loading') {
@@ -207,25 +184,7 @@ const AllProducts = () => {
           <h1 className="text-3xl font-bold text-gray-900">All Products</h1>
           <p className="text-gray-600 mt-2">Manage your product catalog</p>
         </div>
-        
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowCategoryForm(true)}
-            variant="outline"
-            className="transition-all duration-200 hover:bg-gray-50"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Category
-          </Button>
-          
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="transition-all duration-200 hover:scale-105"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
-        </div>
+       
       </div>
 
       {/* Search and Filters */}
@@ -393,21 +352,17 @@ const AllProducts = () => {
         </div>
       )}
 
-      {/* Create/Update Product Modal */}
-      {(showCreateForm || showUpdateForm) && (
+      {/* Create Product Modal */}
+      {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                {showUpdateForm ? 'Update Product' : 'Create Product'}
-              </h2>
+              <h2 className="text-xl font-semibold">Create Product</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setShowCreateForm(false);
-                  setShowUpdateForm(false);
-                  setSelectedProduct(null);
                   setFormData({ title: '', description: '', price: '', category: '', stock: '' });
                 }}
               >
@@ -485,28 +440,24 @@ const AllProducts = () => {
                 disabled={isSubmitting}
                 className="w-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Processing...' : (showUpdateForm ? 'Update Product' : 'Create Product')}
+                {isSubmitting ? 'Processing...' : 'Create Product'}
               </Button>
             </form>
           </div>
         </div>
       )}
 
-      {/* Create/Update Category Modal */}
-      {(showCategoryForm || (showUpdateForm && selectedProduct?.name)) && (
+      {/* Create Category Modal */}
+      {showCategoryForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                {showUpdateForm ? 'Update Category' : 'Create Category'}
-              </h2>
+              <h2 className="text-xl font-semibold">Create Category</h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   setShowCategoryForm(false);
-                  setShowUpdateForm(false);
-                  setSelectedProduct(null);
                   setCategoryFormData({ name: '', description: '' });
                 }}
               >
@@ -538,7 +489,7 @@ const AllProducts = () => {
               </div>
 
               <Button type="submit" className="w-full transition-all duration-200 hover:scale-105">
-                {showUpdateForm ? 'Update Category' : 'Create Category'}
+                Create Category
               </Button>
             </form>
           </div>

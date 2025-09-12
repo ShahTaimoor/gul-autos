@@ -122,11 +122,13 @@ const UpdateProduct = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Update Product</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4">
+        <Card className="shadow-lg">
+          <CardHeader className="bg-white border-b">
+            <CardTitle className="text-2xl font-bold text-gray-800">Update Product</CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
         <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="grid gap-6">
             <div className="grid gap-3">
@@ -251,8 +253,10 @@ const UpdateProduct = () => {
             </div>
           </div>
         </form>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

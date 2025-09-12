@@ -597,37 +597,6 @@ const ProductList = () => {
         )}
       </div>
 
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div
-          className="fixed z-[9999] lg:py-5 lg:top-0 lg:left-0 lg:right-0 lg:bottom-0 py-50 top-0 left-0 right-0 bottom-0 bg-black/70 backdrop-blur-sm lg:px-30 transition-opacity duration-300"
-          onClick={() => setPreviewImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Product image preview"
-        >
-          <div
-            className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh] transition-transform duration-300"
-              loading="eager"
-            />
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-2 right-2 md:top-4 md:right-4 lg:right-24 xl:right-24 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2 text-sm md:text-base transition-colors duration-200"
-              aria-label="Close preview"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-
       {/* WhatsApp Button */}
       <div className="fixed animate-bounce bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">
         <Link
