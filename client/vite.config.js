@@ -15,9 +15,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      filename: 'manifest.webmanifest',
       includeAssets: ["vite.svg", "robots.txt", "logo.jpg", "logos.png"],
-      strategies: 'injectManifest',
+      strategies: 'generateSW',
       manifest: {
         name: "Gul Autos",
         short_name: "Gul Autos",
