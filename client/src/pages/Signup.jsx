@@ -52,7 +52,7 @@ const Signup = () => {
   };
 
   return (
-    <div className='w-full mt-5 flex flex-col '>
+    <div className='w-full min-h-screen flex items-center justify-center mt-5'>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
           <img src="/logos.png" alt="" />

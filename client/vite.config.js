@@ -16,7 +16,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       filename: 'manifest.webmanifest',
-      includeAssets: ["vite.svg", "robots.txt", "logo.jpg"],
+      includeAssets: ["vite.svg", "robots.txt", "logo.jpg", "logos.png"],
+      strategies: 'injectManifest',
       manifest: {
         name: "Gul Autos",
         short_name: "Gul Autos",
@@ -72,6 +73,10 @@ export default defineConfig({
             }
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       },
     })
   ],
