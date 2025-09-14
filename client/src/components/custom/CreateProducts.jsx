@@ -20,13 +20,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { AddProduct } from '@/redux/slices/products/productSlice';
+import { AddProduct, importProductsFromExcel } from '@/redux/slices/products/productSlice';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { FileSpreadsheet, Upload, Download } from 'lucide-react';
 
 const CreateProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { categories } = useSelector((state) => state.categories);
   const [loading, setLoading] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
 
   // Initial input values
   const initialValues = {
@@ -47,6 +51,45 @@ const CreateProducts = () => {
 
   const handleCategoryChange = (value) => {
     setInputValues((values) => ({ ...values, category: value }));
+  };
+
+  const handleExcelImport = async (e) => {
+    e.preventDefault();
+    if (!excelFile) {
+      toast.error('Please select an Excel file');
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const result = await dispatch(importProductsFromExcel(excelFile)).unwrap();
+      
+      if (result.success) {
+        toast.success(result.message);
+        setExcelFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('excelFile');
+        if (fileInput) fileInput.value = '';
+      } else {
+        toast.error(result.message || 'Import failed');
+      }
+    } catch (error) {
+      toast.error(error || 'Import failed');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const downloadTemplate = () => {
+    // Create a simple CSV template with only name, stock, price
+    const csvContent = "name,stock,price\nSample Product 1,10,29.99\nSample Product 2,5,15.50\nSample Product 3,20,9.99";
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'product_template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const handleSubmit = (e) => {
@@ -96,10 +139,17 @@ const CreateProducts = () => {
   return (
     <Card className="w-full max-w-4xl lg:min-w-[900px] lg:min-h-[700px] mx-auto p-4 sm:p-6 md:p-8">
       <CardHeader>
-        <CardTitle>Create Product</CardTitle>
+        <CardTitle>Create Products</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} encType="multipart/form-data">
+        <Tabs defaultValue="single" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="single">Single Product</TabsTrigger>
+            <TabsTrigger value="excel">Excel Import</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="single" className="mt-6">
+            <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Title */}
             <div className="flex flex-col space-y-1.5">
@@ -239,14 +289,119 @@ const CreateProducts = () => {
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="mt-6 w-full sm:w-auto"
-            disabled={loading}
-          >
-            {loading ? <ButtonLoader /> : 'Add Product'}
-          </Button>
-        </form>
+              <Button
+                type="submit"
+                className="mt-6 w-full sm:w-auto"
+                disabled={loading}
+              >
+                {loading ? <ButtonLoader /> : 'Add Product'}
+              </Button>
+            </form>
+          </TabsContent>
+          
+          <TabsContent value="excel" className="mt-6">
+            <div className="space-y-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">Excel Import Instructions</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Excel columns:</strong> <strong>name</strong>, <strong>stock</strong>, <strong>price</strong></li>
+                  <li>• <strong>All columns are optional</strong> - you can include any combination of these three</li>
+                  <li>• Missing fields will use defaults: name="Product X", stock=0, price=0</li>
+                  <li>• All products will be assigned to "General" category automatically</li>
+                  <li>• Products will be created with default image (can be updated later)</li>
+                  <li>• Empty rows will be skipped automatically</li>
+                </ul>
+              </div>
+
+              {/* Template Download */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                  <span className="text-sm text-gray-700">Download Excel template</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadTemplate}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Template
+                </Button>
+              </div>
+
+              {/* File Upload */}
+              <form onSubmit={handleExcelImport}>
+                <div className="space-y-4">
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="excelFile">Select Excel File</Label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors duration-200">
+                      <div className="space-y-1 text-center">
+                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label
+                            htmlFor="excelFile"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+                          >
+                            <span>Upload Excel file</span>
+                            <input
+                              id="excelFile"
+                              name="excelFile"
+                              type="file"
+                              accept=".xlsx,.xls,.csv"
+                              className="sr-only"
+                              onChange={(e) => setExcelFile(e.target.files[0])}
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Excel files (.xlsx, .xls, .csv) up to 10MB
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* File Preview */}
+                    {excelFile && (
+                      <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">
+                            {excelFile.name}
+                          </span>
+                          <span className="text-xs text-green-600">
+                            ({(excelFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExcelFile(null);
+                            const fileInput = document.getElementById('excelFile');
+                            if (fileInput) fileInput.value = '';
+                          }}
+                          className="text-xs text-red-600 hover:text-red-500 mt-1"
+                        >
+                          Remove file
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={importLoading || !excelFile}
+                  >
+                    {importLoading ? <ButtonLoader /> : 'Import Products'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

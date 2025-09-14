@@ -23,8 +23,7 @@ const ProductCard = React.memo(({
   onAddToCart,
   isAddingToCart,
   isInCart,
-  gridType,
-  setPreviewImage
+  gridType
 }) => {
   const imgRef = useRef(null);
   const clickAudioRef = useRef(null);
@@ -64,15 +63,14 @@ const ProductCard = React.memo(({
         }`}
     >
       <div
-        className={`relative cursor-pointer aspect-square overflow-hidden group ${gridType === 'grid3' ? 'w-1/3 sm:w-full' : ''
+        className={`relative aspect-square overflow-hidden group ${gridType === 'grid3' ? 'w-1/3 sm:w-full' : ''
           }`}
       >
         <img
           ref={imgRef}
           src={imageUrl}
           alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
-          onClick={() => setPreviewImage(imageUrl)}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
             e.currentTarget.src = '/logos.png';
           }}
@@ -83,31 +81,6 @@ const ProductCard = React.memo(({
           fetchPriority="low"
         />
 
-        <div
-          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
-          onClick={() => setPreviewImage(imageUrl)}
-          aria-label="View product image"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-            />
-          </svg>
-        </div>
       </div>
 
       <div
@@ -198,25 +171,7 @@ const ProductList = () => {
   const [gridType, setGridType] = useState('grid2');
   const [sortOrder, setSortOrder] = useState('az');
   const [page, setPage] = useState(1);
-  const [previewImage, setPreviewImage] = useState(null);
   const limit = 24;
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (previewImage) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = '0px'; // Prevent layout shift
-    } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.paddingRight = '0px';
-    }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = 'unset';
-      document.body.style.paddingRight = '0px';
-    };
-  }, [previewImage]);
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -532,7 +487,6 @@ const ProductList = () => {
                 isAddingToCart={addingProductId === product._id}
                 isInCart={isInCart}
                 gridType={gridType}
-                setPreviewImage={setPreviewImage}
               />
             );
           })}

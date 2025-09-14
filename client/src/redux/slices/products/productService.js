@@ -93,6 +93,27 @@ const deleteProduct = async (id) => {
     }
 };
 
-const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct };
+// import products from Excel
+const importProductsFromExcel = async (excelFile) => {
+    try {
+        const formData = new FormData();
+        formData.append('excelFile', excelFile);
+        
+        const axiosResponse = await axiosInstance.post(
+            '/import-excel',
+            formData,
+            {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel };
 
 export default productService;
