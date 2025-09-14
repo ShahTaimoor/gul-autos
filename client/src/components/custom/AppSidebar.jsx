@@ -50,7 +50,7 @@ export function AppSidebar() {
   const [loading, setLoading] = useState(false);  // Loading state
   const pendingOrderCount = useSelector((state) => state.orders.pendingOrderCount);
 
-  // Fetch orders after login
+  // Fetch orders after
   useEffect(() => {
     if (user) {
       dispatch(fetchOrdersAdmin());
