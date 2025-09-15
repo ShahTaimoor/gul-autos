@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { User, ShoppingCart } from "lucide-react";
 import LogoutToggle from "./LogoutToggle";
 import CartDrawer from "./CartDrawer";
+import PWAInstallButton from "./PWAInstallButton";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
 
@@ -36,8 +37,11 @@ const Navbar = () => {
             Contact: +92 311 4000096
           </p>
         </div>
-        {/* Right side: Cart + Auth controls */}
+        {/* Right side: PWA Install + Cart + Auth controls */}
         <div className="flex items-center gap-2">
+          {/* PWA Install Button */}
+          <PWAInstallButton />
+          
           {/* Cart - Always visible */}
           <div className="relative">
             <CartDrawer />
