@@ -1,15 +1,17 @@
 // This will be replaced by Workbox with the actual manifest
 self.__WB_MANIFEST;
 
-const CACHE_NAME = 'gul-autos-v2';
-const STATIC_CACHE = 'gul-autos-static-v2';
-const DYNAMIC_CACHE = 'gul-autos-dynamic-v2';
+const CACHE_NAME = 'gul-autos-v3';
+const STATIC_CACHE = 'gul-autos-static-v3';
+const DYNAMIC_CACHE = 'gul-autos-dynamic-v3';
 
 const urlsToCache = [
   '/',
   '/logos.png',
   '/manifest.webmanifest',
-  '/index.html'
+  '/index.html',
+  '/src/main.jsx',
+  '/src/App.jsx'
 ];
 
 // Install event - cache resources
@@ -19,10 +21,14 @@ self.addEventListener('install', (event) => {
     caches.open(STATIC_CACHE)
       .then((cache) => {
         console.log('Opened static cache');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
       })
       .then(() => {
         console.log('Static resources cached');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('Failed to cache resources:', error);
         return self.skipWaiting();
       })
   );
@@ -60,6 +66,11 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension and other non-http requests
   if (!url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Skip API calls and external resources
+  if (url.pathname.startsWith('/api/') || !url.origin.includes(window.location.hostname)) {
     return;
   }
 

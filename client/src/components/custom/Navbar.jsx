@@ -12,7 +12,6 @@ const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [showCustomInstallPrompt, setShowCustomInstallPrompt] = useState(false);
 
   // Calculate total cart quantity
   const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -46,35 +45,55 @@ const Navbar = () => {
     // Check if app is already installed
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInApp = window.navigator.standalone === true;
+    const isInStandaloneMode = isStandalone || isInApp;
+    
     console.log('Is standalone mode:', isStandalone);
     console.log('Is in app:', isInApp);
+    console.log('Is in standalone mode:', isInStandaloneMode);
     
-    if (isStandalone || isInApp) {
+    if (isInStandaloneMode) {
       setShowInstallButton(false);
     } else {
-      // Always show install button for mobile devices
-      // For desktop, show if beforeinstallprompt is supported or if we're in development
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const shouldShow = isMobileDevice || 
-                        window.innerWidth <= 768 || 
-                        'onbeforeinstallprompt' in window || 
-                        process.env.NODE_ENV === 'development';
+      // Check if PWA is installable
+      const checkPWAInstallability = async () => {
+        try {
+          // Check if service worker is registered
+          const registration = await navigator.serviceWorker.getRegistration();
+          const hasServiceWorker = !!registration;
+          
+          // Check if manifest is accessible
+          const manifestResponse = await fetch('/manifest.webmanifest');
+          const hasManifest = manifestResponse.ok;
+          
+          // Check if we're on a mobile device or have beforeinstallprompt support
+          const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const hasBeforeInstallPrompt = 'onbeforeinstallprompt' in window;
+          const isMobileWidth = window.innerWidth <= 768;
+          
+          const shouldShow = (isMobileDevice || isMobileWidth || hasBeforeInstallPrompt) && 
+                           hasServiceWorker && 
+                           hasManifest;
+          
+          console.log('PWA Installability Check:');
+          console.log('- Has Service Worker:', hasServiceWorker);
+          console.log('- Has Manifest:', hasManifest);
+          console.log('- Is Mobile Device:', isMobileDevice);
+          console.log('- Is Mobile Width:', isMobileWidth);
+          console.log('- Has BeforeInstallPrompt:', hasBeforeInstallPrompt);
+          console.log('- Should Show Install Button:', shouldShow);
+          
+          setShowInstallButton(shouldShow);
+        } catch (error) {
+          console.error('Error checking PWA installability:', error);
+          // Fallback: show install button for mobile devices
+          const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const isMobileWidth = window.innerWidth <= 768;
+          setShowInstallButton(isMobileDevice || isMobileWidth);
+        }
+      };
       
-      console.log('Should show install button:', shouldShow);
-      console.log('Window width:', window.innerWidth);
-      console.log('Is mobile device:', isMobileDevice);
-      console.log('Is mobile width:', window.innerWidth <= 768);
-      
-      if (shouldShow) {
-        setShowInstallButton(true);
-      }
+      checkPWAInstallability();
     }
-
-    // Debug PWA support
-    console.log('Service Worker support:', 'serviceWorker' in navigator);
-    console.log('BeforeInstallPrompt support:', 'onbeforeinstallprompt' in window);
-    console.log('Current showInstallButton state:', showInstallButton);
-    console.log('Current isMobile state:', isMobile);
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -114,107 +133,86 @@ const Navbar = () => {
       return;
     }
 
-    // Show custom install prompt immediately
-    setShowCustomInstallPrompt(true);
-
-    // Try multiple installation methods in background
-    const tryInstallMethods = () => {
-      // Method 1: Try to trigger beforeinstallprompt by creating a new window
-      const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
-      if (newWindow) {
-        newWindow.focus();
-        // Close after a short delay
-        setTimeout(() => {
-          newWindow.close();
-        }, 3000);
-      }
-
-      // Method 2: Try to trigger installation by adding PWA meta tags dynamically
-      const metaTags = [
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'application-name', content: 'Gul Autos' }
-      ];
-
-      metaTags.forEach(tag => {
-        let existingTag = document.querySelector(`meta[name="${tag.name}"]`);
-        if (!existingTag) {
-          existingTag = document.createElement('meta');
-          existingTag.name = tag.name;
-          document.head.appendChild(existingTag);
-        }
-        existingTag.content = tag.content;
-      });
-
-      // Method 3: Try to trigger installation by reloading with install parameters
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('install', 'true');
-        url.searchParams.set('source', 'install_button');
-        url.searchParams.set('timestamp', Date.now().toString());
-        
-        // Try to navigate to trigger install
-        window.location.href = url.toString();
-      }, 1000);
-    };
-
-    // Execute installation methods
-    tryInstallMethods();
+    // Try direct installation methods
+    await tryDirectInstall();
   };
 
-  const handleCustomInstallConfirm = () => {
-    setShowCustomInstallPrompt(false);
+  const tryDirectInstall = async () => {
+    console.log('Attempting direct installation...');
     
-    // Try multiple aggressive installation methods
-    const forceInstall = () => {
+    try {
       // Method 1: Try to trigger beforeinstallprompt by creating multiple windows
       for (let i = 0; i < 3; i++) {
         setTimeout(() => {
           const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
           if (newWindow) {
             newWindow.focus();
-            setTimeout(() => newWindow.close(), 2000);
+            setTimeout(() => newWindow.close(), 1500);
           }
-        }, i * 500);
+        }, i * 300);
       }
 
-      // Method 2: Add all possible PWA meta tags
-      const metaTags = [
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'application-name', content: 'Gul Autos' },
-        { name: 'msapplication-TileColor', content: '#000000' },
-        { name: 'msapplication-tap-highlight', content: 'no' }
-      ];
-
-      metaTags.forEach(tag => {
-        let existingTag = document.querySelector(`meta[name="${tag.name}"]`);
-        if (!existingTag) {
-          existingTag = document.createElement('meta');
-          existingTag.name = tag.name;
-          document.head.appendChild(existingTag);
-        }
-        existingTag.content = tag.content;
-      });
-
-      // Method 3: Try to trigger installation by reloading with install parameters
+      // Method 2: Try to trigger installation by reloading with install parameters
       setTimeout(() => {
         const url = new URL(window.location.href);
         url.searchParams.set('install', 'true');
-        url.searchParams.set('source', 'custom_prompt');
+        url.searchParams.set('source', 'install_button');
         url.searchParams.set('timestamp', Date.now().toString());
         url.searchParams.set('force', 'true');
         
         // Try to navigate to trigger install
         window.location.href = url.toString();
-      }, 1500);
-    };
+      }, 800);
 
-    forceInstall();
-  };
+      // Method 3: For mobile, try to trigger add to home screen
+      if (isMobile) {
+        // Try to trigger the beforeinstallprompt event
+        const event = new Event('beforeinstallprompt');
+        window.dispatchEvent(event);
+        
+        // Try to trigger installation by adding PWA meta tags dynamically
+        const metaTags = [
+          { name: 'mobile-web-app-capable', content: 'yes' },
+          { name: 'apple-mobile-web-app-capable', content: 'yes' },
+          { name: 'application-name', content: 'Gul Autos' },
+          { name: 'msapplication-TileColor', content: '#000000' },
+          { name: 'msapplication-tap-highlight', content: 'no' }
+        ];
 
-  const handleCustomInstallCancel = () => {
-    setShowCustomInstallPrompt(false);
+        metaTags.forEach(tag => {
+          let existingTag = document.querySelector(`meta[name="${tag.name}"]`);
+          if (!existingTag) {
+            existingTag = document.createElement('meta');
+            existingTag.name = tag.name;
+            document.head.appendChild(existingTag);
+          }
+          existingTag.content = tag.content;
+        });
+
+        // Method 4: Try to trigger installation by creating a hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = window.location.href + '?install=iframe&timestamp=' + Date.now();
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 2000);
+      }
+
+      // Method 5: Try to trigger installation by creating a new tab
+      setTimeout(() => {
+        const newTab = window.open(window.location.href + '?install=tab&timestamp=' + Date.now(), '_blank');
+        if (newTab) {
+          newTab.focus();
+          setTimeout(() => newTab.close(), 1000);
+        }
+      }, 500);
+
+    } catch (error) {
+      console.error('Direct installation failed:', error);
+      // Fallback: show a simple message
+      alert('Installation initiated. Please follow your browser\'s prompts to complete the installation.');
+    }
   };
 
   // Only show navbar if user is logged in
@@ -276,41 +274,6 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Custom Install Prompt Modal */}
-      {showCustomInstallPrompt && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                <Download className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Install Gul Autos App
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                {isMobile 
-                  ? "Install this app on your device for a better experience. You'll be able to access it from your home screen."
-                  : "Install this app on your computer for quick access and better performance."
-                }
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCustomInstallCancel}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCustomInstallConfirm}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Install Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
