@@ -1,8 +1,9 @@
+// This will be replaced by Workbox with the actual manifest
+self.__WB_MANIFEST;
+
 const CACHE_NAME = 'gul-autos-v1';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/logos.png',
   '/manifest.webmanifest'
 ];
