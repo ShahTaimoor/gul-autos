@@ -36,7 +36,7 @@ const AppContent = () => {
   useTokenValidation();
   useTokenRefresh();
   
-  // Get user state to conditionally apply navbar-present class
+  // Get user state to conditionally apply navbar-present clas
   const user = useSelector((state) => state.auth.user);
 
   // Apply navbar-present class to body when user is logged in
