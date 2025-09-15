@@ -72,7 +72,8 @@ const Navbar = () => {
           
           const shouldShow = (isMobileDevice || isMobileWidth || hasBeforeInstallPrompt) && 
                            hasServiceWorker && 
-                           hasManifest;
+                           hasManifest &&
+                           !isInStandaloneMode;
           
           console.log('PWA Installability Check:');
           console.log('- Has Service Worker:', hasServiceWorker);
@@ -141,36 +142,13 @@ const Navbar = () => {
     console.log('Attempting direct installation...');
     
     try {
-      // Method 1: Try to trigger beforeinstallprompt by creating multiple windows
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
-          if (newWindow) {
-            newWindow.focus();
-            setTimeout(() => newWindow.close(), 1500);
-          }
-        }, i * 300);
-      }
-
-      // Method 2: Try to trigger installation by reloading with install parameters
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('install', 'true');
-        url.searchParams.set('source', 'install_button');
-        url.searchParams.set('timestamp', Date.now().toString());
-        url.searchParams.set('force', 'true');
-        
-        // Try to navigate to trigger install
-        window.location.href = url.toString();
-      }, 800);
-
-      // Method 3: For mobile, try to trigger add to home screen
+      // For mobile, try to trigger the beforeinstallprompt event manually
       if (isMobile) {
-        // Try to trigger the beforeinstallprompt event
+        // Method 1: Try to trigger the beforeinstallprompt event
         const event = new Event('beforeinstallprompt');
         window.dispatchEvent(event);
         
-        // Try to trigger installation by adding PWA meta tags dynamically
+        // Method 2: Try to trigger installation by adding PWA meta tags dynamically
         const metaTags = [
           { name: 'mobile-web-app-capable', content: 'yes' },
           { name: 'apple-mobile-web-app-capable', content: 'yes' },
@@ -189,24 +167,77 @@ const Navbar = () => {
           existingTag.content = tag.content;
         });
 
-        // Method 4: Try to trigger installation by creating a hidden iframe
+        // Method 3: Try to trigger installation by creating a hidden iframe
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         iframe.src = window.location.href + '?install=iframe&timestamp=' + Date.now();
         document.body.appendChild(iframe);
         setTimeout(() => {
-          document.body.removeChild(iframe);
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
         }, 2000);
-      }
 
-      // Method 5: Try to trigger installation by creating a new tab
-      setTimeout(() => {
-        const newTab = window.open(window.location.href + '?install=tab&timestamp=' + Date.now(), '_blank');
-        if (newTab) {
-          newTab.focus();
-          setTimeout(() => newTab.close(), 1000);
+        // Method 4: Try to trigger installation by creating a new window (not tab)
+        setTimeout(() => {
+          const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
+          if (newWindow) {
+            newWindow.focus();
+            setTimeout(() => {
+              try {
+                newWindow.close();
+              } catch (e) {
+                console.log('Could not close window');
+              }
+            }, 2000);
+          }
+        }, 500);
+
+        // Method 5: Try to trigger installation by creating a new tab
+        setTimeout(() => {
+          const newTab = window.open(window.location.href + '?install=tab&timestamp=' + Date.now(), '_blank');
+          if (newTab) {
+            newTab.focus();
+            setTimeout(() => {
+              try {
+                newTab.close();
+              } catch (e) {
+                console.log('Could not close tab');
+              }
+            }, 1500);
+          }
+        }, 1000);
+
+        // Method 6: Try to trigger installation by reloading the page with install parameters
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.set('install', 'true');
+          url.searchParams.set('source', 'install_button');
+          url.searchParams.set('timestamp', Date.now().toString());
+          url.searchParams.set('force', 'true');
+          
+          // Try to navigate to trigger install
+          window.location.href = url.toString();
+        }, 2000);
+
+      } else {
+        // For desktop, try to trigger beforeinstallprompt by creating multiple windows
+        for (let i = 0; i < 2; i++) {
+          setTimeout(() => {
+            const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
+            if (newWindow) {
+              newWindow.focus();
+              setTimeout(() => {
+                try {
+                  newWindow.close();
+                } catch (e) {
+                  console.log('Could not close window');
+                }
+              }, 1500);
+            }
+          }, i * 500);
         }
-      }, 500);
+      }
 
     } catch (error) {
       console.error('Direct installation failed:', error);
