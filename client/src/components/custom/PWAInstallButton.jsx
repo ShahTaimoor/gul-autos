@@ -36,9 +36,19 @@ const PWAInstallButton = () => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInApp = window.navigator.standalone === true;
     
+    console.log('PWA Detection:', {
+      isStandalone,
+      isInApp,
+      userAgent: navigator.userAgent,
+      serviceWorker: 'serviceWorker' in navigator,
+      beforeInstallPrompt: 'onbeforeinstallprompt' in window
+    });
+    
     if (isStandalone || isInApp) {
+      console.log('App already installed, hiding install button');
       setShowInstallButton(false);
     } else {
+      console.log('App not installed, showing install button');
       setShowInstallButton(true);
     }
 
@@ -48,15 +58,29 @@ const PWAInstallButton = () => {
     // Fallback: Show install button after a delay if beforeinstallprompt hasn't fired
     const fallbackTimer = setTimeout(() => {
       if (!deferredPrompt && !isStandalone && !isInApp) {
+        console.log('Fallback: Showing install button after timeout');
         setShowInstallButton(true);
       }
-    }, 3000);
+    }, 2000);
+
+    // Additional fallback: Try to trigger beforeinstallprompt by creating a small window
+    const triggerPromptTimer = setTimeout(() => {
+      if (!deferredPrompt && !isStandalone && !isInApp) {
+        console.log('Trying to trigger beforeinstallprompt...');
+        // Try to trigger the event by opening a small window
+        const popup = window.open(window.location.href, '_blank', 'width=1,height=1');
+        if (popup) {
+          popup.close();
+        }
+      }
+    }, 1000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('resize', checkMobile);
       clearTimeout(fallbackTimer);
+      clearTimeout(triggerPromptTimer);
     };
   }, [deferredPrompt]);
 
@@ -69,11 +93,16 @@ const PWAInstallButton = () => {
 
     if (deferredPrompt) {
       try {
+        console.log('Showing native install prompt');
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
 
+        console.log('Install prompt outcome:', outcome);
         if (outcome === 'accepted') {
+          console.log('User accepted the install prompt');
           setShowInstallButton(false);
+        } else {
+          console.log('User dismissed the install prompt');
         }
       } catch (error) {
         console.error('Error showing install prompt:', error);
@@ -83,12 +112,28 @@ const PWAInstallButton = () => {
       return;
     }
 
-    // Fallback for browsers that don't support beforeinstallprompt
-    if (isMobile) {
-      alert('To install this app on your device:\n\n1. Tap the Share button\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"');
-    } else {
-      alert('To install this app:\n\n1. Look for the install icon in your browser\'s address bar\n2. Or go to the browser menu and look for "Install" or "Add to Home Screen"');
-    }
+    // If no deferred prompt, try to trigger it by refreshing the page
+    console.log('No deferred prompt available, trying to trigger it...');
+    
+    // Try to trigger the beforeinstallprompt event
+    const triggerInstall = () => {
+      // Method 1: Try to open a new window to trigger the event
+      const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600');
+      if (newWindow) {
+        newWindow.focus();
+        setTimeout(() => newWindow.close(), 2000);
+      }
+      
+      // Method 2: Try to reload with install parameters
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('install', 'true');
+        url.searchParams.set('timestamp', Date.now().toString());
+        window.location.href = url.toString();
+      }, 1000);
+    };
+
+    triggerInstall();
   };
 
   const handleInstallCancel = () => {
