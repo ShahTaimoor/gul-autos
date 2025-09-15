@@ -1,28 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import ProductList from '@/components/custom/ProductList';
-import { PageLoader } from '@/components/ui/unified-loader';
-
+import ProductList from '@/components/custom/ProductList'
+import { Button } from '@/components/ui/button'
+import axios from 'axios'
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 const Home = () => {
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulate initial loading time
-    const timer = setTimeout(() => {
-      setIsInitialLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isInitialLoading) {
-    return <PageLoader message="Loading Products" />;
-  }
+ 
 
   return (
     <div>
       <ProductList />
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

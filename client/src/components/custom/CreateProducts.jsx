@@ -8,9 +8,9 @@ import {
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import OneLoader from '../ui/OneLoader';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { ButtonLoader } from '@/components/ui/unified-loader';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -294,7 +294,7 @@ const CreateProducts = () => {
                 className="mt-6 w-full sm:w-auto"
                 disabled={loading}
               >
-                {loading ? <ButtonLoader /> : 'Add Product'}
+                {loading ? <OneLoader size="small" text="Adding..." showText={false} /> : 'Add Product'}
               </Button>
             </form>
           </TabsContent>
@@ -395,7 +395,7 @@ const CreateProducts = () => {
                     className="w-full"
                     disabled={importLoading || !excelFile}
                   >
-                    {importLoading ? <ButtonLoader /> : 'Import Products'}
+                    {importLoading ? <OneLoader size="small" text="Importing..." showText={false} /> : 'Import Products'}
                   </Button>
                 </div>
               </form>

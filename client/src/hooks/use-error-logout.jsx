@@ -1,4 +1,4 @@
-import { setTokenExpired } from "@/redux/slices/auth/authSlice"
+import { setUserLogout } from "@/redux/slices/authSlice"
 import { useDispatch } from "react-redux"
 import { toast } from "sonner"
 
@@ -6,12 +6,12 @@ const useErrorLogout = () => {
 
     const dispatch = useDispatch()
 
-    const handleErrorLogout = (error, otherTitle = 'Error Occurred') => {
-        if (error.response?.status === 401) {
-            dispatch(setTokenExpired())
-            // No toast needed - user will be redirected to login page
+    const handleErrorLogout = (error, otherTitle = 'Error Occred') => {
+        if (error.response.status === 400) {
+            dispatch(setUserLogout())
+            toast('Session Expired Please login Again to continue')
         } else {
-            toast.error(otherTitle)
+            toast(otherTitle)
         }
     }
 

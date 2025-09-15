@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { ButtonLoader } from '@/components/ui/unified-loader'; // Add Eye and EyeOff icons
+import OneLoader from '@/components/ui/OneLoader';
+import { Eye, EyeOff } from 'lucide-react'; // Add Eye and EyeOff icons
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -38,7 +38,7 @@ const Signup = () => {
       );
 
       toast.success('Signup successful! Please login.');
-      navigate('/login');
+      navigate('/');
     } catch (err) {
       console.error(err);
       toast.error('User already exists. Please choose another name.');
@@ -52,7 +52,7 @@ const Signup = () => {
   };
 
   return (
-    <div className='w-full min-h-screen flex items-center justify-center mt-5'>
+    <div className='w-full mt-5 flex flex-col '>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
           <img src="/logos.png" alt="" />
@@ -101,20 +101,13 @@ const Signup = () => {
 
         <Button className='w-full mt-4' disabled={loading}>
           {loading ? (
-            <ButtonLoader />
+            <OneLoader size="small" text="Signing Up..." showText={false} />
           ) : (
             'Sign Up'
           )}
         </Button>
 
-        <div className='text-center mt-4'>
-          <p className='text-sm text-gray-600'>
-            Already have an account?{' '}
-            <Link to='/login' className='text-blue-600 hover:underline font-medium'>
-              Login here
-            </Link>
-          </p>
-        </div>
+       
       </form>
     </div>
   );

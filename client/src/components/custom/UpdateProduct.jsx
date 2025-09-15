@@ -15,7 +15,6 @@ import {
   SelectValue
 } from '../ui/select';
 import { toast } from 'sonner';
-import { ButtonLoader } from '@/components/ui/unified-loader';
 import { Loader2 } from 'lucide-react';
 
 const UpdateProduct = () => {
@@ -85,18 +84,7 @@ const UpdateProduct = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Create FormData for file upload
-    const formData = new FormData();
-    formData.append('title', inputValue.title);
-    formData.append('description', inputValue.description);
-    formData.append('price', inputValue.price);
-    formData.append('category', inputValue.category);
-    formData.append('stock', inputValue.stock);
-    if (inputValue.picture && typeof inputValue.picture === 'object') {
-      formData.append('picture', inputValue.picture);
-    }
-
-    dispatch(updateSingleProduct({ inputValues: formData, id }))
+    dispatch(updateSingleProduct({ inputValues: inputValue, id }))
       .unwrap()
       .then((response) => {
         if (response?.success) {
@@ -122,13 +110,11 @@ const UpdateProduct = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <Card className="shadow-lg">
-          <CardHeader className="bg-white border-b">
-            <CardTitle className="text-2xl font-bold text-gray-800">Update Product</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8">
+    <Card>
+      <CardHeader>
+        <CardTitle>Update Product</CardTitle>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="grid gap-6">
             <div className="grid gap-3">
@@ -242,7 +228,10 @@ const UpdateProduct = () => {
             <div className="flex gap-4">
               <Button type="submit" disabled={loading}>
                 {loading ? (
-                  <ButtonLoader />
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
                 ) : (
                   'Update Product'
                 )}
@@ -253,10 +242,8 @@ const UpdateProduct = () => {
             </div>
           </div>
         </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,13 +1,9 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Provider, useSelector } from 'react-redux';
+import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import { Toaster } from './components/ui/sonner';
 import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
-import ErrorBoundary from './components/custom/ErrorBoundary';
-import { Suspense, lazy, useEffect } from 'react';
-import { useTokenValidation, useTokenRefresh } from './hooks/use-token-validation';
-import { PageLoader } from './components/ui/unified-loader';
-import ScrollOptimizer from './components/ui/ScrollOptimizer';
+import { Suspense, lazy } from 'react';
 
 // Lazy-load pages
 const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
@@ -31,31 +27,7 @@ const AllProducts = lazy(() => import('./components/custom/AllProducts'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 
-const AppContent = () => {
-  // Initialize token validation and refresh
-  useTokenValidation();
-  useTokenRefresh();
-  
-  // Get user state to conditionally apply navbar-present clas
-  const user = useSelector((state) => state.auth.user);
-
-  // Apply navbar-present class to body when user is logged in
-  useEffect(() => {
-    console.log('User state changed:', user);
-    if (user) {
-      document.body.classList.add('navbar-present');
-      console.log('Added navbar-present class to body');
-    } else {
-      document.body.classList.remove('navbar-present');
-      console.log('Removed navbar-present class from body');
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove('navbar-present');
-    };
-  }, [user]);
-
+const App = () => {
   const router = createBrowserRouter([
     {
       path: '/',
@@ -122,16 +94,6 @@ const AppContent = () => {
       ),
     },
     {
-      path: '/admin/profile',
-      element: (
-        <ProtectedRoute>
-          <AdminLayout>
-            <AdminProfile />
-          </AdminLayout>
-        </ProtectedRoute>
-      ),
-    },
-    {
       path: '/admin/dashboard',
       element: (
         <ProtectedRoute>
@@ -192,6 +154,16 @@ const AppContent = () => {
       ),
     },
     {
+      path: '/admin/profile',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <AdminProfile />
+          </AdminLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
       path: '*',
       element: (
         <RootLayout>
@@ -202,22 +174,12 @@ const AppContent = () => {
   ]);
 
   return (
-    <ErrorBoundary>
+    <Provider store={store}>
       <Toaster />
       <TokenExpirationHandler />
-      <Suspense fallback={<PageLoader message="Loading Application" />}>
+      <Suspense fallback={<div className="text-center mt-20 text-lg">Loading...</div>}>
         <RouterProvider router={router} />
       </Suspense>
-    </ErrorBoundary>
-  );
-};
-
-const App = () => {
-  return (
-    <Provider store={store}>
-      <ScrollOptimizer>
-        <AppContent />
-      </ScrollOptimizer>
     </Provider>
   );
 };

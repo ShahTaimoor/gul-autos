@@ -4,9 +4,10 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { updateUserRole } from '../redux/slices/auth/authSlice';
+import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { Loader2, Shield, User } from 'lucide-react';
-import { InlineLoader } from '@/components/ui/unified-loader';
+import OneLoader from '../components/ui/OneLoader';
+import { Shield, User, Crown } from 'lucide-react';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -14,6 +15,7 @@ const Users = () => {
   const [updatingRoles, setUpdatingRoles] = useState({});
 
   const dispatch = useDispatch();
+  const { user: currentUser } = useSelector((state) => state.auth);
 
   const getAllUsers = () => {
     setLoading(true);
@@ -55,6 +57,7 @@ const Users = () => {
         toast.error(result.message || 'Failed to update user role');
       }
     } catch (error) {
+      console.error('Role change error:', error);
       toast.error(error || 'Failed to update user role');
     } finally {
       setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
@@ -67,6 +70,8 @@ const Users = () => {
         return { label: 'User', color: 'bg-blue-100 text-blue-800', icon: User };
       case 1:
         return { label: 'Admin', color: 'bg-green-100 text-green-800', icon: Shield };
+      case 2:
+        return { label: 'Super Admin', color: 'bg-purple-100 text-purple-800', icon: Crown };
       default:
         return { label: 'User', color: 'bg-blue-100 text-blue-800', icon: User };
     }
@@ -83,8 +88,8 @@ const Users = () => {
 
   if (loading) {
     return (
-      <div className="h-64">
-        <InlineLoader message="Loading Users..." />
+      <div className="flex items-center justify-center h-64">
+        <OneLoader size="large" text="Loading Users..." />
       </div>
     );
   }
@@ -149,31 +154,50 @@ const Users = () => {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={user.role.toString()}
-                        onValueChange={(value) => handleRoleChange(user._id, value)}
-                        disabled={isUpdating}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4" />
-                              User
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="1">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Admin
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      {currentUser?.role === 2 ? (
+                        // Check if this is the super admin's own row
+                        currentUser?._id === user._id ? (
+                          <span className="text-sm text-gray-500 italic">
+                            Cannot change own role
+                          </span>
+                        ) : (
+                          <Select
+                            value={user.role.toString()}
+                            onValueChange={(value) => handleRoleChange(user._id, value)}
+                            disabled={isUpdating}
+                          >
+                            <SelectTrigger className="w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4" />
+                                  User
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="1">
+                                <div className="flex items-center gap-2">
+                                  <Shield className="h-4 w-4" />
+                                  Admin
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="2">
+                                <div className="flex items-center gap-2">
+                                  <Crown className="h-4 w-4" />
+                                  Super Admin
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )
+                      ) : (
+                        <span className="text-sm text-gray-500">
+                          Only Super Admin can change roles
+                        </span>
+                      )}
                       {isUpdating && (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <OneLoader size="small" text="Updating..." showText={false} />
                       )}
                     </div>
                   </td>

@@ -5,8 +5,8 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
-import { PageLoader, CardLoader } from '../ui/unified-loader';
 import { Badge } from '../ui/badge';
+import OneLoader from '../ui/OneLoader';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -32,7 +32,7 @@ import { AllCategory, AddCategory, deleteCategory } from '@/redux/slices/categor
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, status } = useSelector((state) => state.products);
+  const { products, status, currentPage, totalPages, totalItems } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +44,7 @@ const AllProducts = () => {
   const [gridView, setGridView] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPageLocal, setCurrentPageLocal] = useState(1);
 
   // Form sta
   const [formData, setFormData] = useState({
@@ -61,33 +62,27 @@ const AllProducts = () => {
 
   // Fetch products and categories on component mount
   useEffect(() => {
-    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 100 }));
+    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12 }));
     dispatch(AllCategory());
   }, [dispatch]);
 
-  // Filter products based on search, category, and stock
-  const filteredProducts = useMemo(() => {
-    let filtered = products || [];
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      dispatch(fetchProducts({ 
+        category: selectedCategory, 
+        searchTerm, 
+        page: currentPageLocal, 
+        limit: 12,
+        stockFilter 
+      }));
+    }, 500); // 500ms debounce
 
-    if (searchTerm) {
-      filtered = filtered.filter(product =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    return () => clearTimeout(timeoutId);
+  }, [dispatch, selectedCategory, searchTerm, currentPageLocal, stockFilter]);
 
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category?.name === selectedCategory);
-    }
-
-    if (stockFilter === 'active') {
-      filtered = filtered.filter(product => product.stock > 0);
-    } else if (stockFilter === 'out-of-stock') {
-      filtered = filtered.filter(product => product.stock <= 0);
-    }
-
-    return filtered;
-  }, [products, searchTerm, selectedCategory, stockFilter]);
+  // Use products directly since filtering is now done on the backend
+  const filteredProducts = products || [];
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -168,10 +163,23 @@ const AllProducts = () => {
     setShowCategoryForm(true);
   }, []);
 
+  // Handle page change
+  const handlePageChange = useCallback((page) => {
+    setCurrentPageLocal(page);
+  }, []);
+
+  // Handle search with debounce
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+    setCurrentPageLocal(1); // Reset to first page when searching
+  }, []);
+
   if (status === 'loading') {
     return (
       <div className="container mx-auto px-4 py-8">
-        <PageLoader message="Loading Products..." />
+        <div className="flex items-center justify-center min-h-[400px]">
+          <OneLoader size="large" text="Loading Products..." />
+        </div>
       </div>
     );
   }
@@ -197,7 +205,7 @@ const AllProducts = () => {
               <Input
                 placeholder="Search products..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -331,6 +339,64 @@ const AllProducts = () => {
             </div>
           </Card>
         ))}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center mt-8 space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageLocal - 1)}
+            disabled={currentPageLocal === 1}
+            className="transition-all duration-200"
+          >
+            Previous
+          </Button>
+          
+          <div className="flex items-center space-x-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPageLocal <= 3) {
+                pageNum = i + 1;
+              } else if (currentPageLocal >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPageLocal - 2 + i;
+              }
+              
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPageLocal === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(pageNum)}
+                  className="transition-all duration-200"
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPageLocal + 1)}
+            disabled={currentPageLocal === totalPages}
+            className="transition-all duration-200"
+          >
+            Next
+          </Button>
+        </div>
+      )}
+
+      {/* Results Info */}
+      <div className="text-center text-sm text-gray-500 mt-4">
+        Showing {filteredProducts.length} of {totalItems} products
+        {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
       </div>
 
       {/* Empty State */}

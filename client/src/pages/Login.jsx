@@ -1,18 +1,21 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { ButtonLoader } from '@/components/ui/unified-loader';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import OneLoader from '@/components/ui/OneLoader';
+import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { login } from '@/redux/slices/auth/authSlice';
 
+
 const Login = () => {
+
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
   
   const params = new URLSearchParams(location.search);
   const expired = params.get('expired');
@@ -57,16 +60,6 @@ const Login = () => {
     }
   }, [expired]);
 
-  // Redirect if user is already authenticated
-  useEffect(() => {
-    console.log('Login component - isAuthenticated:', isAuthenticated, 'user:', user);
-    if (isAuthenticated && user) {
-      const redirectPath = user.role === 1 ? '/admin/dashboard' : '/';
-      console.log('Redirecting to:', redirectPath);
-      navigate(redirectPath, { replace: true });
-    }
-  }, [isAuthenticated, user, navigate]);
-
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setInputValues((prev) => ({ ...prev, [name]: value }));
@@ -92,13 +85,11 @@ const Login = () => {
 
     try {
       const response = await dispatch(login(inputValue)).unwrap();
-      console.log('Login response:', response);
       
       if (response?.user) {
         toast.success('Login successful');
         setInputValues({ name: '', password: '' });
-        console.log('Login successful, user:', response.user);
-        // The useEffect will handle the redirect when isAuthenticated becomes true
+        navigate(from, { replace: true });
       } else {
         setErrorMsg({ name: 'Login failed', password: 'Login failed' });
         toast.error('Login failed');
@@ -136,7 +127,7 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p12'>
+    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
       <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
         <div className='flex justify-center mb-6'>
           <img src="/logos.png" alt="Logo" loading="eager" />
@@ -193,7 +184,7 @@ const Login = () => {
           type='submit'
         >
           {loading ? (
-            <ButtonLoader />
+            <OneLoader size="small" text="Logging in..." showText={false} />
           ) : (
             'Login'
           )}

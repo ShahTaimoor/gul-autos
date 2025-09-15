@@ -53,7 +53,7 @@ const ToggleLogout = ({ user }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem>
-                {user?.role === 1 ? (
+                {(user?.role === 1 || user?.role === 2) ? (
                   <Link to="/admin/dashboard">Admin Dashboard</Link>
                 ) : (
                   <Link to="/profile">Profile</Link>
@@ -77,7 +77,7 @@ const ToggleLogout = ({ user }) => {
     Home
   </Link>
   {/* Dashboard / Profile */}
-  {user?.role === 1 ? (
+  {(user?.role === 1 || user?.role === 2) ? (
     <Link
       to="/admin/dashboard"
       className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"

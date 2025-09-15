@@ -108,8 +108,8 @@ const OrderData = ({
       tableLineColor: borderColor,
     });
 
-    // Product Table: Admin (role 1)
-    if (Number(user?.role) === 1) {
+    // Product Table: Admin or Super Admin (role 1 or 2)
+    if (Number(user?.role) === 1 || Number(user?.role) === 2) {
       const tableBody = products.map((product, idx) => [
         idx + 1,
         product?.id?.title || "Unnamed Product",

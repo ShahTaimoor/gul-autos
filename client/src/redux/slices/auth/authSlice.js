@@ -47,33 +47,22 @@ export const updateUserRole = createAsyncThunk(
   }
 );
 
-export const refreshToken = createAsyncThunk(
-  'auth/refreshToken',
-  async (_, thunkAPI) => {
-    try {
-      return await authService.refreshToken();
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
-export const validateToken = createAsyncThunk(
-  'auth/validateToken',
-  async (_, thunkAPI) => {
-    try {
-      return await authService.validateToken();
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
 export const changePassword = createAsyncThunk(
   'auth/changePassword',
   async (passwordData, thunkAPI) => {
     try {
       return await authService.changePassword(passwordData);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateUsername = createAsyncThunk(
+  'auth/updateUsername',
+  async (usernameData, thunkAPI) => {
+    try {
+      return await authService.updateUsername(usernameData);
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
     }
@@ -140,50 +129,25 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload;
       })
-      .addCase(refreshToken.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(refreshToken.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-        state.tokenExpired = false;
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
-      })
-      .addCase(refreshToken.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-        state.tokenExpired = true;
-        state.user = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem('user');
-      })
-      .addCase(validateToken.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(validateToken.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.user = action.payload.user;
-        state.isAuthenticated = true;
-        state.tokenExpired = false;
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
-      })
-      .addCase(validateToken.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-        state.tokenExpired = true;
-        state.user = null;
-        state.isAuthenticated = false;
-        localStorage.removeItem('user');
-      })
       .addCase(changePassword.pending, (state) => {
         state.status = 'loading';
       })
       .addCase(changePassword.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.error = null;
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(updateUsername.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(updateUsername.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = { ...state.user, ...action.payload.user };
+        localStorage.setItem('user', JSON.stringify(state.user));
+      })
+      .addCase(updateUsername.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });

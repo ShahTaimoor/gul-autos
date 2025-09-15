@@ -11,7 +11,7 @@ import {
   ChartBar,
   UserCheck,
   ShoppingCart,
-  User,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,7 +35,7 @@ const items = [
   { title: "All Products", url: "/admin/dashboard/all-products", icon: GalleryVerticalEnd },
   { title: "Orders", url: "/admin/dashboard/orders", icon: PackageSearch, showBadge: true },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
-  { title: "Admin Profile", url: "/admin/profile", icon: User },
+  { title: "Admin Profile", url: "/admin/profile", icon: UserCog },
   { title: "Customer View", url: "/", icon: ShoppingCart }, 
   
 ];
@@ -50,7 +50,7 @@ export function AppSidebar() {
   const [loading, setLoading] = useState(false);  // Loading state
   const pendingOrderCount = useSelector((state) => state.orders.pendingOrderCount);
 
-  // Fetch orders after
+  // Fetch orders after login
   useEffect(() => {
     if (user) {
       dispatch(fetchOrdersAdmin());

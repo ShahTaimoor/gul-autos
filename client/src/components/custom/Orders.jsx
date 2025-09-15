@@ -30,7 +30,6 @@ import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { CalendarDays, List, Share2, FileDown, Trash2 } from 'lucide-react';
-import { InlineLoader } from '@/components/ui/unified-loader';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -205,10 +204,10 @@ useEffect(() => {
     const details = `
 Order #${order._id.slice(-6)}
 Status: ${order.status}
-Amount: PKR ${order.amount}
+Amount: Rs. ${order.amount}
 Products:
 ${order.products.map((p, i) =>
-  `${i + 1}. ${p.id?.name} (Qty: ${p.quantity}, Price: PKR ${p.id?.price})`
+  `${i + 1}. ${p.id?.name} (Qty: ${p.quantity}, Price: Rs. ${p.id?.price})`
 ).join('\n')}
 Shipping:
 Address: ${order.address}
@@ -274,7 +273,7 @@ Phone: ${order.phone}
           { content: "", img: imgData }, // image cell
           p.id?.title || "",
           p.quantity || "",
-          p.id?.price ? `PKR ${p.id.price}` : "",
+          p.id?.price ? `Rs. ${p.id.price}` : "",
         ];
       })
     );
@@ -287,7 +286,7 @@ Phone: ${order.phone}
     doc.text(user?.name || 'Shop Name', doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
     doc.setFont(undefined, 'normal');
     doc.setFontSize(10);
-    doc.text(`Amount: PKR ${order.amount}`, 14, 28);
+    doc.text(`Amount: Rs. ${order.amount}`, 14, 28);
     doc.text(`Shipping: ${order.address}, ${order.city}, ${order.phone}`, 14, 34);
 
     // 3. Add table with images
@@ -377,8 +376,8 @@ Phone: ${order.phone}
         </div>
 
         {status === 'loading' ? (
-          <div className="h-64">
-            <InlineLoader message="Loading Orders..." />
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center space-y-2">
@@ -426,7 +425,7 @@ Phone: ${order.phone}
                   <div className="flex justify-between mb-2">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
-                      <p className="text-lg font-semibold">PKR {order.amount.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">Rs. {order.amount.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Products</p>
@@ -448,7 +447,7 @@ Phone: ${order.phone}
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">{item.id?.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                Qty: {item.quantity} × PKR {item.id?.price}
+                                Qty: {item.quantity} × Rs. {item.id?.price}
                               </p>
                             </div>
                           </div>

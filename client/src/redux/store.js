@@ -14,20 +14,4 @@ export const store = configureStore({
         categories: categoriesReducer,
         orders: ordersReducer,
     },
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: {
-                // Ignore these action types
-                ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-                // Ignore these field paths in all actions
-                ignoredActionsPaths: ['meta.arg', 'payload.timestamp'],
-                // Ignore these paths in the state
-                ignoredPaths: ['items.dates'],
-            },
-            // Enable performance optimizations
-            immutableCheck: { warnAfter: 128 },
-            serializableCheck: { warnAfter: 128 },
-        }),
-    // Enable Redux DevTools in development
-    devTools: process.env.NODE_ENV !== 'production',
 })

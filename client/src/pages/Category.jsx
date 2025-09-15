@@ -39,7 +39,6 @@ import {
   updateCategory,
 } from '@/redux/slices/categories/categoriesSlice';
 import { Loader2, PlusCircle, Trash2, Edit, X, Check } from 'lucide-react';
-import { InlineLoader, TableLoader } from '@/components/ui/unified-loader';
 import {
   Table,
   TableBody,
@@ -92,11 +91,6 @@ const Category = () => {
       return;
     }
 
-    if (!inputValues.picture) {
-      toast.error('Category image is required');
-      return;
-    }
-
     const formData = new FormData();
     formData.append('name', inputValues.name);
     formData.append('picture', inputValues.picture);
@@ -129,14 +123,6 @@ const Category = () => {
     }
 
     setLoading(true);
-    
-    // Create FormData for update
-    const formData = new FormData();
-    formData.append('name', editingCategory.name);
-    if (editingCategory.picture && typeof editingCategory.picture === 'object') {
-      formData.append('picture', editingCategory.picture);
-    }
-
     dispatch(updateCategory({
       name: editingCategory.name,
       slug: editingCategory.slug,
@@ -210,7 +196,6 @@ const Category = () => {
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
-
 
   return (
     <div className="w-full max-w-4xl lg:min-w-[800px] mx-auto p-4 md:p-6 space-y-6">
@@ -374,8 +359,8 @@ const Category = () => {
         </CardHeader>
         <CardContent>
           {status === 'loading' && (
-            <div className="py-8">
-              <InlineLoader message="Loading Categories..." />
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}
 
@@ -405,12 +390,9 @@ const Category = () => {
                     </TableCell>
                     <TableCell>
                       <img
-                        src={category.image || category.picture?.secure_url || '/logos.png'}
+                        src={category.image}
                         alt={category.name}
                         className="h-10 w-10 rounded object-cover"
-                        onError={(e) => {
-                          e.target.src = '/logos.png'; // Fallback image
-                        }}
                       />
                     </TableCell>
                     <TableCell>
