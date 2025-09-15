@@ -117,7 +117,7 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-20">
-      {/* Main Content Container */}
+      {/* Main Content Containe */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="relative p-6 rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden rounded-2xl">
