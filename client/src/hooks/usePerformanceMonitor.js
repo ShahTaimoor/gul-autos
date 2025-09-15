@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import performanceMonitor from '../utils/performanceMonitor';
 
-// Hook for monitoring component performance
+// Hook for monitoring component performanc
 export const useComponentPerformance = (componentName) => {
   const [metrics, setMetrics] = useState({
     fps: 0,
