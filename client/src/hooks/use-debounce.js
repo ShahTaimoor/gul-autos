@@ -23,7 +23,7 @@ export function useDebounce(value, delay) {
 }
 
 /**
- * Custom hook for throttling function calls
+ * Custom hook for throttling function call
  * @param {Function} callback - The function to throttle
  * @param {number} delay - The delay in milliseconds
  * @returns {Function} The throttled function
