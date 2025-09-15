@@ -2,7 +2,7 @@
   "name": "Gul Autos - E-commerce Store",
   "short_name": "Gul Autos",
   "description": "Your trusted automotive parts and accessories store",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",

@@ -12,6 +12,7 @@ const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   // Calculate total cart quantity
   const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -33,6 +34,7 @@ const Navbar = () => {
       e.preventDefault();
       setDeferredPrompt(e);
       setShowInstallButton(true);
+      console.log('Deferred prompt set:', !!e);
     };
 
     // Listen for the appinstalled event
@@ -49,9 +51,11 @@ const Navbar = () => {
     console.log('Is in app:', isInApp);
     
     if (isStandalone || isInApp) {
+      console.log('App already installed, hiding install button');
       setShowInstallButton(false);
     } else {
       // Show install button for all devices - let the browser handle the installation
+      console.log('App not installed, showing install button');
       setShowInstallButton(true);
     }
 
@@ -64,16 +68,31 @@ const Navbar = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // Fallback: Show install button after a delay if beforeinstallprompt hasn't fired
+    const fallbackTimer = setTimeout(() => {
+      if (!deferredPrompt && !isStandalone && !isInApp) {
+        console.log('Fallback: Showing install button after timeout');
+        setShowInstallButton(true);
+      }
+    }, 3000);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
       window.removeEventListener('resize', checkMobile);
+      clearTimeout(fallbackTimer);
     };
   }, []);
 
-  const handleInstallClick = async () => {
+  const handleInstallClick = () => {
     console.log('Install button clicked');
+    setShowInstallModal(true);
+  };
+
+  const handleInstallConfirm = async () => {
+    console.log('Install confirmed');
     console.log('Deferred prompt available:', !!deferredPrompt);
+    setShowInstallModal(false);
 
     // Check if we have a deferred prompt (Chrome, Edge, etc.)
     if (deferredPrompt) {
@@ -83,6 +102,7 @@ const Navbar = () => {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
 
+        console.log('Install prompt outcome:', outcome);
         if (outcome === 'accepted') {
           console.log('User accepted the install prompt');
           setShowInstallButton(false);
@@ -105,6 +125,11 @@ const Navbar = () => {
       // For desktop browsers, try to trigger installation
       alert('To install this app:\n\n1. Look for the install icon in your browser\'s address bar\n2. Or go to the browser menu and look for "Install" or "Add to Home Screen"');
     }
+  };
+
+  const handleInstallCancel = () => {
+    console.log('Install cancelled');
+    setShowInstallModal(false);
   };
 
 
@@ -166,6 +191,42 @@ const Navbar = () => {
           )}
         </div>
       </nav>
+
+      {/* Custom Install Modal */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <Download className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Install Gul Autos App
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                {isMobile 
+                  ? "Install this app on your device for a better experience. You'll be able to access it from your home screen."
+                  : "Install this app on your computer for quick access and better performance."
+                }
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleInstallCancel}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleInstallConfirm}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Install
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   );
