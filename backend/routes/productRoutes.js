@@ -6,6 +6,8 @@ const upload = require('../middleware/multer')
 const { deleteImageOnCloudinary, uploadImageOnCloudinary } = require('../utils/cloudinary');
 const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
 const { default: mongoose } = require('mongoose');
+const multer = require('multer');
+const XLSX = require('xlsx');
 
 // @route POST /api/products/create-product
 // @desc Create a new Product
@@ -68,6 +70,263 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
   }
 });
 
+// @route POST /api/products/import-excel
+// @desc Import products from Excel file
+// @access Private/Admin
+router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Excel file is required'
+      });
+    }
+
+    // Parse Excel file with different options
+    const workbook = XLSX.read(req.file.buffer, { 
+      type: 'buffer',
+      cellDates: true,
+      cellNF: false,
+      cellText: false
+    });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Try different parsing methods
+    let jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+      header: 1, // Use first row as header
+      defval: '' // Default value for empty cells
+    });
+
+    console.log('Raw Excel data (first 5 rows):', jsonData.slice(0, 5));
+
+    // If we get array of arrays, convert to objects
+    if (jsonData.length > 0 && Array.isArray(jsonData[0])) {
+      const headers = jsonData[0];
+      console.log('Headers found:', headers);
+      
+      // Map headers to standard names
+      const headerMap = {};
+      headers.forEach((header, index) => {
+        if (header) {
+          const cleanHeader = header.toString().toLowerCase().trim();
+          if (cleanHeader.includes('name') || cleanHeader === 'name') {
+            headerMap[index] = 'name';
+          } else if (cleanHeader.includes('stock') || cleanHeader === 'stock') {
+            headerMap[index] = 'stock';
+          } else if (cleanHeader.includes('price') || cleanHeader === 'price') {
+            headerMap[index] = 'price';
+          }
+        }
+      });
+      
+      console.log('Header mapping:', headerMap);
+      
+      // If no headers were mapped, try to detect from data
+      if (Object.keys(headerMap).length === 0) {
+        console.log('No headers detected, trying to detect from data...');
+        // Look for patterns in the first few rows
+        for (let i = 0; i < Math.min(3, jsonData.length); i++) {
+          const row = jsonData[i];
+          for (let j = 0; j < row.length; j++) {
+            const cell = row[j];
+            if (cell && typeof cell === 'string') {
+              const cleanCell = cell.toLowerCase().trim();
+              if (cleanCell.includes('steering') || cleanCell.includes('lock') || cleanCell.includes('product')) {
+                if (!headerMap[j]) headerMap[j] = 'name';
+              } else if (!isNaN(parseFloat(cell)) && parseFloat(cell) > 1000) {
+                if (!headerMap[j]) headerMap[j] = 'stock';
+              } else if (!isNaN(parseFloat(cell)) && parseFloat(cell) < 10000) {
+                if (!headerMap[j]) headerMap[j] = 'price';
+              }
+            }
+          }
+        }
+        console.log('Auto-detected header mapping:', headerMap);
+      }
+      
+      // Convert to objects
+      jsonData = jsonData.slice(1).map(row => {
+        const obj = {};
+        Object.keys(headerMap).forEach(index => {
+          obj[headerMap[index]] = row[index];
+        });
+        return obj;
+      });
+    } else {
+      // Try standard parsing
+      jsonData = XLSX.utils.sheet_to_json(worksheet);
+    }
+
+    // If still no data, try alternative parsing
+    if (jsonData.length === 0 || (jsonData[0] && Object.keys(jsonData[0]).length === 0)) {
+      console.log('Trying alternative parsing method...');
+      jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        raw: false,
+        defval: '',
+        blankrows: false
+      });
+      console.log('Alternative parsing result:', jsonData.slice(0, 3));
+      
+      // If we get __EMPTY columns, map them properly
+      if (jsonData.length > 0 && jsonData[0].__EMPTY) {
+        console.log('Mapping __EMPTY columns to standard names...');
+        jsonData = jsonData.map(row => {
+          const obj = {};
+          if (row.__EMPTY) obj.name = row.__EMPTY;
+          if (row.__EMPTY_1) obj.stock = row.__EMPTY_1;
+          if (row.__EMPTY_2) obj.price = row.__EMPTY_2;
+          return obj;
+        });
+        console.log('Mapped data:', jsonData.slice(0, 3));
+      }
+    }
+
+    console.log('Parsed JSON data (first 3 rows):', jsonData.slice(0, 3));
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Excel file is empty or invalid format'
+      });
+    }
+
+    // Check available columns
+    const availableColumns = Object.keys(jsonData[0] || {});
+    console.log('Available columns:', availableColumns);
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    // Process each row
+    for (let i = 0; i < jsonData.length; i++) {
+      const row = jsonData[i];
+      const rowNumber = i + 2; // +2 because Excel starts from 1 and we skip header
+
+      try {
+        // Handle both standard column names and __EMPTY column names
+        let name, stock, price;
+        
+        if (row.name && row.stock && row.price) {
+          // Standard column names
+          ({ name, stock, price } = row);
+        } else {
+          // Handle __EMPTY column names
+          name = row.__EMPTY || row.name;
+          stock = row.__EMPTY_1 || row.stock;
+          price = row.__EMPTY_2 || row.price;
+        }
+        
+        // Debug logging
+        console.log(`Processing row ${rowNumber}:`, { name, stock, price });
+
+        // Skip header row (contains column names)
+        if (name === 'name' && stock === 'stock' && price === 'price') {
+          console.log(`Skipping header row ${rowNumber}`);
+          continue;
+        }
+        
+        // Skip empty rows
+        if (!name && !stock && !price) {
+          console.log(`Skipping empty row ${rowNumber}`);
+          continue;
+        }
+
+        // Use default values for missing fields
+        const productName = name ? name.trim() : `Product ${rowNumber}`;
+        
+        // Handle comma-separated numbers for stock and price
+        const cleanStock = stock ? stock.toString().replace(/,/g, '') : '0';
+        const cleanPrice = price ? price.toString().replace(/,/g, '') : '0';
+        
+        const productStock = parseInt(cleanStock) || 0;
+        const productPrice = parseFloat(cleanPrice) || 0;
+        
+        console.log(`Cleaned values:`, { 
+          originalStock: stock, 
+          cleanStock, 
+          productStock,
+          originalPrice: price, 
+          cleanPrice, 
+          productPrice 
+        });
+
+        // Find or create default category
+        let categoryId;
+        console.log('Looking for General category...');
+        const existingCategory = await Category.findOne({ 
+          name: 'General' 
+        });
+
+        if (existingCategory) {
+          categoryId = existingCategory._id;
+          console.log('Found existing General category:', categoryId);
+        } else {
+          // Create default category if it doesn't exist
+          console.log('Creating new General category...');
+          const newCategory = await Category.create({
+            name: 'General',
+            slug: 'general',
+            picture: {
+              secure_url: '/logos.png', // Default image
+              public_id: 'default-category-image'
+            }
+          });
+          categoryId = newCategory._id;
+          console.log('Created new General category:', categoryId);
+        }
+
+        // Create product
+        console.log('Creating product with data:', {
+          title: productName,
+          price: productPrice,
+          category: categoryId,
+          stock: productStock,
+          user: req.user._id
+        });
+        
+        const product = await Product.create({
+          title: productName,
+          description: `Imported from Excel - Row ${rowNumber}`,
+          price: productPrice,
+          category: categoryId,
+          stock: productStock,
+          user: req.user._id,
+          picture: {
+            secure_url: '/logos.png', // Default image
+            public_id: 'default-product-image'
+          }
+        });
+
+        console.log(`Product created successfully:`, product._id);
+        results.success++;
+      } catch (error) {
+        console.error(`Error creating product for row ${rowNumber}:`, error);
+        results.failed++;
+        results.errors.push(`Row ${rowNumber}: ${error.message}`);
+      }
+    }
+
+    console.log('Import completed. Summary:', results);
+    
+    return res.status(200).json({
+      success: true,
+      message: `Import completed. ${results.success} products created, ${results.failed} failed.`,
+      results
+    });
+
+  } catch (error) {
+    console.error('Error importing Excel file:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while importing Excel file',
+      error: error.message
+    });
+  }
+});
 
 // @rout PUT /api/products/update-product/:id
 // @desc Update an existing product ID

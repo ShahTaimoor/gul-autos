@@ -60,7 +60,19 @@ export const deleteSingleProduct = createAsyncThunk(
             return thunkAPI.rejectWithValue(error);
         }
     }
-)
+);
+
+export const importProductsFromExcel = createAsyncThunk(
+    'products/importProductsFromExcel',
+    async (excelFile, thunkAPI) => {
+        try {
+            const res = await productService.importProductsFromExcel(excelFile);
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
 
 const initialState = {
     products: [],
@@ -160,6 +172,19 @@ export const productsSlice = createSlice({
                 state.products = state.products.filter(prod => prod._id !== action.payload.id);
             })
             .addCase(deleteSingleProduct.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+            .addCase(importProductsFromExcel.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(importProductsFromExcel.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                // Refresh products after successful import
+                // The products will be refetched by the component
+            })
+            .addCase(importProductsFromExcel.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })
