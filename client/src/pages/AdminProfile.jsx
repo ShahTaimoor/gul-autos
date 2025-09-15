@@ -16,7 +16,7 @@ const AdminProfile = React.memo(() => {
   const dispatch = useDispatch();
   const { user, status } = useSelector((state) => state.auth);
 
-  // Local state for form input
+  // Local state for form inpu
   const [formData, setFormData] = useState({
     name: user?.name || '',
     address: user?.address || '',
