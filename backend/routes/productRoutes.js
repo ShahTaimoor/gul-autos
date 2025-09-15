@@ -4,7 +4,7 @@ const Category = require('../models/Category');
 const router = express.Router();
 const upload = require('../middleware/multer')
 const { deleteImageOnCloudinary, uploadImageOnCloudinary } = require('../utils/cloudinary');
-const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
+const { isAuthorized, isAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
 const { default: mongoose } = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
@@ -13,11 +13,10 @@ const XLSX = require('xlsx');
 // @desc Create a new Product
 // @access Private/Admin
 
-router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), async (req, res) => {
+router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
     const { title, description, price, category, stock } = req.body;
 
-    console.log('Product creation request:', { title, description, price, category, stock, hasFile: !!req.file });
 
     if (!title || !price || !category || !stock || !req.file) {
       return res.status(400).json({ 
@@ -33,7 +32,6 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
       });
     }
 
-    console.log('Uploading to Cloudinary...');
     const { secure_url, public_id } = await uploadImageOnCloudinary(req.file.buffer, 'products');
 
     if (!secure_url || !public_id) {
@@ -43,7 +41,6 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
       });
     }
 
-    console.log('Creating product in database...');
     const product = await Product.create({
       title,
       description,
@@ -54,7 +51,6 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
       picture: { secure_url, public_id }
     });
 
-    console.log('Product created successfully:', product._id);
     return res.status(201).json({
       success: true,
       message: 'Product Added Successfully',
@@ -73,7 +69,7 @@ router.post('/create-product', isAuthorized, isAdmin, upload.single('picture'), 
 // @route POST /api/products/import-excel
 // @desc Import products from Excel file
 // @access Private/Admin
-router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), async (req, res) => {
+router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -98,12 +94,10 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
       defval: '' // Default value for empty cells
     });
 
-    console.log('Raw Excel data (first 5 rows):', jsonData.slice(0, 5));
 
     // If we get array of arrays, convert to objects
     if (jsonData.length > 0 && Array.isArray(jsonData[0])) {
       const headers = jsonData[0];
-      console.log('Headers found:', headers);
       
       // Map headers to standard names
       const headerMap = {};
@@ -120,11 +114,9 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
         }
       });
       
-      console.log('Header mapping:', headerMap);
       
       // If no headers were mapped, try to detect from data
       if (Object.keys(headerMap).length === 0) {
-        console.log('No headers detected, trying to detect from data...');
         // Look for patterns in the first few rows
         for (let i = 0; i < Math.min(3, jsonData.length); i++) {
           const row = jsonData[i];
@@ -142,7 +134,6 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
             }
           }
         }
-        console.log('Auto-detected header mapping:', headerMap);
       }
       
       // Convert to objects
@@ -160,17 +151,14 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
 
     // If still no data, try alternative parsing
     if (jsonData.length === 0 || (jsonData[0] && Object.keys(jsonData[0]).length === 0)) {
-      console.log('Trying alternative parsing method...');
       jsonData = XLSX.utils.sheet_to_json(worksheet, { 
         raw: false,
         defval: '',
         blankrows: false
       });
-      console.log('Alternative parsing result:', jsonData.slice(0, 3));
       
       // If we get __EMPTY columns, map them properly
       if (jsonData.length > 0 && jsonData[0].__EMPTY) {
-        console.log('Mapping __EMPTY columns to standard names...');
         jsonData = jsonData.map(row => {
           const obj = {};
           if (row.__EMPTY) obj.name = row.__EMPTY;
@@ -178,11 +166,9 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
           if (row.__EMPTY_2) obj.price = row.__EMPTY_2;
           return obj;
         });
-        console.log('Mapped data:', jsonData.slice(0, 3));
       }
     }
 
-    console.log('Parsed JSON data (first 3 rows):', jsonData.slice(0, 3));
 
     if (jsonData.length === 0) {
       return res.status(400).json({
@@ -191,9 +177,6 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
       });
     }
 
-    // Check available columns
-    const availableColumns = Object.keys(jsonData[0] || {});
-    console.log('Available columns:', availableColumns);
 
     const results = {
       success: 0,
@@ -220,18 +203,17 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
           price = row.__EMPTY_2 || row.price;
         }
         
-        // Debug logging
-        console.log(`Processing row ${rowNumber}:`, { name, stock, price });
+       
 
         // Skip header row (contains column names)
         if (name === 'name' && stock === 'stock' && price === 'price') {
-          console.log(`Skipping header row ${rowNumber}`);
+         
           continue;
         }
         
         // Skip empty rows
         if (!name && !stock && !price) {
-          console.log(`Skipping empty row ${rowNumber}`);
+        
           continue;
         }
 
@@ -245,18 +227,11 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
         const productStock = parseInt(cleanStock) || 0;
         const productPrice = parseFloat(cleanPrice) || 0;
         
-        console.log(`Cleaned values:`, { 
-          originalStock: stock, 
-          cleanStock, 
-          productStock,
-          originalPrice: price, 
-          cleanPrice, 
-          productPrice 
-        });
+       
 
         // Find or create default category
         let categoryId;
-        console.log('Looking for General category...');
+       
         const existingCategory = await Category.findOne({ 
           name: 'General' 
         });
@@ -331,7 +306,7 @@ router.post('/import-excel', isAuthorized, isAdmin, upload.single('excelFile'), 
 // @rout PUT /api/products/update-product/:id
 // @desc Update an existing product ID
 // @access Private/Admin
-router.put('/update-product/:id', isAuthorized, isAdmin, upload.single('picture'), async (req, res) => {
+router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, price, category, stock } = req.body;
@@ -376,7 +351,7 @@ router.put('/update-product/:id', isAuthorized, isAdmin, upload.single('picture'
 // @route DELETE /api/products/delete-product/:id
 // @desc Delete a product by ID
 // @access Private/Admin
-router.delete('/delete-product/:id', isAuthorized, isAdmin,  async (req, res) => {
+router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (req, res) => {
 
     try {
         const { id } = req.params;
@@ -396,7 +371,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdmin,  async (req, res) =>
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: 'Server error in delete Product' });
-    }
+  }
 });
 
 // @route GET /api/products/get-products

@@ -2,7 +2,7 @@ const express = require('express');
 const Order = require('../models/Order');
 const User = require('../models/User');
 const Product = require('../models/Product');
-const { isAdmin, isAuthorized } = require('../middleware/authMiddleware');
+const { isAdmin, isAuthorized, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -90,7 +90,7 @@ router.post('/order', isAuthorized, async (req, res) => {
 // @route PUT /api/orders/:id/status
 // @desc Update order status
 // @access Admin
-router.put('/update-order-status/:id', isAuthorized, isAdmin, async (req, res) => {
+router.put('/update-order-status/:id', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
     const { status, packerName } = req.body;
     const { id } = req.params;
@@ -156,7 +156,7 @@ router.get('/get-orders-by-user-id', isAuthorized, async (req, res) => {
 // @access Admin
 
 // GET: All Orders with Pagination
-router.get('/get-all-orders', isAuthorized, isAdmin, async (req, res) => {
+router.get('/get-all-orders', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
 
@@ -207,7 +207,7 @@ function toPakistanDateISOString(date) {
 }
 
 // GET: Metrics (Sales, Users, Recent Orders)
-router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
+router.get('/get-metrics', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   const { startDate, endDate } = req.query;
 
   try {
@@ -307,7 +307,7 @@ router.get('/get-metrics', isAuthorized, isAdmin, async (req, res) => {
 // @route GET /api/orders/pending-orders-count
 // @desc Get total count of pending orders
 // @access Admin
-router.get('/pending-orders-count', isAuthorized, isAdmin, async (req, res) => {
+router.get('/pending-orders-count', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
     const count = await Order.countDocuments({ status: 'Pending' });
     return res.status(200).json({ success: true, count });
@@ -319,7 +319,7 @@ router.get('/pending-orders-count', isAuthorized, isAdmin, async (req, res) => {
 // @route DELETE /api/orders/:id
 // @desc Delete an order (Admin only)
 // @access Admin
-router.delete('/delete-order/:id', isAuthorized, isAdmin, async (req, res) => {
+router.delete('/delete-order/:id', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -360,7 +360,7 @@ router.delete('/delete-order/:id', isAuthorized, isAdmin, async (req, res) => {
 // @route DELETE /api/orders/bulk-delete
 // @desc Delete multiple orders (Admin only)
 // @access Admin
-router.delete('/bulk-delete-orders', isAuthorized, isAdmin, async (req, res) => {
+router.delete('/bulk-delete-orders', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
     const { orderIds } = req.body;
 

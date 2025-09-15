@@ -1,8 +1,8 @@
 const express = require('express');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
+const bcrypt = require('bcrypt');
+const { isAuthorized, isAdmin, isSuperAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -39,14 +39,14 @@ router.post('/login', async (req, res) => {
     user.password = undefined;
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP || '24h',
+      expiresIn: process.env.JWT_EXP || '365d',
     });
 
     return res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours instead of 365 days
+      secure: true, 
+      sameSite: 'None',
+      maxAge: 365 * 24 * 60 * 60 * 1000,
     }).status(200).json({
       success: true,
       user,
@@ -55,55 +55,6 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Server error during login');
-  }
-});
-
-// Refresh token endpoint
-router.post('/refresh', async (req, res) => {
-  try {
-    const { token } = req.cookies;
-
-    if (!token) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'No token provided' 
-      });
-    }
-
-    // Verify the existing token
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decodedToken.id).select('-password');
-    
-    if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'User not found' 
-      });
-    }
-
-    // Generate new token
-    const newToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP || '24h',
-    });
-
-    // Set new cookie
-    return res.cookie('token', newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    }).status(200).json({
-      success: true,
-      message: 'Token refreshed successfully',
-      user,
-      token: newToken,
-    });
-  } catch (error) {
-    console.error('Refresh token error:', error);
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid or expired token' 
-    });
   }
 });
 
@@ -133,32 +84,9 @@ router.post('/logout', (req, res) => {
   });
 });
 
-// Validate token endpoint
-router.get('/validate-token', isAuthorized, async (req, res) => {
-  try {
-    return res.status(200).json({
-      success: true,
-      message: 'Token is valid',
-      user: {
-        id: req.user._id,
-        name: req.user.name,
-        role: req.user.role,
-        phone: req.user.phone,
-        address: req.user.address,
-        city: req.user.city,
-      },
-    });
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Invalid token' 
-    });
-  }
-});
-
 // All users
-router.get('/all-users', isAuthorized, isAdmin, async (req, res) => {
+
+router.get('/all-users', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
     const users = await User.find({}).select('-password');
     res.status(200).json({
@@ -205,8 +133,8 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
   }
 });
 
-// Update user role (Admin only)
-router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) => {
+// Update user role (Super Admin only)
+router.put('/update-user-role/:userId', isAuthorized, isSuperAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
@@ -218,6 +146,14 @@ router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) 
       });
     }
 
+    // Validate role value
+    if (![0, 1, 2].includes(parseInt(role))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role value. Must be 0 (User), 1 (Admin), or 2 (Super Admin)'
+      });
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -226,7 +162,15 @@ router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) 
       });
     }
 
-    user.role = role;
+    // Prevent super admin from changing their own role
+    if (req.user.id === userId && req.user.role === 2) {
+      return res.status(403).json({
+        success: false,
+        message: 'Super admin cannot change their own role'
+      });
+    }
+
+    user.role = parseInt(role);
     const updatedUser = await user.save();
 
     return res.status(200).json({
@@ -247,17 +191,17 @@ router.put('/update-user-role/:userId', isAuthorized, isAdmin, async (req, res) 
   }
 });
 
-// Change Password - Admin only
-router.put('/change-password', isAuthorized, isAdmin, async (req, res) => {
+// Change password
+router.put('/change-password', isAuthorized, async (req, res) => {
   try {
-    const { currentPassword, newPassword, confirmPassword } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
+    const { oldPassword, newPassword, confirmPassword } = req.body;
 
-    // Validation
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    // Validate input
+    if (!oldPassword || !newPassword || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: 'All fields are required'
+        message: 'All password fields are required'
       });
     }
 
@@ -275,7 +219,69 @@ router.put('/change-password', isAuthorized, isAdmin, async (req, res) => {
       });
     }
 
-    // Get user from database
+    // Get user with password
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Old password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    user.password = hashedNewPassword;
+    await user.save();
+
+    console.log('Password changed successfully for user:', userId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// Update username
+router.put('/update-username', isAuthorized, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { newUsername } = req.body;
+
+    if (!newUsername || newUsername.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ name: newUsername.trim() });
+    if (existingUser && existingUser._id.toString() !== userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username already exists'
+      });
+    }
+
+    // Update username
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -284,33 +290,26 @@ router.put('/change-password', isAuthorized, isAdmin, async (req, res) => {
       });
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
+    user.name = newUsername.trim();
+    await user.save();
 
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    await User.findByIdAndUpdate(userId, {
-      password: hashedNewPassword
-    });
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: 'Password changed successfully'
+      message: 'Username updated successfully',
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+        city: user.city,
+      }
     });
-
   } catch (error) {
-    console.error('Change Password Error:', error);
-    res.status(500).json({
+    console.error('Update Username Error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Server error during password change'
+      message: 'Server error'
     });
   }
 });

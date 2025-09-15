@@ -45,7 +45,49 @@ const isAdmin = (req, res, next) => {
     }
 };
 
+// Middleware to check if user is super admin
+const isSuperAdmin = (req, res, next) => {
+    try {
+        const { user } = req;
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'User not authenticated.' });
+        }
+
+        if (user.role !== 2) {
+            return res.status(403).json({ success: false, message: 'Access denied. Super Admin only.' });
+        }
+
+        next();
+    } catch (error) {
+        console.error('Error in isSuperAdmin middleware:', error.message);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
+// Middleware to check if user is admin or super admin
+const isAdminOrSuperAdmin = (req, res, next) => {
+    try {
+        const { user } = req;
+
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'User not authenticated.' });
+        }
+
+        if (user.role !== 1 && user.role !== 2) {
+            return res.status(403).json({ success: false, message: 'Access denied. Admin or Super Admin only.' });
+        }
+
+        next();
+    } catch (error) {
+        console.error('Error in isAdminOrSuperAdmin middleware:', error.message);
+        return res.status(500).json({ success: false, message: 'Internal server error.' });
+    }
+};
+
 module.exports = {
     isAuthorized,
     isAdmin,
+    isSuperAdmin,
+    isAdminOrSuperAdmin,
 };

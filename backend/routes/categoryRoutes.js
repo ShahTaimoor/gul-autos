@@ -1,14 +1,14 @@
 const express = require('express');
 const Category = require('../models/Category');
 const slugify = require('slugify');
-const { isAuthorized, isAdmin } = require('../middleware/authMiddleware');
+const { isAuthorized, isAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
 const upload = require('../middleware/multer');
 const { uploadImageOnCloudinary, deleteImageOnCloudinary } = require('../utils/cloudinary');
 
 const router = express.Router();
 
-// Create categor
-router.post('/create-category', upload.single('picture'), isAuthorized, isAdmin, async (req, res) => {
+// Create category
+router.post('/create-category', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { name } = req.body;
 
@@ -49,7 +49,7 @@ router.post('/create-category', upload.single('picture'), isAuthorized, isAdmin,
 });
 
 // Update category
-router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isAdmin, async (req, res) => {
+router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { name } = req.body;
         const { slug } = req.params;
@@ -96,7 +96,7 @@ router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isA
 });
 
 // Delete ategory
-router.delete('/delete-category/:slug', isAuthorized, isAdmin, async (req, res) => {
+router.delete('/delete-category/:slug', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { slug } = req.params;
         const deletedCategory = await Category.findOneAndDelete({ slug });
@@ -126,13 +126,10 @@ router.get('/all-category', async (req, res) => {
             return res.status(404).json({ success: false, message: 'No categories found' });
         }
 
-        const newCategoryArray = categories.map((category, index) => {
+        const newCategoryArray = categories.map((category) => {
             const categoryObj = category.toObject();
-            // Keep both image and picture fields for compatibility
             categoryObj.image = categoryObj.picture?.secure_url || null;
-            // Don't delete picture field, keep it for backward compatibility
-            
-            
+            delete categoryObj.picture;
             return categoryObj;
         });
 
