@@ -9,7 +9,7 @@ const { default: mongoose } = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
 
-// @route POST /api/products/create-product
+// @route POST /api/products/create-produc
 // @desc Create a new Product
 // @access Private/Admin
 
