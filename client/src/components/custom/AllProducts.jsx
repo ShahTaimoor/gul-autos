@@ -45,7 +45,7 @@ const AllProducts = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form stat
+  // Form sta
   const [formData, setFormData] = useState({
     title: '',
     description: '',
