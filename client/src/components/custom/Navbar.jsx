@@ -12,7 +12,6 @@ const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [showCustomInstallPrompt, setShowCustomInstallPrompt] = useState(false);
 
   // Calculate total cart quantity
   const totalQuantity = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -52,22 +51,8 @@ const Navbar = () => {
     if (isStandalone || isInApp) {
       setShowInstallButton(false);
     } else {
-      // Always show install button for mobile devices
-      // For desktop, show if beforeinstallprompt is supported or if we're in development
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      const shouldShow = isMobileDevice || 
-                        window.innerWidth <= 768 || 
-                        'onbeforeinstallprompt' in window || 
-                        process.env.NODE_ENV === 'development';
-      
-      console.log('Should show install button:', shouldShow);
-      console.log('Window width:', window.innerWidth);
-      console.log('Is mobile device:', isMobileDevice);
-      console.log('Is mobile width:', window.innerWidth <= 768);
-      
-      if (shouldShow) {
-        setShowInstallButton(true);
-      }
+      // Show install button for all devices - let the browser handle the installation
+      setShowInstallButton(true);
     }
 
     // Debug PWA support
@@ -89,13 +74,11 @@ const Navbar = () => {
   const handleInstallClick = async () => {
     console.log('Install button clicked');
     console.log('Deferred prompt available:', !!deferredPrompt);
-    console.log('Is mobile:', isMobile);
-    console.log('User agent:', navigator.userAgent);
 
     // Check if we have a deferred prompt (Chrome, Edge, etc.)
     if (deferredPrompt) {
       try {
-        console.log('Showing deferred prompt');
+        console.log('Showing native install prompt');
         // Show the install prompt
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
@@ -114,108 +97,16 @@ const Navbar = () => {
       return;
     }
 
-    // Show custom install prompt immediately
-    setShowCustomInstallPrompt(true);
-
-    // Try multiple installation methods in background
-    const tryInstallMethods = () => {
-      // Method 1: Try to trigger beforeinstallprompt by creating a new window
-      const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
-      if (newWindow) {
-        newWindow.focus();
-        // Close after a short delay
-        setTimeout(() => {
-          newWindow.close();
-        }, 3000);
-      }
-
-      // Method 2: Try to trigger installation by adding PWA meta tags dynamically
-      const metaTags = [
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'application-name', content: 'Gul Autos' }
-      ];
-
-      metaTags.forEach(tag => {
-        let existingTag = document.querySelector(`meta[name="${tag.name}"]`);
-        if (!existingTag) {
-          existingTag = document.createElement('meta');
-          existingTag.name = tag.name;
-          document.head.appendChild(existingTag);
-        }
-        existingTag.content = tag.content;
-      });
-
-      // Method 3: Try to trigger installation by reloading with install parameters
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('install', 'true');
-        url.searchParams.set('source', 'install_button');
-        url.searchParams.set('timestamp', Date.now().toString());
-        
-        // Try to navigate to trigger install
-        window.location.href = url.toString();
-      }, 1000);
-    };
-
-    // Execute installation methods
-    tryInstallMethods();
+    // Fallback for browsers that don't support beforeinstallprompt
+    if (isMobile) {
+      // For mobile Safari, show instructions
+      alert('To install this app on your device:\n\n1. Tap the Share button\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add"');
+    } else {
+      // For desktop browsers, try to trigger installation
+      alert('To install this app:\n\n1. Look for the install icon in your browser\'s address bar\n2. Or go to the browser menu and look for "Install" or "Add to Home Screen"');
+    }
   };
 
-  const handleCustomInstallConfirm = () => {
-    setShowCustomInstallPrompt(false);
-    
-    // Try multiple aggressive installation methods
-    const forceInstall = () => {
-      // Method 1: Try to trigger beforeinstallprompt by creating multiple windows
-      for (let i = 0; i < 3; i++) {
-        setTimeout(() => {
-          const newWindow = window.open(window.location.href, '_blank', 'width=400,height=600,scrollbars=yes,resizable=yes');
-          if (newWindow) {
-            newWindow.focus();
-            setTimeout(() => newWindow.close(), 2000);
-          }
-        }, i * 500);
-      }
-
-      // Method 2: Add all possible PWA meta tags
-      const metaTags = [
-        { name: 'mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'application-name', content: 'Gul Autos' },
-        { name: 'msapplication-TileColor', content: '#000000' },
-        { name: 'msapplication-tap-highlight', content: 'no' }
-      ];
-
-      metaTags.forEach(tag => {
-        let existingTag = document.querySelector(`meta[name="${tag.name}"]`);
-        if (!existingTag) {
-          existingTag = document.createElement('meta');
-          existingTag.name = tag.name;
-          document.head.appendChild(existingTag);
-        }
-        existingTag.content = tag.content;
-      });
-
-      // Method 3: Try to trigger installation by reloading with install parameters
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('install', 'true');
-        url.searchParams.set('source', 'custom_prompt');
-        url.searchParams.set('timestamp', Date.now().toString());
-        url.searchParams.set('force', 'true');
-        
-        // Try to navigate to trigger install
-        window.location.href = url.toString();
-      }, 1500);
-    };
-
-    forceInstall();
-  };
-
-  const handleCustomInstallCancel = () => {
-    setShowCustomInstallPrompt(false);
-  };
 
   // Only show navbar if user is logged in
   if (!user) {
@@ -251,7 +142,7 @@ const Navbar = () => {
               title={isMobile ? "Install App on Home Screen" : "Install App"}
             >
               {isMobile ? <Smartphone size={14} /> : <Download size={14} />}
-              <span>Install</span>
+              <span>Install App</span>
             </button>
           )}
         </div>
@@ -276,41 +167,6 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Custom Install Prompt Modal */}
-      {showCustomInstallPrompt && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-xl p-6 mx-4 max-w-sm w-full">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                <Download className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Install Gul Autos App
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                {isMobile 
-                  ? "Install this app on your device for a better experience. You'll be able to access it from your home screen."
-                  : "Install this app on your computer for quick access and better performance."
-                }
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleCustomInstallCancel}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCustomInstallConfirm}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Install Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
