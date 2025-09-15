@@ -49,6 +49,11 @@ const Checkout = () => {
     });
   }, [user]);
 
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -59,6 +64,9 @@ const Checkout = () => {
       await dispatch(updateProfile(formData)).unwrap();
       toast.success('Profile updated successfully');
       setShowForm(false);
+      
+      // Scroll to top after successful profile update
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       toast.error(err?.message || 'Failed to update profile');
     }
@@ -79,6 +87,10 @@ const Checkout = () => {
 
     try {
       setLoading(true);
+      
+      // Scroll to top before starting checkout process
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
       await dispatch(updateProfile({ address, phone, city })).unwrap();
 
       const orderData = {
@@ -98,6 +110,9 @@ const Checkout = () => {
         
         // Set loading to false before navigation
         setLoading(false);
+        
+        // Ensure we're at the top before navigation
+        window.scrollTo({ top: 0, behavior: 'instant' });
         
         // Use window.location for guaranteed navigation
         setTimeout(() => {
