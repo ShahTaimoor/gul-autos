@@ -7,7 +7,7 @@
   ],
   "headers": [
     {
-      "source": ".*\\.js$",
+      "source": "*.js",
       "headers": [
         {
           "key": "Content-Type",
@@ -16,7 +16,7 @@
       ]
     },
     {
-      "source": ".*\\.css$",
+      "source": "*.css",
       "headers": [
         {
           "key": "Content-Type",
