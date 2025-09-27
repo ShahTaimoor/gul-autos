@@ -49,7 +49,7 @@ const ProductList = () => {
 
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
-    return productList.filter((product) => product.stock > 0);
+    return productList.filter((product) => product && product._id && product.stock > 0);
   }, [productList]);
 
   // Scroll to top on page change
@@ -83,7 +83,7 @@ const ProductList = () => {
   useEffect(() => {
     if (productList.length > 0) {
       const initialQuantities = {};
-      productList.forEach((product) => {
+      productList.filter(product => product && product._id).forEach((product) => {
         initialQuantities[product._id] = product.stock > 0 ? 1 : 0;
       });
       setQuantities(initialQuantities);

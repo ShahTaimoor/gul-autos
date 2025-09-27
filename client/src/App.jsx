@@ -3,6 +3,7 @@ import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import { Toaster } from './components/ui/sonner';
 import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
+import ErrorBoundary from './components/custom/ErrorBoundary';
 import OneLoader from './components/ui/OneLoader';
 import { Suspense, lazy } from 'react';
 
@@ -35,7 +36,9 @@ const App = () => {
       element: (
         <RootLayout>
           <ProtectedRoute>
-            <Home />
+            <ErrorBoundary>
+              <Home />
+            </ErrorBoundary>
           </ProtectedRoute>
         </RootLayout>
       ),
@@ -178,9 +181,11 @@ const App = () => {
     <Provider store={store}>
       <Toaster />
       <TokenExpirationHandler />
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><OneLoader size="large" text="Loading..." /></div>}>
-        <RouterProvider router={router} />
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><OneLoader size="large" text="Loading..." /></div>}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </ErrorBoundary>
     </Provider>
   );
 };

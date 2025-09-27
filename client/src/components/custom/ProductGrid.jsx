@@ -51,7 +51,7 @@ const ProductGrid = React.memo(({
           : 'grid-cols-1'
     }`}>
       <AnimatePresence>
-        {products.map((product) => (
+        {products.filter(product => product && product._id).map((product) => (
           <ProductCard
             key={product._id}
             product={product}
