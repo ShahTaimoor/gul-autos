@@ -24,8 +24,10 @@ const categorySchema = new mongoose.Schema({
             required: true
         },
     },
-    
-
+    position: {
+        type: Number,
+        default: 0
+    }
 
 }, { timestamps: true })
 

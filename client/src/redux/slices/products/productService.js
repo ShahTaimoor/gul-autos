@@ -19,7 +19,7 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 24, stockFilter ) => {
+const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 24, stockFilter, sortBy = 'az') => {
     // If searching, fetch all
     if (searchTerm && searchTerm.trim() !== '') {
       limit = 'all';
@@ -29,7 +29,7 @@ const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 2
       const response = await axiosInstance.get(
         '/get-products',
         {
-          params: { category, search: searchTerm, page, limit, stockFilter },
+          params: { category, search: searchTerm, page, limit, stockFilter, sortBy },
           headers: { 'Content-Type': 'application/json' },
         }
       );

@@ -38,7 +38,7 @@ import {
   deleteCategory,
   updateCategory,
 } from '@/redux/slices/categories/categoriesSlice';
-import { Loader2, PlusCircle, Trash2, Edit, X, Check } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, X, Check, Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -56,6 +56,7 @@ const Category = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { categories, status, error } = useSelector((state) => state.categories);
 
   const handleChange = (e) => {
@@ -123,11 +124,18 @@ const Category = () => {
     }
 
     setLoading(true);
-    dispatch(updateCategory({
+    const updateData = {
       name: editingCategory.name,
       slug: editingCategory.slug,
       picture: editingCategory.picture,
-    }))
+    };
+    
+    // Add position if it's provided
+    if (editingCategory.position !== undefined && editingCategory.position !== '') {
+      updateData.position = parseInt(editingCategory.position);
+    }
+
+    dispatch(updateCategory(updateData))
       .unwrap()
       .then((response) => {
         if (response?.success) {
@@ -193,6 +201,11 @@ const Category = () => {
     setIsDialogOpen(false);
   };
 
+  // Filter categories based on search term
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
@@ -237,6 +250,25 @@ const Category = () => {
                   disabled={loading}
                 />
               </div>
+
+              {editingCategory && (
+                <div className="space-y-2">
+                  <Label htmlFor="position">Position (Optional)</Label>
+                  <Input
+                    id="position"
+                    name="position"
+                    type="number"
+                    value={editingCategory.position || ''}
+                    onChange={handleChange}
+                    placeholder="Enter position number (1, 2, 3...)"
+                    min="1"
+                    disabled={loading}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Lower numbers appear first. Leave empty to keep current position.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -352,6 +384,29 @@ const Category = () => {
         </Dialog>
       </div>
 
+      {/* Search Bar */}
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search categories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        {searchTerm && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSearchTerm('')}
+            className="shrink-0"
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Category List</CardTitle>
@@ -371,22 +426,58 @@ const Category = () => {
           )}
 
           {categories && categories.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.map((category, index) => (
+            <>
+              {filteredCategories.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Search className="h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-muted-foreground">No categories found matching "{searchTerm}"</p>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Try a different search term or clear the search to see all categories.
+                  </p>
+                  {searchTerm && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setSearchTerm('')}
+                      className="mt-4"
+                    >
+                      Clear Search
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {searchTerm && (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        Showing {filteredCategories.length} of {categories.length} categories
+                        {searchTerm && ` matching "${searchTerm}"`}
+                      </p>
+                    </div>
+                  )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Image</TableHead>
+                        <TableHead>Slug</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCategories.map((category, index) => (
                   <TableRow key={category._id}>
-                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-mono">
+                        {category.position || index + 1}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">
-                      {category.name}
+                      {category.name
+                        .split(' ')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                        .join(' ')
+                      }
                     </TableCell>
                     <TableCell>
                       <img
@@ -447,9 +538,12 @@ const Category = () => {
                       </AlertDialog>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              )}
+            </>
           ) : (
             status === 'succeeded' && (
               <div className="flex flex-col items-center justify-center py-12 text-center">

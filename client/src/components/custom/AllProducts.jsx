@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -10,6 +11,7 @@ import OneLoader from '../ui/OneLoader';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import LazyImage from '../ui/LazyImage';
 
 import {
   Trash2,
@@ -46,6 +48,9 @@ const AllProducts = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPageLocal, setCurrentPageLocal] = useState(1);
 
+  // Debounced search to reduce API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
   // Form sta
   const [formData, setFormData] = useState({
     title: '',
@@ -66,20 +71,16 @@ const AllProducts = () => {
     dispatch(AllCategory());
   }, [dispatch]);
 
-  // Debounced search effect
+  // Fetch products with debounced search
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      dispatch(fetchProducts({ 
-        category: selectedCategory, 
-        searchTerm, 
-        page: currentPageLocal, 
-        limit: 12,
-        stockFilter 
-      }));
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [dispatch, selectedCategory, searchTerm, currentPageLocal, stockFilter]);
+    dispatch(fetchProducts({ 
+      category: selectedCategory, 
+      searchTerm: debouncedSearchTerm, 
+      page: currentPageLocal, 
+      limit: 12,
+      stockFilter 
+    }));
+  }, [dispatch, selectedCategory, debouncedSearchTerm, currentPageLocal, stockFilter]);
 
   // Use products directly since filtering is now done on the backend
   const filteredProducts = products || [];
@@ -174,7 +175,8 @@ const AllProducts = () => {
     setCurrentPageLocal(1); // Reset to first page when searching
   }, []);
 
-  if (status === 'loading') {
+  // Only show main loader for initial loading, not for search/filter operations
+  if (status === 'loading' && products.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -206,8 +208,13 @@ const AllProducts = () => {
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
               />
+              {status === 'loading' && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -269,7 +276,7 @@ const AllProducts = () => {
         gridView === 'grid' 
           ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
-      }`}>
+      } ${status === 'loading' && products.length > 0 ? 'opacity-75 pointer-events-none' : ''}`}>
         {filteredProducts.map((product) => (
           <Card 
             key={product._id} 
@@ -281,11 +288,12 @@ const AllProducts = () => {
             <div className={`relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 ${
               gridView === 'list' ? 'w-24 h-24 flex-shrink-0' : 'w-full'
             }`}>
-              <img
-                src={product.image || '/placeholder-product.jpg'}
+              <LazyImage
+                src={product.image || product.picture?.secure_url}
                 alt={product.title}
-                className="w-full h-full object-cover"
-                onError={(e) => (e.currentTarget.src = '/placeholder-product.jpg')}
+                className="w-full h-full"
+                fallback="/placeholder-product.jpg"
+                quality={85}
               />
               
               {/* Stock Badge */}
@@ -301,6 +309,19 @@ const AllProducts = () => {
               <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
                 {product.title}
               </h3>
+              
+              {/* Category Badge */}
+              {product.category && (
+                <div className="mb-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {(product.category.name || product.category)
+                      .split(' ')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                      .join(' ')
+                    }
+                  </Badge>
+                </div>
+              )}
               
               <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                 {product.description}
@@ -395,8 +416,17 @@ const AllProducts = () => {
 
       {/* Results Info */}
       <div className="text-center text-sm text-gray-500 mt-4">
-        Showing {filteredProducts.length} of {totalItems} products
-        {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
+        {status === 'loading' && products.length > 0 ? (
+          <span className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+            Searching...
+          </span>
+        ) : (
+          <>
+            Showing {filteredProducts.length} of {totalItems} products
+            {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
+          </>
+        )}
       </div>
 
       {/* Empty State */}

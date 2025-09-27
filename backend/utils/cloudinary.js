@@ -7,12 +7,19 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const uploadImageOnCloudinary = async (buffer, folderName) => {
+const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
   try {
-    const base64String = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+    // Convert to WebP if not already
+    const { convertToWebP } = require('./imageProcessor');
+    const webpBuffer = await convertToWebP(buffer, options);
+    
+    const base64String = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
 
     const result = await cloudinary.uploader.upload(base64String, {
-      folder: folderName
+      folder: folderName,
+      format: 'webp',
+      quality: 'auto',
+      fetch_format: 'auto'
     });
 
     return {

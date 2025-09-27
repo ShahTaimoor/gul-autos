@@ -29,6 +29,7 @@ const UpdateProduct = () => {
 
   const [previewImage, setPreviewImage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
 
   const { categories } = useSelector((state) => state.categories);
   const { singleProducts } = useSelector((s) => s.products);
@@ -49,7 +50,18 @@ const UpdateProduct = () => {
 
   const handleCategoryChange = (value) => {
     setInputValue((values) => ({ ...values, category: value }));
+    setCategorySearch(''); // Clear search when category is selected
   };
+
+  const handleCategorySearch = (e) => {
+    setCategorySearch(e.target.value);
+  };
+
+  // Filter categories based on search - show only if search is empty or category starts with search
+  const filteredCategories = categories?.filter(category => {
+    if (!categorySearch) return true; // Show all when no search
+    return category.name.toLowerCase().startsWith(categorySearch.toLowerCase());
+  }) || [];
 
   const handleRemoveImage = () => {
     setInputValue((prev) => ({ ...prev, picture: '' }));
@@ -148,12 +160,35 @@ const UpdateProduct = () => {
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((category) => (
-                      <SelectItem key={category._id} value={category._id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                  <SelectContent position="popper" className="max-h-60">
+                    {/* Search Input */}
+                    <div className="p-2 border-b">
+                      <Input
+                        placeholder="Type first letter to filter..."
+                        value={categorySearch}
+                        onChange={handleCategorySearch}
+                        className="h-8"
+                      />
+                    </div>
+                    
+                    {/* Category List */}
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredCategories.length > 0 ? (
+                        filteredCategories.map((category) => (
+                          <SelectItem key={category._id} value={category._id}>
+                            {category.name
+                              .split(' ')
+                              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                              .join(' ')
+                            }
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-2 text-sm text-gray-500 text-center">
+                          No categories found
+                        </div>
+                      )}
+                    </div>
                   </SelectContent>
                 </Select>
               </div>

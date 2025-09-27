@@ -32,6 +32,18 @@ router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single(
       });
     }
 
+    // Check for duplicate product name
+    const existingProduct = await Product.findOne({ 
+      title: { $regex: new RegExp(`^${title.trim()}$`, 'i') } 
+    });
+    
+    if (existingProduct) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product with this name already exists'
+      });
+    }
+
     const { secure_url, public_id } = await uploadImageOnCloudinary(req.file.buffer, 'products');
 
     if (!secure_url || !public_id) {
@@ -316,6 +328,21 @@ router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.sing
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
+    // Check for duplicate product name (excluding current product)
+    if (title && title.trim() !== product.title) {
+      const existingProduct = await Product.findOne({ 
+        title: { $regex: new RegExp(`^${title.trim()}$`, 'i') },
+        _id: { $ne: id }
+      });
+      
+      if (existingProduct) {
+        return res.status(400).json({
+          success: false,
+          message: 'Product with this name already exists'
+        });
+      }
+    }
+
     // Update text fields
     if (title) product.title = title;
     if (description) product.description = description;
@@ -379,7 +406,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 24, stockFilter = 'all' } = req.query;
+    let { category, search, page = 1, limit = 24, stockFilter = 'all', sortBy = 'az' } = req.query;
 
     if (limit === 'all') {
       limit = 0; 
@@ -425,18 +452,157 @@ router.get('/get-products', async (req, res) => {
       }
     }
 
-    // Handle search filter
-    if (search) {
-      query.title = { $regex: search, $options: 'i' };
+    // Handle enhanced search filter with keyword and year matching
+    if (search && search.trim()) {
+      const trimmedSearch = search.trim();
+      
+      // Split search into keywords and years
+      const words = trimmedSearch.split(/\s+/).filter(word => word.length > 0);
+      const keywords = [];
+      const years = [];
+      
+      // Separate keywords from years (4-digit numbers)
+      words.forEach(word => {
+        if (/^\d{4}$/.test(word)) {
+          years.push(word);
+        } else {
+          keywords.push(word);
+        }
+      });
+      
+      console.log('Search analysis:', { keywords, years, original: trimmedSearch });
+      
+      // If we have both keywords and years, require both to match
+      if (keywords.length > 0 && years.length > 0) {
+        const keywordPatterns = [];
+        const yearPatterns = [];
+        
+        // Create keyword patterns (must match in title or description)
+        keywords.forEach(keyword => {
+          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          keywordPatterns.push(
+            { title: { $regex: escapedKeyword, $options: 'i' } },
+            { description: { $regex: escapedKeyword, $options: 'i' } }
+          );
+        });
+        
+        // Create year patterns (must match in title or description)
+        years.forEach(year => {
+          yearPatterns.push(
+            { title: { $regex: year, $options: 'i' } },
+            { description: { $regex: year, $options: 'i' } }
+          );
+        });
+        
+        // Both keyword AND year must be found
+        query.$and = [
+          { $or: keywordPatterns }, // At least one keyword must match
+          { $or: yearPatterns }     // At least one year must match
+        ];
+        
+        console.log('Keyword + Year search:', { keywordPatterns: keywordPatterns.length, yearPatterns: yearPatterns.length });
+      }
+      // If only keywords (no years), use flexible keyword matching
+      else if (keywords.length > 0) {
+        const searchPatterns = [];
+        
+        // Exact phrase search
+        const escapedExact = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        searchPatterns.push(
+          { title: { $regex: `^${escapedExact}$`, $options: 'i' } },
+          { description: { $regex: `^${escapedExact}$`, $options: 'i' } }
+        );
+        
+        // Word boundary search
+        keywords.forEach(keyword => {
+          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          searchPatterns.push(
+            { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+            { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+          );
+        });
+        
+        // Partial match search
+        const escapedPartial = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        searchPatterns.push(
+          { title: { $regex: escapedPartial, $options: 'i' } },
+          { description: { $regex: escapedPartial, $options: 'i' } }
+        );
+        
+        query.$or = searchPatterns;
+        console.log('Keyword-only search:', { patterns: searchPatterns.length });
+      }
+      // If only years, search for any of the years
+      else if (years.length > 0) {
+        const yearPatterns = [];
+        years.forEach(year => {
+          yearPatterns.push(
+            { title: { $regex: year, $options: 'i' } },
+            { description: { $regex: year, $options: 'i' } }
+          );
+        });
+        query.$or = yearPatterns;
+        console.log('Year-only search:', { patterns: yearPatterns.length });
+      }
     }
 
     const totalProducts = await Product.countDocuments(query);
 
+    // Build sort object based on sortBy parameter
+    let sortObject = {};
+    switch (sortBy) {
+      case 'az':
+        sortObject = { title: 1 };
+        break;
+      case 'za':
+        sortObject = { title: -1 };
+        break;
+      case 'price-low':
+        sortObject = { price: 1 };
+        break;
+      case 'price-high':
+        sortObject = { price: -1 };
+        break;
+      case 'newest':
+        sortObject = { createdAt: -1 };
+        break;
+      case 'oldest':
+        sortObject = { createdAt: 1 };
+        break;
+      case 'stock-high':
+        sortObject = { stock: -1 };
+        break;
+      case 'stock-low':
+        sortObject = { stock: 1 };
+        break;
+      case 'relevance':
+        // For search results, prioritize title matches over description matches
+        if (search && search.trim()) {
+          sortObject = { 
+            title: 1, // Exact matches first
+            createdAt: -1 // Then by newest
+          };
+        } else {
+          sortObject = { createdAt: -1 };
+        }
+        break;
+      default:
+        // If searching, default to relevance-based sorting
+        if (search && search.trim()) {
+          sortObject = { 
+            title: 1,
+            createdAt: -1 
+          };
+        } else {
+          sortObject = { title: 1 };
+        }
+    }
+
     const products = await Product.find(query)
-      .select('title picture price description stock')
+      .select('title picture price description stock createdAt')
       .populate('user', 'name')
       .populate('category', 'name')
-      .sort({ stock: -1, name: 1 })
+      .sort(sortObject)
       .skip((page - 1) * (limit || 1))
       .limit(limit || undefined);
 

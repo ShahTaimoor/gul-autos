@@ -15,9 +15,9 @@ export const AddCategory = createAsyncThunk(
 
 export const updateCategory = createAsyncThunk(
     'categories/updateCategory',
-    async ({ name, slug, picture }, thunkAPI) => {
+    async ({ name, slug, picture, position }, thunkAPI) => {
         try {
-            const res = await categoryService.updateCat({ name, slug, picture });
+            const res = await categoryService.updateCat({ name, slug, picture, position });
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);

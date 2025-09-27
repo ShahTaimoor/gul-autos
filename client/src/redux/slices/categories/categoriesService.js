@@ -16,11 +16,12 @@ const createCat = async (inputValues) => {
 };
 
 // Update Category
-const updateCat = async ({ name, slug, picture }) => {
+const updateCat = async ({ name, slug, picture, position }) => {
     try {
         const formData = new FormData();
         formData.append('name', name);
         if (picture) formData.append('picture', picture);
+        if (position !== undefined) formData.append('position', position);
 
         const axiosResponse = await axiosInstance.put(
             `/update-category/${slug}`,

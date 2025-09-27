@@ -15,9 +15,9 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, searchTerm, page = 1, limit = 24, stockFilter  }, thunkAPI) => {
+    async ({ category, searchTerm, page = 1, limit = 24, stockFilter, sortBy = 'az' }, thunkAPI) => {
         try {
-            const res = await productService.allProduct(category, searchTerm, page, limit, stockFilter);
+            const res = await productService.allProduct(category, searchTerm, page, limit, stockFilter, sortBy);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);

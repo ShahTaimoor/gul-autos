@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
+import LazyImage from "../ui/LazyImage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -226,14 +227,12 @@ const OrderData = ({
           className="flex flex-col sm:flex-row justify-between items-end sm:items-center border p-3 rounded-lg bg-gray-100"
         >
           <div className="flex items-center gap-2">
-            <img
-              src={
-                product?.id?.picture?.secure_url
-                  ? product.id.picture.secure_url
-                  : "fallback.jpg"
-              }
+            <LazyImage
+              src={product?.id?.picture?.secure_url}
               alt={product?.id?.title || "Product image"}
-              className="h-20 w-20 rounded-lg object-cover"
+              className="h-20 w-20 rounded-lg"
+              fallback="fallback.jpg"
+              quality={80}
             />
             <div className="grid">
               <h1>{product?.id?.title || "Unnamed Product"}</h1>

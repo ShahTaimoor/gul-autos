@@ -7,6 +7,21 @@ const { uploadImageOnCloudinary, deleteImageOnCloudinary } = require('../utils/c
 
 const router = express.Router();
 
+// Helper function to normalize positions (1, 2, 3, 4...)
+const normalizePositions = async () => {
+    try {
+        const categories = await Category.find().sort({ position: 1, createdAt: 1 });
+        for (let i = 0; i < categories.length; i++) {
+            const expectedPosition = i + 1;
+            if (categories[i].position !== expectedPosition) {
+                await Category.findByIdAndUpdate(categories[i]._id, { position: expectedPosition });
+            }
+        }
+    } catch (error) {
+        console.error('Error normalizing positions:', error);
+    }
+};
+
 // Create category
 router.post('/create-category', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
@@ -31,12 +46,20 @@ router.post('/create-category', upload.single('picture'), isAuthorized, isAdminO
             });
         }
 
+        // Get the highest position number and increment by 1
+        const lastCategory = await Category.findOne().sort({ position: -1 });
+        const newPosition = lastCategory ? lastCategory.position + 1 : 1;
+
         const newCategory = await Category.create({
             name,
             slug: slugify(name, { lower: true, strict: true }),
-            picture: { secure_url, public_id }
+            picture: { secure_url, public_id },
+            position: newPosition
         });
 
+        // Normalize positions after creation
+        await normalizePositions();
+        
         return res.status(201).json({
             success: true,
             message: 'Category created successfully',
@@ -51,19 +74,46 @@ router.post('/create-category', upload.single('picture'), isAuthorized, isAdminO
 // Update category
 router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, position } = req.body;
         const { slug } = req.params;
 
         if (!name) {
             return res.status(400).json({ success: false, message: 'Category name is required' });
         }
 
+        // If position is being updated, handle position conflicts by swapping
+        if (position !== undefined) {
+            const newPosition = parseInt(position);
+            const existingCategoryWithPosition = await Category.findOne({ 
+                position: newPosition, 
+                slug: { $ne: slug } 
+            });
+            
+            // Get the current category to find its current position
+            const currentCategory = await Category.findOne({ slug });
+            const currentPosition = currentCategory?.position;
+            
+            if (existingCategoryWithPosition) {
+                // Swap positions: move the conflicting category to the current category's position
+                await Category.findOneAndUpdate(
+                    { _id: existingCategoryWithPosition._id },
+                    { position: currentPosition || newPosition + 1000 } // Use high number if no current position
+                );
+            }
+        }
+
+        const updateData = {
+            name,
+            slug: slugify(name, { lower: true, strict: true }),
+        };
+
+        if (position !== undefined) {
+            updateData.position = parseInt(position);
+        }
+
         let updatedCategory = await Category.findOneAndUpdate(
             { slug },
-            {
-                name,
-                slug: slugify(name, { lower: true, strict: true }),
-            },
+            updateData,
             { new: true }
         );
         if (!updatedCategory) {
@@ -84,6 +134,10 @@ router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isA
 
 
         updatedCategory = await updatedCategory.save();
+        
+        // Normalize positions to ensure they are sequential (1, 2, 3, 4...)
+        await normalizePositions();
+        
         return res.status(200).json({
             success: true,
             message: 'Category updated successfully',
@@ -107,6 +161,10 @@ router.delete('/delete-category/:slug', isAuthorized, isAdminOrSuperAdmin, async
         if (deletedCategory.picture && deletedCategory.picture.public_id) {
             await deleteImageOnCloudinary(deletedCategory.picture.public_id);
         }
+        
+        // Normalize positions after deletion
+        await normalizePositions();
+        
         return res.status(200).json({
             success: true,
             message: 'Category deleted successfully',
@@ -121,7 +179,7 @@ router.delete('/delete-category/:slug', isAuthorized, isAdminOrSuperAdmin, async
 // Get all categori
 router.get('/all-category', async (req, res) => {
     try {
-        const categories = await Category.find().sort({ createdAt: -1 });
+        const categories = await Category.find().sort({ position: 1, createdAt: -1 });
         if (!categories.length) {
             return res.status(404).json({ success: false, message: 'No categories found' });
         }
