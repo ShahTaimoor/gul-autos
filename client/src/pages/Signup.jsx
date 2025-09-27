@@ -52,13 +52,17 @@ const Signup = () => {
   };
 
   return (
-    <div className='w-full mt-5 flex flex-col '>
-      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
-        <div className='flex justify-center mb-6'>
-          <img src="/logos.png" alt="" />
+    <div className='min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col items-center justify-center p-4'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-2xl border border-white/40 shadow-2xl'>
+        <div className='flex justify-center mb-8'>
+          <div className="relative">
+            <img src="/logo.jpeg" alt="GULTRADERS Logo" className="h-20 w-auto object-contain" />
+            <div className="absolute -inset-2 bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-2xl blur-sm"></div>
+          </div>
         </div>
         
-        <p className='text-center mb-6'>Enter your details to Sign Up</p>
+        <h1 className='text-2xl font-bold text-center mb-2 text-gray-800'>Join GULTRADERS</h1>
+        <p className='text-center mb-8 text-gray-600'>Create your account to get started</p>
 
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -99,15 +103,25 @@ const Signup = () => {
           </button>
         </div>
 
-        <Button className='w-full mt-4' disabled={loading}>
+        <Button className='w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95' disabled={loading}>
           {loading ? (
             <OneLoader size="small" text="Signing Up..." showText={false} />
           ) : (
-            'Sign Up'
+            'Create Account'
           )}
         </Button>
 
-       
+        <div className='text-center mt-6'>
+          <p className='text-sm text-gray-600'>
+            Already have an account?{' '}
+            <Link 
+              to="/login" 
+              className='text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors duration-200'
+            >
+              Sign In
+            </Link>
+          </p>
+        </div>
       </form>
     </div>
   );

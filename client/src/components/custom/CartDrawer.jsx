@@ -275,16 +275,27 @@ const CartDrawer = () => {
     <>
       <Sheet>
         <SheetTrigger asChild>
-          <Button variant="outline" className="relative">
+          <Button 
+            className="relative backdrop-blur-xl border border-white/40 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 rounded-xl p-3"
+            style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            }}
+          >
             {totalQuantity > 0 && (
-              <Badge className="absolute -top-2 -right-2 text-xs px-1 py-0.5">
+              <Badge className="absolute -top-1 -right-1 text-xs px-2 py-1 bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg">
                 {totalQuantity}
               </Badge>
             )}
             <ShoppingCart
-              strokeWidth={1.3}
-              size={28}
-              className="text-gray-800 hover:scale-105 transition-all ease-in-out"
+              strokeWidth={1.5}
+              size={24}
+              className="text-gray-700 hover:text-blue-600 transition-colors duration-300"
             />
           </Button>
         </SheetTrigger>

@@ -66,29 +66,39 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/40 backdrop-blur-md border-b border-white/30 shadow-md px-2 py-2 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/40 shadow-lg px-4 py-3 flex items-center justify-between">
       {/* Left side: Logo + contact */}
-      <div className="flex items-start flex-col">
-        <Link to="/">
-          <img
-            src="/logos.png"
-            alt="Logo"
-            className="h-8 w-auto object-contain"
-          />
+      <div className="flex items-center gap-6">
+        <Link to="/" className="group">
+          <div className="relative">
+            <img
+              src="/logo.jpeg"
+              alt="GULTRADERS Logo"
+              className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </div>
         </Link>
-        <p className="text-xs text-gray-700 mt-1 font-medium">
-          Contact: +92 311 4000096
-        </p>
+        <div className="hidden md:block">
+          <p className="text-sm text-gray-700 font-semibold">
+            Contact: <span className="text-blue-600 font-bold">+92 311 4000096</span>
+          </p>
+          <p className="text-xs text-gray-500 font-medium">
+            CAR ACCESSORIES
+          </p>
+        </div>
       </div>
-      <div>
+
+      {/* Center: PWA Install Button */}
+      <div className="flex-1 flex justify-center">
         {/* PWA Install Button - Always visible on mobile */}
         {isMobile && (
           <button
             onClick={handleInstallClick}
-            className="flex items-center mr-10 gap-1.5 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             title="Install App on Home Screen"
           >
-            <Smartphone size={16} />
+            <Smartphone size={18} />
             <span className="hidden sm:inline">Install App</span>
             <span className="sm:hidden">Install</span>
           </button>
@@ -98,22 +108,23 @@ const Navbar = () => {
         {!isMobile && showInstallButton && (
           <button
             onClick={handleInstallClick}
-            className="flex items-center mr-10 gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
             title="Install App"
           >
             <Download size={16} />
-            <span>Install</span>
+            <span>Install App</span>
           </button>
         )}
       </div>
-      {/* Right side: PWA Install + Auth controls */}
+
+      {/* Right side: Auth controls */}
       <div className="flex items-center gap-3">
         {user == null ? (
           <Link
             to="/login"
-            className="p-1.5 rounded-full hover:bg-white/70 transition"
+            className="px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
           >
-            <h1 className="text-gray-700 text-bold hover:text-gray-400">Login</h1>
+            Login
           </Link>
         ) : (
           <LogoutToggle user={user} />

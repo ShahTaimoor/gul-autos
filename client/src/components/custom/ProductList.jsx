@@ -44,7 +44,7 @@ const ProductList = () => {
   // Memoized combined categories
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
-    ...categories
+    ...(categories || [])
   ], [categories]);
 
   // Products are now sorted on the backend, so we use them directly
@@ -223,7 +223,7 @@ const ProductList = () => {
       )}
 
       {/* Cart Drawer */}
-      <div className="fixed top-4 right-16 md:right-8 z-50">
+      <div className="fixed top-6 right-16 md:right-8 z-50">
         <div
           ref={cartRef}
           className={`relative transition-all duration-300 ${

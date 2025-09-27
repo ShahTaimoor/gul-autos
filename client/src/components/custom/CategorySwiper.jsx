@@ -36,7 +36,7 @@ const CategorySwiper = React.memo(({
         {categoryChunks.map((chunk, idx) => (
           <SwiperSlide key={idx}>
             <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
-              {chunk.map((cat, index) => (
+              {chunk.filter(cat => cat && cat._id).map((cat, index) => (
                 <CategoryItem
                   key={cat._id}
                   category={cat}
@@ -69,7 +69,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
         ? 'border border-[#FED700] shadow-md'
         : 'hover:shadow-sm'
     } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all`}
-    onClick={() => onSelect(category._id)}
+    onClick={() => onSelect(category?._id)}
     whileHover={{
       scale: 1.05,
       boxShadow: "0 4px 8px rgba(254, 215, 0, 0.2)"
@@ -77,27 +77,30 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
     whileTap={{ scale: 0.95 }}
     role="button"
     tabIndex="0"
-    aria-label={`Filter by ${category.name}`}
-    onKeyDown={(e) => e.key === 'Enter' && onSelect(category._id)}
+    aria-label={`Filter by ${category?.name || "Category"}`}
+    onKeyDown={(e) => e.key === 'Enter' && onSelect(category?._id)}
   >
     <motion.div
       className="rounded-full p-1"
       whileHover={{ rotate: 5 }}
     >
       <img
-        src={category.image || "/fallback.jpg"}
-        alt={category.name}
+        src={category?.image || category?.picture?.secure_url || "/fallback.jpg"}
+        alt={category?.name || "Category"}
         className="w-14 h-14 object-cover rounded-full border-2 border-white/30"
         loading="lazy"
         width="56"
         height="56"
+        onError={(e) => {
+          e.currentTarget.src = "/fallback.jpg";
+        }}
       />
     </motion.div>
     <motion.p
       className="text-xs mt-2 font-medium text-gray-700"
       whileHover={{ color: "#000000" }}
     >
-      {category.name.split(' ').map(word =>
+      {(category?.name || "Category").split(' ').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
       ).join(' ')}
     </motion.p>

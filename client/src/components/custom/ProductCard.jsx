@@ -63,8 +63,8 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleImageClick = useCallback(() => {
-    setPreviewImage(product.image || '/placeholder-product.jpg');
-  }, [setPreviewImage, product.image]);
+    setPreviewImage(product.image || product.picture?.secure_url || '/placeholder-product.jpg');
+  }, [setPreviewImage, product.image, product.picture]);
 
   const handleImageError = useCallback((e) => {
     e.currentTarget.src = '/placeholder-product.jpg';
@@ -90,7 +90,7 @@ const ProductCard = React.memo(({
       >
         <LazyImage
           ref={imgRef}
-          src={product.image || product.picture?.secure_url}
+          src={product.image || product.picture?.secure_url || '/placeholder-product.jpg'}
           alt={product.title}
           className="w-full h-full transition-transform duration-300 group-hover:scale-105 cursor-pointer"
           onClick={handleImageClick}

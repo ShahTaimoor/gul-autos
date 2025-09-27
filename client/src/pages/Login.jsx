@@ -127,13 +127,17 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='w-full mt-20 mx-auto md:w-1/2 flex flex-col justify-center items-center p-8 md:p-12'>
-      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white p-8 rounded-lg border shadow-sm'>
-        <div className='flex justify-center mb-6'>
-          <img src="/logos.png" alt="Logo" loading="eager" />
+    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col justify-center items-center p-4'>
+      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-2xl border border-white/40 shadow-2xl'>
+        <div className='flex justify-center mb-8'>
+          <div className="relative">
+            <img src="/logo.jpeg" alt="GULTRADERS Logo" loading="eager" className="h-20 w-auto object-contain" />
+            <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl blur-sm"></div>
+          </div>
         </div>
         
-        <p className='text-center mb-6'>Enter your details to Login</p>
+        <h1 className='text-2xl font-bold text-center mb-2 text-gray-800'>Welcome Back</h1>
+        <p className='text-center mb-8 text-gray-600'>Sign in to your GULTRADERS account</p>
 
         <div className='mb-4'>
           <label className='block text-sm font-semibold mb-2'>Shop Name</label>
@@ -179,20 +183,20 @@ const Login = () => {
         </div>
 
         <Button 
-          className='w-full mt-4' 
+          className='w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95' 
           disabled={loading} 
           type='submit'
         >
           {loading ? (
             <OneLoader size="small" text="Logging in..." showText={false} />
           ) : (
-            'Login'
+            'Sign In'
           )}
         </Button>
 
-        <p className='mt-6 text-center text-sm'>
+        <p className='mt-6 text-center text-sm text-gray-600'>
           Don't have an account?
-          <a href='/signup' className='text-blue-500 ml-1 hover:underline'>Sign Up</a>
+          <Link to='/signup' className='text-blue-600 ml-1 hover:text-blue-800 font-semibold hover:underline transition-colors duration-200'>Sign Up</Link>
         </p>
       </form>
     </div>
