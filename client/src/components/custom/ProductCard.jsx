@@ -1,6 +1,5 @@
 import React, { useRef, useCallback, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { flyToCart } from './FlyToCart';
 import OneLoader from '../ui/OneLoader';
 import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
@@ -13,7 +12,6 @@ const ProductCard = React.memo(({
   isAddingToCart,
   isInCart,
   gridType,
-  cartRef,
   setPreviewImage
 }) => {
   const imgRef = useRef(null);
@@ -38,8 +36,7 @@ const ProductCard = React.memo(({
       clickAudioRef.current.play();
     }
     onAddToCart(product);
-    flyToCart(imgRef, cartRef);
-  }, [onAddToCart, product, cartRef]);
+  }, [onAddToCart, product]);
 
   const handleQuantityChange = useCallback((value) => {
     if (value === '') {

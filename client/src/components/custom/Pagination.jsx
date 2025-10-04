@@ -61,7 +61,7 @@ const Pagination = React.memo(({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative flex flex-wrap items-center justify-center gap-1 mt-10"
+        className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto"
       >
         {/* Previous Button */}
         <motion.button
@@ -69,7 +69,7 @@ const Pagination = React.memo(({
           whileTap={{ scale: 0.95 }}
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="relative flex items-center justify-center h-10 px-4 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous page"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,7 +111,7 @@ const Pagination = React.memo(({
           whileTap={{ scale: 0.95 }}
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="relative flex items-center justify-center h-10 px-4 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next page"
         >
           Next

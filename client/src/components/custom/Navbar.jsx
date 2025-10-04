@@ -66,7 +66,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/40 shadow-lg px-4 py-3 flex items-center justify-between">
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/40 shadow-lg px-4 py-3 flex items-center justify-between ${isMobile ? 'hidden' : 'block'}`}>
       {/* Left side: Logo + contact */}
       <div className="flex items-center gap-6">
         <Link to="/" className="group">

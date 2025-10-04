@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ShoppingCart, Trash2 } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import {
   removeFromCart,
   updateCartQuantity,
@@ -29,6 +29,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [inputQty, setInputQty] = useState(quantity);
+  const [isRemoving, setIsRemoving] = useState(false);
   const prevIsValid = useRef(true);
   const updateTimeoutRef = useRef(null);
   const { _id, title, price, stock } = product;
@@ -81,10 +82,17 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     navigate('/');
   }, [inputQty, stock, navigate]);
 
-  const handleRemove = useCallback((e) => {
+  const handleRemove = useCallback(async (e) => {
     e.stopPropagation();
-    dispatch(removeFromCart(_id));
-    toast.success('Product removed from cart');
+    setIsRemoving(true);
+    try {
+      await dispatch(removeFromCart(_id)).unwrap();
+      toast.success('Product removed from cart');
+    } catch (error) {
+      toast.error('Failed to remove product from cart');
+    } finally {
+      setIsRemoving(false);
+    }
   }, [dispatch, _id]);
 
   const handleQuantityChange = useCallback((newQty) => {
@@ -210,10 +218,15 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
           </div>
           <button
             onClick={handleRemove}
-            className="text-red-500 hover:text-red-600 transition-colors"
+            disabled={isRemoving}
+            className="text-red-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Remove from cart"
           >
-            <Trash2 size={16} />
+            {isRemoving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Trash2 size={16} />
+            )}
           </button>
         </div>
       </div>

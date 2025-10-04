@@ -6,7 +6,6 @@ import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
-import CartDrawer from './CartDrawer';
 import CategorySwiper from './CategorySwiper';
 import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
@@ -28,7 +27,6 @@ const ProductList = () => {
   const [previewImage, setPreviewImage] = useState(null);
   
   const limit = 24;
-  const cartRef = useRef(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -59,8 +57,11 @@ const ProductList = () => {
 
   // Fetch products with debounced search
   useEffect(() => {
+    // When searching, ignore category filter to show all products
+    const searchCategory = debouncedSearchTerm ? 'all' : category;
+    
     dispatch(fetchProducts({ 
-      category, 
+      category: searchCategory, 
       searchTerm: debouncedSearchTerm, 
       page, 
       limit, 
@@ -154,21 +155,19 @@ const ProductList = () => {
 
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-6">
-      {/* Category Swiper */}
-      <CategorySwiper
-        categories={combinedCategories}
-        selectedCategory={category}
-        onCategorySelect={handleCategorySelect}
-      />
-
       {/* Search and Sort Bar */}
       <SearchBar
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
         gridType={gridType}
         onGridTypeChange={handleGridTypeChange}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
+      />
+
+      {/* Category Swiper */}
+      <CategorySwiper
+        categories={combinedCategories}
+        selectedCategory={category}
+        onCategorySelect={handleCategorySelect}
       />
 
       {/* Product Grid */}
@@ -181,7 +180,6 @@ const ProductList = () => {
         onAddToCart={handleAddToCart}
         addingProductId={addingProductId}
         cartItems={cartItems}
-        cartRef={cartRef}
         onPreviewImage={handlePreviewImage}
       />
 
@@ -223,19 +221,9 @@ const ProductList = () => {
       )}
 
       {/* Cart Drawer */}
-      <div className="fixed top-6 right-16 md:right-8 z-50">
-        <div
-          ref={cartRef}
-          className={`relative transition-all duration-300 ${
-            cartItems.length > 0 ? 'animate-bounce' : ''
-          }`}
-        >
-          <CartDrawer />
-        </div>
-      </div>
 
       {/* WhatsApp Button */}
-      <div className="fixed animate-bounce bottom-3 lg:bottom-5 right-0 lg:right-2 z-50">
+      <div className="fixed animate-bounce bottom-18 lg:bottom-5 right-0 lg:right-2 z-50">
         <Link
           to="https://wa.me/923114000096?text=Hi%20How%20Are%20you%20?"
           target="_blank"

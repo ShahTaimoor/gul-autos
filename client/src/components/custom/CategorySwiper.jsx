@@ -18,7 +18,7 @@ const CategorySwiper = React.memo(({
       }
       return result;
     };
-    return chunkArray(categories, 8);
+    return chunkArray(categories, 4);
   }, [categories]);
 
   return (
@@ -35,7 +35,7 @@ const CategorySwiper = React.memo(({
       >
         {categoryChunks.map((chunk, idx) => (
           <SwiperSlide key={idx}>
-            <div className="grid grid-cols-4 md:grid-cols-8 mt-18 pb-6 gap-3">
+            <div className="grid grid-cols-4 mt-4 pb-6 gap-3">
               {chunk.filter(cat => cat && cat._id).map((cat, index) => (
                 <CategoryItem
                   key={cat._id}

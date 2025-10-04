@@ -12,7 +12,6 @@ const ProductGrid = React.memo(({
   onAddToCart, 
   addingProductId, 
   cartItems, 
-  cartRef, 
   onPreviewImage 
 }) => {
   const isInCartMap = useMemo(() => {
@@ -61,7 +60,6 @@ const ProductGrid = React.memo(({
             isAddingToCart={addingProductId === product._id}
             isInCart={isInCartMap.get(product._id) || false}
             gridType={gridType}
-            cartRef={cartRef}
             setPreviewImage={onPreviewImage}
           />
         ))}
