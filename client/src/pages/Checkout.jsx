@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const Checkout = () => {
+const Checkout = ({ closeModal }) => {
   const { items: cartItems = [] } = useSelector((state) => state.cart);
   const { user, status } = useSelector((state) => state.auth);
 
@@ -92,6 +92,7 @@ const Checkout = () => {
 
       if (res.success) {
         dispatch(emptyCart());
+        closeModal && closeModal(); // Close the modal first
         navigate('/success');
         toast.success('Order placed successfully!');
       } else {

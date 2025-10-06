@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -20,6 +20,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
+import { logout } from "../../redux/slices/auth/authSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 
@@ -174,6 +175,12 @@ const BottomNavigation = () => {
     }
   };
 
+  const handleLogout = () => {
+    dispatch(logout());
+    toast.success('Logged out successfully');
+    navigate('/');
+  };
+
   // Don't render on desktop
   if (!isMobile) return null;
 
@@ -199,6 +206,16 @@ const BottomNavigation = () => {
     }
   ];
 
+  const actionItems = [
+    {
+      icon: LogOut,
+      label: "Logout",
+      show: user !== null,
+      onClick: handleLogout,
+      className: "text-red-600 hover:text-red-700 hover:bg-red-50"
+    }
+  ];
+
   const isActive = (path) => {
     if (path === "/" && location.pathname === "/") return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
@@ -207,33 +224,7 @@ const BottomNavigation = () => {
 
   return (
     <>
-      {/* Install Button */}
-      {showInstallPrompt && (
-        <div className="fixed bottom-20 left-0 right-0 z-40 bg-green-600 text-white p-3 mx-2 rounded-lg shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h3 className="font-bold text-sm">Install Gul Autos App</h3>
-              <p className="text-xs opacity-90">Get quick access to auto parts</p>
-            </div>
-            <div className="flex items-center gap-2 ml-3">
-              <Button
-                onClick={handleInstall}
-                size="sm"
-                className="bg-white text-green-600 hover:bg-gray-100"
-              >
-                <Download size={14} className="mr-1" />
-                Install
-              </Button>
-              <button
-                onClick={() => setShowInstallPrompt(false)}
-                className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+     
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-lg">
@@ -280,8 +271,29 @@ const BottomNavigation = () => {
             </Link>
           );
         })}
-        
-        
+
+        {/* Action items (like logout) */}
+        {actionItems.map((item) => {
+          if (!item.show) return null;
+          
+          const Icon = item.icon;
+          
+          return (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 ${item.className || "text-gray-600 hover:text-blue-600 hover:bg-gray-50"}`}
+            >
+              <Icon 
+                size={20} 
+                className="transition-transform duration-200"
+              />
+              <span className="text-xs font-medium mt-1">
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
         
         {/* Cart button - always visible */}
         <Sheet>
