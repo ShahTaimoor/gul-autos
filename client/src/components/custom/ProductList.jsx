@@ -11,6 +11,7 @@ import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
 import { useDebounce } from '@/hooks/use-debounce';
+import { getPopularSearches } from '@/utils/searchAnalytics';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -19,6 +20,7 @@ const ProductList = () => {
   // State management
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
   const [quantities, setQuantities] = useState({});
   const [addingProductId, setAddingProductId] = useState(null);
   const [gridType, setGridType] = useState('grid2');
@@ -36,8 +38,21 @@ const ProductList = () => {
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
 
-  // Debounced search to reduce API calls
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  // State for all products (for suggestions)
+  const [allProducts, setAllProducts] = useState([]);
+
+  // Debounced search to reduce API calls - reduced delay for better responsiveness
+  const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
+
+  // Search history and popular searches
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [popularSearches, setPopularSearches] = useState([
+    'toyota corolla grill',
+    'honda civic bumper',
+    'nissan altima headlight',
+    'mazda 3 taillight',
+    'hyundai elantra mirror'
+  ]);
 
   // Memoized combined categories
   const combinedCategories = useMemo(() => [
@@ -45,10 +60,56 @@ const ProductList = () => {
     ...(categories || [])
   ], [categories]);
 
+  // Load search history and popular searches from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('searchHistory');
+    if (savedHistory) {
+      try {
+        setSearchHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Error parsing search history:', error);
+        setSearchHistory([]);
+      }
+    }
+    
+    // Load popular searches from analytics
+    const analyticsPopularSearches = getPopularSearches();
+    if (analyticsPopularSearches.length > 0) {
+      setPopularSearches(analyticsPopularSearches);
+    }
+  }, []);
+
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
-    return productList.filter((product) => product && product._id && product.stock > 0);
-  }, [productList]);
+    let filtered = productList.filter((product) => product && product._id && product.stock > 0);
+    
+    // Additional filtering for search precision
+    if (searchTerm && searchTerm.trim()) {
+      const searchWords = searchTerm.toLowerCase().split(/\s+/);
+      
+      // If searching for specific parts, prioritize exact matches
+      if (searchWords.includes('grill') || searchWords.includes('grille')) {
+        // Prioritize products that actually contain "grill" in title or description
+        filtered = filtered.sort((a, b) => {
+          const aTitle = (a.title || '').toLowerCase();
+          const bTitle = (b.title || '').toLowerCase();
+          const aDesc = (a.description || '').toLowerCase();
+          const bDesc = (b.description || '').toLowerCase();
+          
+          const aHasGrill = aTitle.includes('grill') || aTitle.includes('grille') || 
+                           aDesc.includes('grill') || aDesc.includes('grille');
+          const bHasGrill = bTitle.includes('grill') || bTitle.includes('grille') || 
+                           bDesc.includes('grill') || bDesc.includes('grille');
+          
+          if (aHasGrill && !bHasGrill) return -1;
+          if (!aHasGrill && bHasGrill) return 1;
+          return 0;
+        });
+      }
+    }
+    
+    return filtered;
+  }, [productList, searchTerm]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -60,6 +121,12 @@ const ProductList = () => {
     // When searching, ignore category filter to show all products
     const searchCategory = debouncedSearchTerm ? 'all' : category;
     
+    // Reset to page 1 when search term changes
+    if (debouncedSearchTerm !== activeSearchTerm && page > 1) {
+      setPage(1);
+      return;
+    }
+    
     dispatch(fetchProducts({ 
       category: searchCategory, 
       searchTerm: debouncedSearchTerm, 
@@ -69,16 +136,36 @@ const ProductList = () => {
       sortBy: sortOrder
     })).then((res) => {
       // Go back one page if current page has no results
-      if (res.payload.products?.length === 0 && page > 1) {
+      if (res.payload?.data?.length === 0 && page > 1) {
         setPage((prev) => prev - 1);
       }
+    }).catch((error) => {
+      console.error('Error fetching products:', error);
     });
-  }, [dispatch, category, debouncedSearchTerm, page, limit, sortOrder]);
+  }, [dispatch, category, debouncedSearchTerm, page, limit, sortOrder, activeSearchTerm]);
 
   // Fetch categories
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
+
+  // Fetch products for suggestions (only once on mount) - increased limit for better suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/get-products?limit=500&stockFilter=active&sortBy=az`);
+        const data = await response.json();
+        if (data?.data) {
+          console.log('Loaded products for suggestions:', data.data.length);
+          setAllProducts(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching products for suggestions:', error);
+      }
+    };
+    fetchSuggestions();
+  }, []);
 
   // Initialize quantities when products change
   useEffect(() => {
@@ -151,6 +238,12 @@ const ProductList = () => {
     setPreviewImage(image);
   }, []);
 
+  // Handle search submission
+  const handleSearchSubmit = useCallback((term) => {
+    setActiveSearchTerm(term);
+    setPage(1); // Reset to first page when searching
+  }, []);
+
   const loadingProducts = status === 'loading';
 
   return (
@@ -159,8 +252,12 @@ const ProductList = () => {
       <SearchBar
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
         gridType={gridType}
         onGridTypeChange={handleGridTypeChange}
+        searchHistory={searchHistory}
+        popularSearches={popularSearches}
+        products={allProducts}
       />
 
       {/* Category Swiper */}
@@ -169,6 +266,31 @@ const ProductList = () => {
         selectedCategory={category}
         onCategorySelect={handleCategorySelect}
       />
+
+      {/* Search Results Header */}
+      {activeSearchTerm && (
+        <div className="px-2 sm:px-0 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800">
+                Search Results for "{activeSearchTerm}"
+              </h2>
+              <p className="text-sm text-gray-600">
+                {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setActiveSearchTerm('');
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700 underline"
+            >
+              Clear search
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Product Grid */}
       <ProductGrid
@@ -181,6 +303,7 @@ const ProductList = () => {
         addingProductId={addingProductId}
         cartItems={cartItems}
         onPreviewImage={handlePreviewImage}
+
       />
 
       {/* Pagination */}

@@ -12,7 +12,8 @@ const ProductGrid = React.memo(({
   onAddToCart, 
   addingProductId, 
   cartItems, 
-  onPreviewImage 
+  onPreviewImage,
+  searchTerm = ''
 }) => {
   const isInCartMap = useMemo(() => {
     const map = new Map();
@@ -35,19 +36,22 @@ const ProductGrid = React.memo(({
 
   if (products.length === 0) {
     return (
-      <p className="text-center text-lg text-gray-500 mb-10">
-        No products found for your search.
-      </p>
+      <div className="text-center py-10">
+        <p className="text-lg text-gray-500 mb-4">
+          No products found for your search.
+        </p>
+        <p className="text-sm text-gray-400">
+          Try adjusting your search terms or browse our categories.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-6 ${
-      gridType === 'grid1' 
-        ? 'grid-cols-1' 
-        : gridType === 'grid2' 
-          ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' 
-          : 'grid-cols-1'
+      gridType === 'grid2' 
+        ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' 
+        : 'grid-cols-1'
     }`}>
       <AnimatePresence>
         {products.filter(product => product && product._id).map((product) => (
@@ -61,6 +65,7 @@ const ProductGrid = React.memo(({
             isInCart={isInCartMap.get(product._id) || false}
             gridType={gridType}
             setPreviewImage={onPreviewImage}
+            searchTerm={searchTerm}
           />
         ))}
       </AnimatePresence>

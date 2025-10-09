@@ -3,6 +3,7 @@ import { motion, useInView } from 'framer-motion';
 import OneLoader from '../ui/OneLoader';
 import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
+import { highlightSearchTerm, truncateAndHighlight } from '@/utils/searchHighlight.jsx';
 
 const ProductCard = React.memo(({
   product,
@@ -12,7 +13,8 @@ const ProductCard = React.memo(({
   isAddingToCart,
   isInCart,
   gridType,
-  setPreviewImage
+  setPreviewImage,
+  searchTerm = ''
 }) => {
   const imgRef = useRef(null);
   const ref = useRef(null);
@@ -130,9 +132,17 @@ const ProductCard = React.memo(({
         }`}
       >
         <h3 className="font-semibold text-sm line-clamp-2">
-          {product.title.split(' ').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          ).join(' ')}
+          {searchTerm ? 
+            highlightSearchTerm(
+              product.title.split(' ').map(word =>
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+              ).join(' '), 
+              searchTerm
+            ) : 
+            product.title.split(' ').map(word =>
+              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+            ).join(' ')
+          }
         </h3>
         
         <div className="flex-grow" />

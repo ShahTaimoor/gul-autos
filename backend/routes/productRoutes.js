@@ -502,18 +502,32 @@ router.get('/get-products', async (req, res) => {
         
         console.log('Keyword + Year search:', { keywordPatterns: keywordPatterns.length, yearPatterns: yearPatterns.length });
       }
-      // If only keywords (no years), use flexible keyword matching
+      // If only keywords (no years), use precise keyword matching
       else if (keywords.length > 0) {
         const searchPatterns = [];
         
-        // Exact phrase search
+        // Exact phrase search (highest priority)
         const escapedExact = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         searchPatterns.push(
           { title: { $regex: `^${escapedExact}$`, $options: 'i' } },
           { description: { $regex: `^${escapedExact}$`, $options: 'i' } }
         );
         
-        // Word boundary search
+        // All keywords must be present (AND logic for better precision)
+        if (keywords.length > 1) {
+          const allKeywordsPattern = keywords.map(keyword => {
+            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return {
+              $or: [
+                { title: { $regex: escapedKeyword, $options: 'i' } },
+                { description: { $regex: escapedKeyword, $options: 'i' } }
+              ]
+            };
+          });
+          searchPatterns.push({ $and: allKeywordsPattern });
+        }
+        
+        // Word boundary search for individual keywords
         keywords.forEach(keyword => {
           const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           searchPatterns.push(
@@ -522,7 +536,7 @@ router.get('/get-products', async (req, res) => {
           );
         });
         
-        // Partial match search
+        // Partial match search (lowest priority)
         const escapedPartial = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         searchPatterns.push(
           { title: { $regex: escapedPartial, $options: 'i' } },
@@ -530,7 +544,7 @@ router.get('/get-products', async (req, res) => {
         );
         
         query.$or = searchPatterns;
-        console.log('Keyword-only search:', { patterns: searchPatterns.length });
+        console.log('Keyword-only search:', { patterns: searchPatterns.length, keywords });
       }
       // If only years, search for any of the years
       else if (years.length > 0) {
@@ -576,8 +590,10 @@ router.get('/get-products', async (req, res) => {
         sortObject = { stock: 1 };
         break;
       case 'relevance':
-        // For search results, prioritize title matches over description matches
+        // For search results, prioritize exact matches and relevance
         if (search && search.trim()) {
+          // Custom sorting for better relevance
+          // This will be handled in the aggregation pipeline below
           sortObject = { 
             title: 1, // Exact matches first
             createdAt: -1 // Then by newest
@@ -598,13 +614,123 @@ router.get('/get-products', async (req, res) => {
         }
     }
 
-    const products = await Product.find(query)
-      .select('title picture price description stock createdAt')
-      .populate('user', 'name')
-      .populate('category', 'name')
-      .sort(sortObject)
-      .skip((page - 1) * (limit || 1))
-      .limit(limit || undefined);
+    // For search results, use aggregation pipeline for better relevance scoring
+    let products;
+    if (search && search.trim()) {
+      const searchWords = search.trim().toLowerCase().split(/\s+/);
+      
+      products = await Product.aggregate([
+        { $match: query },
+        {
+          $addFields: {
+            relevanceScore: {
+              $add: [
+                // Title starts with exact search phrase (highest priority)
+                {
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: `^${search.trim().toLowerCase()}` } },
+                    200, 0
+                  ]
+                },
+                // First word of title matches first search word
+                {
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchWords[0]}\\b` } },
+                    150, 0
+                  ]
+                },
+                // Exact phrase match anywhere in title
+                {
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: search.trim().toLowerCase() } },
+                    100, 0
+                  ]
+                },
+                // All keywords in title (high score)
+                {
+                  $cond: [
+                    { 
+                      $and: searchWords.map(word => ({ 
+                        $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
+                      }))
+                    },
+                    80, 0
+                  ]
+                },
+                // All keywords in description (medium score)
+                {
+                  $cond: [
+                    { 
+                      $and: searchWords.map(word => ({ 
+                        $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } 
+                      }))
+                    },
+                    60, 0
+                  ]
+                },
+                // Individual keyword matches in title (word boundaries)
+                {
+                  $sum: searchWords.map(word => ({
+                    $cond: [
+                      { $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } },
+                      20, 0
+                    ]
+                  }))
+                },
+                // Individual keyword matches in description (word boundaries)
+                {
+                  $sum: searchWords.map(word => ({
+                    $cond: [
+                      { $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } },
+                      10, 0
+                    ]
+                  }))
+                }
+              ]
+            }
+          }
+        },
+        { $sort: { relevanceScore: -1, createdAt: -1 } },
+        { $skip: (page - 1) * (limit || 1) },
+        { $limit: limit || 1000 },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'user'
+          }
+        },
+        {
+          $lookup: {
+            from: 'categories',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'category'
+          }
+        },
+        {
+          $project: {
+            title: 1,
+            picture: 1,
+            price: 1,
+            description: 1,
+            stock: 1,
+            createdAt: 1,
+            user: { $arrayElemAt: ['$user', 0] },
+            category: { $arrayElemAt: ['$category', 0] }
+          }
+        }
+      ]);
+    } else {
+      products = await Product.find(query)
+        .select('title picture price description stock createdAt')
+        .populate('user', 'name')
+        .populate('category', 'name')
+        .sort(sortObject)
+        .skip((page - 1) * (limit || 1))
+        .limit(limit || undefined);
+    }
 
     const newProductArray = products.map((product, index) => {
       const productObj = product.toObject();
@@ -631,7 +757,7 @@ router.get('/get-products', async (req, res) => {
         total: totalProducts,
         page,
         limit,
-        totalPages: Math.ceil(totalProducts / limit),
+        totalPages: limit > 0 ? Math.ceil(totalProducts / limit) : 1,
       },
     });
   } catch (error) {
