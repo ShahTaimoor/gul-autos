@@ -83,15 +83,17 @@ const ProductCard = React.memo(({
       }`}
     >
       <div
-        className={`relative cursor-pointer aspect-square overflow-hidden group ${
-          gridType === 'grid3' ? 'w-1/3 sm:w-full' : ''
+        className={`relative cursor-pointer overflow-hidden group ${
+          gridType === 'grid3' 
+            ? 'w-2/5 sm:w-full aspect-square' 
+            : 'aspect-square'
         }`}
       >
         <LazyImage
           ref={imgRef}
           src={product.image || product.picture?.secure_url || '/logo.jpeg'}
           alt={product.title}
-          className="w-full h-full transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
           onClick={handleImageClick}
           fallback="/logo.jpeg"
           quality={85}
@@ -127,8 +129,8 @@ const ProductCard = React.memo(({
       </div>
 
       <div
-        className={`p-4 flex flex-col flex-grow ${
-          gridType === 'grid3' ? 'w-2/3 sm:w-full' : ''
+        className={`p-2 flex flex-col flex-grow ${
+          gridType === 'grid3' ? 'w-3/5 sm:w-full' : ''
         }`}
       >
         <h3 className="font-semibold text-sm line-clamp-2">
@@ -147,7 +149,7 @@ const ProductCard = React.memo(({
         
         <div className="flex-grow" />
 
-        <div className="flex flex-col lg:flex-row gap-2 mt-4">
+        <div className="flex flex-col lg:flex-row gap-1.5 mt-2">
           <div className="flex sm:flex-row items-center gap-2 justify-between">
             <div className="flex w-full lg:w-28 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button

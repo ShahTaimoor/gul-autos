@@ -212,6 +212,8 @@ const ProductList = () => {
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
     setCategory(categoryId);
+    setSearchTerm(''); // Clear search when selecting category
+    setActiveSearchTerm(''); // Clear active search
     setPage(1); // Reset to first page when changing category
   }, []);
 

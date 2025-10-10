@@ -48,7 +48,7 @@ const ProductGrid = React.memo(({
   }
 
   return (
-    <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-6 ${
+    <div className={`grid px-2 sm:px-0 lg:grid-cols-4 gap-2 ${
       gridType === 'grid2' 
         ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' 
         : 'grid-cols-1'

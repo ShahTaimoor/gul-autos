@@ -32,7 +32,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const [isRemoving, setIsRemoving] = useState(false);
   const prevIsValid = useRef(true);
   const updateTimeoutRef = useRef(null);
-  const { _id, title, price, stock } = product;
+  const { _id, title, stock } = product;
   const image = product.image || product.picture?.secure_url;
 
   // Sync input with prop changes

@@ -139,8 +139,10 @@ const SearchBar = React.memo(({
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       setShowSuggestions(false);
+      searchInputRef.current?.blur(); // Close keyboard
     } else if (e.key === 'Enter') {
       handleSearchSubmitAction();
+      searchInputRef.current?.blur(); // Close keyboard
     }
   }, [handleSearchSubmitAction]);
 
