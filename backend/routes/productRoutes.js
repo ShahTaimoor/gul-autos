@@ -733,7 +733,7 @@ router.get('/get-products', async (req, res) => {
     }
 
     const newProductArray = products.map((product, index) => {
-      const productObj = product.toObject();
+      const productObj = product.toObject ? product.toObject() : product;
       // Keep both image and picture fields for compatibility
       productObj.image = productObj.picture?.secure_url || null;
       // Don't delete picture field, keep it for backward compatibility

@@ -136,20 +136,29 @@ const SearchBar = React.memo(({
         const newHistory = [searchTerm.trim(), ...searchHistory.slice(0, 4)];
         localStorage.setItem('searchHistory', JSON.stringify(newHistory));
       }
+      
+      // Scroll to top to see results
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [searchTerm, searchHistory, onSearchSubmit]);
 
   const handleSuggestionClick = useCallback((suggestion) => {
     const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
+    console.log('Suggestion clicked:', suggestionText);
+    
     onSearchChange(suggestionText);
     setShowSuggestions(false);
     
     // Submit the search when clicking a suggestion
     if (onSearchSubmit) {
+      console.log('Submitting search for:', suggestionText);
       onSearchSubmit(suggestionText);
     }
     
-    searchInputRef.current?.focus();
+    // Scroll to top to see results
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    searchInputRef.current?.blur(); // Remove focus to hide keyboard on mobile
   }, [onSearchChange, onSearchSubmit]);
 
   const handleKeyDown = useCallback((e) => {
