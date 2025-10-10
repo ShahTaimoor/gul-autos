@@ -5,7 +5,6 @@ import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import CategorySwiper from './CategorySwiper';
 import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
@@ -249,24 +248,34 @@ const ProductList = () => {
 
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-6">
-      {/* Search and Sort Bar */}
-      <SearchBar
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
-        gridType={gridType}
-        onGridTypeChange={handleGridTypeChange}
-        searchHistory={searchHistory}
-        popularSearches={popularSearches}
-        products={allProducts}
-      />
+      {/* Fixed Search and Categories Container */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-md pb-2">
+        {/* Search and Sort Bar */}
+        <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4">
+          <SearchBar
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            onSearchSubmit={handleSearchSubmit}
+            gridType={gridType}
+            onGridTypeChange={handleGridTypeChange}
+            searchHistory={searchHistory}
+            popularSearches={popularSearches}
+            products={allProducts}
+          />
+        </div>
 
-      {/* Category Swiper */}
-      <CategorySwiper
-        categories={combinedCategories}
-        selectedCategory={category}
-        onCategorySelect={handleCategorySelect}
-      />
+        {/* Category Swiper */}
+        <div className="max-w-7xl lg:mx-auto lg:px-4">
+          <CategorySwiper
+            categories={combinedCategories}
+            selectedCategory={category}
+            onCategorySelect={handleCategorySelect}
+          />
+        </div>
+      </div>
+
+      {/* Spacer to prevent content from going under fixed header */}
+      <div className="h-52"></div>
 
       {/* Product Grid */}
       <ProductGrid

@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const Pagination = React.memo(({ 
   currentPage, 
@@ -57,69 +56,52 @@ const Pagination = React.memo(({
         <div className="absolute -top-20 -right-20 w-80 h-80 bg-yellow-100 rounded-full filter blur-3xl opacity-20"></div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto"
-      >
+      <div className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto">
         {/* Previous Button */}
-        <motion.button
-          whileHover={{ scale: 1.05, boxShadow: "0 4px 14px rgba(254, 215, 0, 0.2)" }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous page"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Previous
-        </motion.button>
+        </button>
 
         {/* Page Numbers */}
-        <AnimatePresence>
-          {visiblePages.map((page, index) => (
-            <motion.button
-              key={page === '...' ? `ellipsis-${index}` : page}
-              layout
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              whileHover={{ scale: 1.1 }}
-              onClick={() => typeof page === 'number' && onPageChange(page)}
-              disabled={page === '...'}
-              className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-all ${
-                page === currentPage
-                  ? 'bg-[#FED700] text-white border-[#FED700] shadow-lg'
-                  : page === '...'
-                    ? 'bg-transparent text-gray-400 cursor-default'
-                    : 'bg-white/90 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-yellow-50'
-              } border`}
-              aria-label={page === '...' ? 'More pages' : `Page ${page}`}
-            >
-              {page}
-            </motion.button>
-          ))}
-        </AnimatePresence>
+        {visiblePages.map((page, index) => (
+          <button
+            key={page === '...' ? `ellipsis-${index}` : page}
+            onClick={() => typeof page === 'number' && onPageChange(page)}
+            disabled={page === '...'}
+            className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-all hover:scale-110 ${
+              page === currentPage
+                ? 'bg-[#FED700] text-white border-[#FED700] shadow-lg'
+                : page === '...'
+                  ? 'bg-transparent text-gray-400 cursor-default'
+                  : 'bg-white/90 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-yellow-50'
+            } border`}
+            aria-label={page === '...' ? 'More pages' : `Page ${page}`}
+          >
+            {page}
+          </button>
+        ))}
 
         {/* Next Button */}
-        <motion.button
-          whileHover={{ scale: 1.05, boxShadow: "0 4px 14px rgba(254, 215, 0, 0.2)" }}
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next page"
         >
           Next
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-        </motion.button>
-      </motion.div>
+        </button>
+      </div>
     </div>
   );
 });

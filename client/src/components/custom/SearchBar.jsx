@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
-import { LayoutPanelLeft, Grid2x2, ChevronDown } from 'lucide-react';
+import { LayoutPanelLeft, Grid2x2, ChevronDown, X } from 'lucide-react';
 import { trackSearch } from '@/utils/searchAnalytics';
 
 const SearchBar = React.memo(({ 
@@ -136,6 +136,16 @@ const SearchBar = React.memo(({
     searchInputRef.current?.blur(); // Remove focus to hide keyboard on mobile
   }, [onSearchChange, onSearchSubmit]);
 
+  const handleClearSearch = useCallback(() => {
+    onSearchChange('');
+    setShowSuggestions(false);
+    setSuggestions([]);
+    if (onSearchSubmit) {
+      onSearchSubmit('');
+    }
+    searchInputRef.current?.focus();
+  }, [onSearchChange, onSearchSubmit]);
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       setShowSuggestions(false);
@@ -185,12 +195,23 @@ const SearchBar = React.memo(({
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               placeholder=" Search products by name or description..."
-              className="w-full border-2 border-[#FED700] rounded-2xl px-4 py-3 text-sm outline-none bg-white/80 backdrop-blur-sm
+              className="w-full border-2 border-[#FED700] rounded-2xl px-4 py-3 pr-10 text-sm outline-none bg-white/80 backdrop-blur-sm
               focus:outline-none focus:ring-4 focus:ring-[#EFD700] focus:border-[#FED700]
               transition-all duration-300 ease-out shadow-sm hover:shadow-md hover:border-[#EFD700]
               placeholder:text-gray-400"
               aria-label="Search products"
             />
+            {/* Clear Search Button */}
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1 rounded-full hover:bg-gray-100"
+                aria-label="Clear search"
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Product Suggestions Dropdown - Only show when actively searching */}

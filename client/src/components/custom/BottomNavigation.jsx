@@ -135,7 +135,11 @@ const BottomNavigation = () => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstallPrompt(true);
+      // Only show install prompt if not already installed
+      if (!window.matchMedia('(display-mode: standalone)').matches && 
+          window.navigator.standalone !== true) {
+        setShowInstallPrompt(true);
+      }
     };
 
     // Check if app is already installed
@@ -143,13 +147,15 @@ const BottomNavigation = () => {
       if (window.matchMedia('(display-mode: standalone)').matches || 
           window.navigator.standalone === true) {
         setShowInstallPrompt(false);
-      } else {
-        // Show install button after a delay if not installed
-        setTimeout(() => {
-          setShowInstallPrompt(true);
-        }, 2000);
+        setDeferredPrompt(null);
       }
     };
+
+    // Check if user has already dismissed the install prompt
+    const hasUserDismissed = localStorage.getItem('pwa-install-dismissed');
+    if (hasUserDismissed) {
+      setShowInstallPrompt(false);
+    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     checkIfInstalled();
@@ -167,11 +173,20 @@ const BottomNavigation = () => {
         setShowInstallPrompt(false);
         setDeferredPrompt(null);
         toast.success('App installed successfully!');
+      } else {
+        // User dismissed the install prompt, remember this choice
+        localStorage.setItem('pwa-install-dismissed', 'true');
+        setShowInstallPrompt(false);
       }
     } else {
       // Fallback for browsers that don't support beforeinstallprompt
       toast.info('To install this app, use your browser\'s menu and select "Add to Home Screen"');
     }
+  };
+
+  const handleDismissInstall = () => {
+    localStorage.setItem('pwa-install-dismissed', 'true');
+    setShowInstallPrompt(false);
   };
 
   const handleLogout = () => {
@@ -343,16 +358,18 @@ const BottomNavigation = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Install button - always visible */}
-        <button
-          onClick={handleInstall}
-          className="flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 text-gray-600 hover:text-green-600 hover:bg-green-50"
-        >
-          <Download size={20} />
-          <span className="text-xs font-medium mt-1 text-gray-500">
-            Install
-          </span>
-        </button>
+        {/* Install button - only show when needed */}
+        {showInstallPrompt && (
+          <button
+            onClick={handleInstall}
+            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 text-gray-600 hover:text-green-600 hover:bg-green-50"
+          >
+            <Download size={20} />
+            <span className="text-xs font-medium mt-1 text-gray-500">
+              Install
+            </span>
+          </button>
+        )}
       </div>
       
       {/* Checkout Dialog */}

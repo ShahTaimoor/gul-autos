@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import { motion } from 'framer-motion';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -56,34 +55,19 @@ const CategorySwiper = React.memo(({
 });
 
 const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{
-      duration: 0.4,
-      delay: index * 0.05,
-      ease: "easeOut"
-    }}
+  <div
     className={`flex flex-col items-center rounded-xl p-1 ${
       isSelected
         ? 'border border-[#FED700] shadow-md'
         : 'hover:shadow-sm'
-    } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all`}
+    } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all hover:scale-105 active:scale-95`}
     onClick={() => onSelect(category?._id)}
-    whileHover={{
-      scale: 1.05,
-      boxShadow: "0 4px 8px rgba(254, 215, 0, 0.2)"
-    }}
-    whileTap={{ scale: 0.95 }}
     role="button"
     tabIndex="0"
     aria-label={`Filter by ${category?.name || "Category"}`}
     onKeyDown={(e) => e.key === 'Enter' && onSelect(category?._id)}
   >
-    <motion.div
-      className="rounded-full p-1"
-      whileHover={{ rotate: 5 }}
-    >
+    <div className="rounded-full p-1">
       <img
         src={category?.image || category?.picture?.secure_url || "/fallback.jpg"}
         alt={category?.name || "Category"}
@@ -95,65 +79,46 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
           e.currentTarget.src = "/fallback.jpg";
         }}
       />
-    </motion.div>
-    <motion.p
-      className="text-xs mt-2 font-medium text-gray-700"
-      whileHover={{ color: "#000000" }}
-    >
+    </div>
+    <p className="text-xs mt-2 font-medium text-gray-700">
       {(category?.name || "Category").split(' ').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
       ).join(' ')}
-    </motion.p>
-  </motion.div>
+    </p>
+  </div>
 ));
 
 const NavigationButtons = React.memo(() => (
   <div className="hidden lg:block">
     {/* Previous Button */}
-    <motion.div
-      className="custom-swiper-button-prev absolute top-[120px] left-0 z-20 -translate-y-1/2 cursor-pointer"
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      initial={{ x: -10, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
-        <motion.svg
+    <div className="custom-swiper-button-prev absolute top-[120px] left-0 z-20 -translate-y-1/2 cursor-pointer">
+      <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
+        <svg
           className="w-4 h-4 text-black drop-shadow"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           viewBox="0 0 24 24"
-          whileHover={{ scale: 1.2 }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </motion.svg>
+        </svg>
       </div>
-    </motion.div>
+    </div>
 
     {/* Next Button */}
-    <motion.div
-      className="custom-swiper-button-next absolute top-[120px] right-0 z-20 -translate-y-1/2 cursor-pointer"
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.9 }}
-      initial={{ x: 10, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 300 }}
-    >
-      <div className="p-3 rounded-r-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 transition-all duration-300 ease-in-out">
-        <motion.svg
+    <div className="custom-swiper-button-next absolute top-[120px] right-0 z-20 -translate-y-1/2 cursor-pointer">
+      <div className="p-3 rounded-r-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
+        <svg
           className="w-4 h-4 text-black drop-shadow"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           viewBox="0 0 24 24"
-          whileHover={{ scale: 1.2 }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </motion.svg>
+        </svg>
       </div>
-    </motion.div>
+    </div>
   </div>
 ));
 

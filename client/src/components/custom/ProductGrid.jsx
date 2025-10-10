@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import ProductCard from './ProductCard';
 import OneLoader from '../ui/OneLoader';
 
@@ -53,22 +52,20 @@ const ProductGrid = React.memo(({
         ? 'grid-cols-2 sm:grid-cols-2 md:grid-cols-2' 
         : 'grid-cols-1'
     }`}>
-      <AnimatePresence>
-        {products.filter(product => product && product._id).map((product) => (
-          <ProductCard
-            key={product._id}
-            product={product}
-            quantity={quantities[product._id] || 1}
-            onQuantityChange={onQuantityChange}
-            onAddToCart={onAddToCart}
-            isAddingToCart={addingProductId === product._id}
-            isInCart={isInCartMap.get(product._id) || false}
-            gridType={gridType}
-            setPreviewImage={onPreviewImage}
-            searchTerm={searchTerm}
-          />
-        ))}
-      </AnimatePresence>
+      {products.filter(product => product && product._id).map((product) => (
+        <ProductCard
+          key={product._id}
+          product={product}
+          quantity={quantities[product._id] || 1}
+          onQuantityChange={onQuantityChange}
+          onAddToCart={onAddToCart}
+          isAddingToCart={addingProductId === product._id}
+          isInCart={isInCartMap.get(product._id) || false}
+          gridType={gridType}
+          setPreviewImage={onPreviewImage}
+          searchTerm={searchTerm}
+        />
+      ))}
     </div>
   );
 });

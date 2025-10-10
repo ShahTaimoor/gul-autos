@@ -1,5 +1,4 @@
 import React, { useRef, useCallback, useEffect } from 'react';
-import { motion, useInView } from 'framer-motion';
 import OneLoader from '../ui/OneLoader';
 import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
@@ -17,9 +16,7 @@ const ProductCard = React.memo(({
   searchTerm = ''
 }) => {
   const imgRef = useRef(null);
-  const ref = useRef(null);
   const clickAudioRef = useRef(null);
-  const isInView = useInView(ref, { once: false });
 
   // Initialize audio only once
   useEffect(() => {
@@ -73,11 +70,7 @@ const ProductCard = React.memo(({
   const isDisabled = currentQuantity <= 0 || isAddingToCart;
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 40 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+    <div
       className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full ${
         gridType === 'grid3' ? 'sm:flex-col flex-row items-stretch' : ''
       }`}
@@ -207,7 +200,7 @@ const ProductCard = React.memo(({
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 });
 
