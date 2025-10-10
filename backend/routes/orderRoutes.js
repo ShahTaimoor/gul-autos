@@ -77,7 +77,13 @@ router.post('/order', isAuthorized, async (req, res) => {
 
     const savedOrder = await newOrder.save();
 
-    return res.status(201).json({ success: true, data: savedOrder });
+    // Populate product details for WhatsApp message
+    const populatedOrder = await Order.findById(savedOrder._id).populate({
+      path: 'products.id',
+      select: 'title price picture'
+    });
+
+    return res.status(201).json({ success: true, data: populatedOrder });
   } catch (error) {
     console.error('COD Order Error:', error);
     return res.status(500).json({ success: false, message: 'Server Error' });
