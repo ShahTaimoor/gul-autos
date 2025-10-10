@@ -34,7 +34,7 @@ const CategorySwiper = React.memo(({
       >
         {categoryChunks.map((chunk, idx) => (
           <SwiperSlide key={idx}>
-            <div className="grid grid-cols-4 mt-4 pb-6 gap-3">
+            <div className="grid grid-cols-4 mt-4 pb-6 gap-2">
               {chunk.filter(cat => cat && cat._id).map((cat, index) => (
                 <CategoryItem
                   key={cat._id}
@@ -56,7 +56,7 @@ const CategorySwiper = React.memo(({
 
 const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
   <div
-    className={`flex flex-col items-center rounded-xl p-1 ${
+    className={`flex flex-col items-center rounded-xl  ${
       isSelected
         ? 'border border-[#FED700] shadow-md'
         : 'hover:shadow-sm'
@@ -67,7 +67,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
     aria-label={`Filter by ${category?.name || "Category"}`}
     onKeyDown={(e) => e.key === 'Enter' && onSelect(category?._id)}
   >
-    <div className="rounded-full p-1">
+    <div className="rounded-full ">
       <img
         src={category?.image || category?.picture?.secure_url || "/fallback.jpg"}
         alt={category?.name || "Category"}
@@ -80,7 +80,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
         }}
       />
     </div>
-    <p className="text-xs mt-2 font-medium text-gray-700">
+    <p className="text-xs mt-1 font-medium text-gray-700">
       {(category?.name || "Category").split(' ').map(word =>
         word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
       ).join(' ')}
