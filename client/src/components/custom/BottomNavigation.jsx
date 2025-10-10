@@ -70,7 +70,6 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
         />
         <div className="max-w-[120px]">
           <h4 className="font-semibold text-xs text-gray-900 line-clamp-2">{title}</h4>
-          <p className="text-xs text-gray-600">₹{price}</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
