@@ -99,7 +99,6 @@ router.get('/all-users', isAuthorized, isAdminOrSuperAdmin, async (req, res) => 
     res.status(500).send('Server error while fetching users');
   }
 });
-
 // Update profile
 router.put('/update-profile', isAuthorized, async (req, res) => {
   try {
@@ -132,20 +131,17 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 });
-
 // Update user role (Super Admin only)
 router.put('/update-user-role/:userId', isAuthorized, isSuperAdmin, async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
-
     if (role === undefined || role === null) {
       return res.status(400).json({
         success: false,
         message: 'Role is required'
       });
     }
-
     // Validate role value
     if (![0, 1, 2].includes(parseInt(role))) {
       return res.status(400).json({
@@ -153,7 +149,6 @@ router.put('/update-user-role/:userId', isAuthorized, isSuperAdmin, async (req, 
         message: 'Invalid role value. Must be 0 (User), 1 (Admin), or 2 (Super Admin)'
       });
     }
-
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -161,7 +156,6 @@ router.put('/update-user-role/:userId', isAuthorized, isSuperAdmin, async (req, 
         message: 'User not found'
       });
     }
-
     // Prevent super admin from changing their own role
     if (req.user.id === userId && req.user.role === 2) {
       return res.status(403).json({
@@ -169,10 +163,8 @@ router.put('/update-user-role/:userId', isAuthorized, isSuperAdmin, async (req, 
         message: 'Super admin cannot change their own role'
       });
     }
-
     user.role = parseInt(role);
     const updatedUser = await user.save();
-
     return res.status(200).json({
       success: true,
       message: 'User role updated successfully',
@@ -244,14 +236,12 @@ router.put('/change-password', isAuthorized, async (req, res) => {
     user.password = hashedNewPassword;
     await user.save();
 
-    console.log('Password changed successfully for user:', userId);
-
     return res.status(200).json({
       success: true,
       message: 'Password changed successfully'
     });
   } catch (error) {
-    console.error('Change Password Error:', error);
+   
     return res.status(500).json({
       success: false,
       message: 'Server error'

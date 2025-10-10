@@ -25,7 +25,6 @@ const Users = () => {
     })
       .then((response) => response.json())
       .then((data) => {
-        console.log('API Response:', data);
         setUsers(Array.isArray(data) ? data : data?.users || []);
       })
       .catch((error) => {

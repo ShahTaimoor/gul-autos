@@ -49,7 +49,6 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/" replace />;
   }
 
-  console.log('ProtectedRoute - rendering children');
   return children;
 };
 

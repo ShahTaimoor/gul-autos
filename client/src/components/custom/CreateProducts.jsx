@@ -119,16 +119,9 @@ const CreateProducts = () => {
       formData.append('picture', inputValues.picture);
     }
 
-    // Debug: Log form data
-    console.log('Form data being sent:');
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
-
     dispatch(AddProduct(formData))
       .unwrap()
       .then((response) => {
-        console.log('Product creation response:', response);
         if (response?.success) {
           toast.success(response?.message);
           setInputValues(initialValues);

@@ -95,8 +95,6 @@ const Login = () => {
         toast.error('Login failed');
       }
     } catch (error) {
-      console.log('Login error:', error);
-
       let nameError = '';
       let passwordError = '';
 

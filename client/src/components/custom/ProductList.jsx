@@ -157,7 +157,6 @@ const ProductList = () => {
         const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
         const data = await response.json();
         if (data?.data) {
-          console.log('Loaded products for suggestions:', data.data.length);
           setAllProducts(data.data);
         }
       } catch (error) {
@@ -266,31 +265,6 @@ const ProductList = () => {
         selectedCategory={category}
         onCategorySelect={handleCategorySelect}
       />
-
-      {/* Search Results Header */}
-      {activeSearchTerm && (
-        <div className="px-2 sm:px-0 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">
-                Search Results for "{activeSearchTerm}"
-              </h2>
-              <p className="text-sm text-gray-600">
-                {sortedProducts.length} product{sortedProducts.length !== 1 ? 's' : ''} found
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                setActiveSearchTerm('');
-              }}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-            >
-              Clear search
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Product Grid */}
       <ProductGrid

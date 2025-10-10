@@ -250,10 +250,8 @@ router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('e
 
         if (existingCategory) {
           categoryId = existingCategory._id;
-          console.log('Found existing General category:', categoryId);
         } else {
           // Create default category if it doesn't exist
-          console.log('Creating new General category...');
           const newCategory = await Category.create({
             name: 'General',
             slug: 'general',
@@ -263,18 +261,9 @@ router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('e
             }
           });
           categoryId = newCategory._id;
-          console.log('Created new General category:', categoryId);
         }
 
         // Create product
-        console.log('Creating product with data:', {
-          title: productName,
-          price: productPrice,
-          category: categoryId,
-          stock: productStock,
-          user: req.user._id
-        });
-        
         const product = await Product.create({
           title: productName,
           description: `Imported from Excel - Row ${rowNumber}`,
@@ -288,7 +277,6 @@ router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('e
           }
         });
 
-        console.log(`Product created successfully:`, product._id);
         results.success++;
       } catch (error) {
         console.error(`Error creating product for row ${rowNumber}:`, error);
@@ -296,8 +284,6 @@ router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('e
         results.errors.push(`Row ${rowNumber}: ${error.message}`);
       }
     }
-
-    console.log('Import completed. Summary:', results);
     
     return res.status(200).json({
       success: true,
@@ -470,8 +456,6 @@ router.get('/get-products', async (req, res) => {
         }
       });
       
-      console.log('Search analysis:', { keywords, years, original: trimmedSearch });
-      
       // If we have both keywords and years, require both to match
       if (keywords.length > 0 && years.length > 0) {
         const keywordPatterns = [];
@@ -499,8 +483,6 @@ router.get('/get-products', async (req, res) => {
           { $or: keywordPatterns }, // At least one keyword must match
           { $or: yearPatterns }     // At least one year must match
         ];
-        
-        console.log('Keyword + Year search:', { keywordPatterns: keywordPatterns.length, yearPatterns: yearPatterns.length });
       }
       // If only keywords (no years), use precise keyword matching
       else if (keywords.length > 0) {
@@ -544,7 +526,6 @@ router.get('/get-products', async (req, res) => {
         );
         
         query.$or = searchPatterns;
-        console.log('Keyword-only search:', { patterns: searchPatterns.length, keywords });
       }
       // If only years, search for any of the years
       else if (years.length > 0) {
@@ -556,7 +537,6 @@ router.get('/get-products', async (req, res) => {
           );
         });
         query.$or = yearPatterns;
-        console.log('Year-only search:', { patterns: yearPatterns.length });
       }
     }
 
@@ -737,8 +717,6 @@ router.get('/get-products', async (req, res) => {
       // Keep both image and picture fields for compatibility
       productObj.image = productObj.picture?.secure_url || null;
       // Don't delete picture field, keep it for backward compatibility
-      
-      
       return productObj;
     });
 

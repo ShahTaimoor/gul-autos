@@ -80,14 +80,12 @@ const authSlice = createSlice({
       localStorage.removeItem('user');
     },
     setTokenExpired: (state, action) => {
-      console.log('setTokenExpired action dispatched');
       state.tokenExpired = true;
       state.user = null;
       state.isAuthenticated = false;
       localStorage.removeItem('user');
     },
     clearTokenExpired: (state) => {
-      console.log('clearTokenExpired action dispatched');
       state.tokenExpired = false;
     },
   },

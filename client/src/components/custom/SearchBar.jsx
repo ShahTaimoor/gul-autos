@@ -27,9 +27,6 @@ const SearchBar = React.memo(({
     const searchTerm = term.toLowerCase().trim();
     const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
     
-    console.log('Generating suggestions for:', searchTerm, 'Words:', searchWords, 'Products available:', products.length);
-    console.log('Sample products:', products.slice(0, 5).map(p => p.title));
-    
     // Filter products that match the search term with precision
     const matchingProducts = products
       .filter(product => {
@@ -37,31 +34,16 @@ const SearchBar = React.memo(({
         const title = product.title.toLowerCase();
         const description = (product.description || '').toLowerCase();
         
-        // Check if each search word exists (flexible matching for suggestions)
-        const allWordsMatchTitle = searchWords.every(word => {
-          // Use word boundary OR start of string for more flexible matching
+        // Check if each search word exists in EITHER title OR description
+        const allWordsMatch = searchWords.every(word => {
           const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(title);
+          // Each word can be in title OR description (not necessarily all in one)
+          return regex.test(title) || regex.test(description);
         });
         
-        const allWordsMatchDesc = searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(description);
-        });
-        
-        const matches = allWordsMatchTitle || allWordsMatchDesc;
-        if (matches) {
-          console.log('✅ Matched:', product.title);
-        }
-        return matches;
+        return allWordsMatch;
       });
-    
-    console.log('Products after filtering:', matchingProducts.length);
-    if (matchingProducts.length === 0) {
-      console.log('⚠️ No products matched! Check if products contain:', searchWords);
-    }
     
     const sortedProducts = matchingProducts.sort((a, b) => {
         const aTitle = a.title.toLowerCase();
@@ -89,8 +71,6 @@ const SearchBar = React.memo(({
         return aTitle.length - bTitle.length;
       });
     
-    console.log('Products after sorting:', sortedProducts.length);
-    
     const finalSuggestions = sortedProducts.slice(0, 10) // Limit to 10 suggestions
       .map(product => ({
         text: product.title,
@@ -98,7 +78,6 @@ const SearchBar = React.memo(({
         product: product // Keep reference to full product
       }));
     
-    console.log('Final suggestions:', finalSuggestions.length, finalSuggestions.map(p => p.text));
     return finalSuggestions;
   }, [products]);
 
@@ -109,7 +88,6 @@ const SearchBar = React.memo(({
     // Show suggestions only when actively searching (2+ characters)
     if (value.trim().length >= 2) {
       const newSuggestions = generateSuggestions(value);
-      console.log('Search term:', value, 'Suggestions found:', newSuggestions.length);
       setSuggestions(newSuggestions);
       setShowSuggestions(true);
     } else {
@@ -120,7 +98,6 @@ const SearchBar = React.memo(({
 
   const handleSearchSubmitAction = useCallback(() => {
     if (searchTerm.trim()) {
-      console.log('Searching for:', searchTerm);
       setShowSuggestions(false);
       
       // Submit the search
@@ -144,14 +121,12 @@ const SearchBar = React.memo(({
 
   const handleSuggestionClick = useCallback((suggestion) => {
     const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
-    console.log('Suggestion clicked:', suggestionText);
     
     onSearchChange(suggestionText);
     setShowSuggestions(false);
     
     // Submit the search when clicking a suggestion
     if (onSearchSubmit) {
-      console.log('Submitting search for:', suggestionText);
       onSearchSubmit(suggestionText);
     }
     
