@@ -20,6 +20,7 @@ const ProductList = () => {
   const [category, setCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
+  const [selectedProductId, setSelectedProductId] = useState(null); // For specific product from suggestion
   const [quantities, setQuantities] = useState({});
   const [addingProductId, setAddingProductId] = useState(null);
   const [gridType, setGridType] = useState('grid2');
@@ -82,33 +83,30 @@ const ProductList = () => {
   const sortedProducts = useMemo(() => {
     let filtered = productList.filter((product) => product && product._id && product.stock > 0);
     
+    // If a specific product was selected from suggestions, show only that product
+    if (selectedProductId) {
+      filtered = filtered.filter(product => product._id === selectedProductId);
+      return filtered;
+    }
+    
     // Additional filtering for search precision
     if (searchTerm && searchTerm.trim()) {
       const searchWords = searchTerm.toLowerCase().split(/\s+/);
       
-      // If searching for specific parts, prioritize exact matches
+      // If searching for specific parts like "grill", only show products that contain that term
       if (searchWords.includes('grill') || searchWords.includes('grille')) {
-        // Prioritize products that actually contain "grill" in title or description
-        filtered = filtered.sort((a, b) => {
-          const aTitle = (a.title || '').toLowerCase();
-          const bTitle = (b.title || '').toLowerCase();
-          const aDesc = (a.description || '').toLowerCase();
-          const bDesc = (b.description || '').toLowerCase();
-          
-          const aHasGrill = aTitle.includes('grill') || aTitle.includes('grille') || 
-                           aDesc.includes('grill') || aDesc.includes('grille');
-          const bHasGrill = bTitle.includes('grill') || bTitle.includes('grille') || 
-                           bDesc.includes('grill') || bDesc.includes('grille');
-          
-          if (aHasGrill && !bHasGrill) return -1;
-          if (!aHasGrill && bHasGrill) return 1;
-          return 0;
+        // Filter to only show products that actually contain "grill" in title or description
+        filtered = filtered.filter(product => {
+          const title = (product.title || '').toLowerCase();
+          const description = (product.description || '').toLowerCase();
+          return title.includes('grill') || title.includes('grille') || 
+                 description.includes('grill') || description.includes('grille');
         });
       }
     }
     
     return filtered;
-  }, [productList, searchTerm]);
+  }, [productList, searchTerm, selectedProductId]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -213,11 +211,13 @@ const ProductList = () => {
     setCategory(categoryId);
     setSearchTerm(''); // Clear search when selecting category
     setActiveSearchTerm(''); // Clear active search
+    setSelectedProductId(null); // Clear selected product
     setPage(1); // Reset to first page when changing category
   }, []);
 
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
+    setSelectedProductId(null); // Clear selected product when typing manually
     setPage(1); // Reset to first page when searching
   }, []);
 
@@ -239,8 +239,9 @@ const ProductList = () => {
   }, []);
 
   // Handle search submission
-  const handleSearchSubmit = useCallback((term) => {
+  const handleSearchSubmit = useCallback((term, productId = null) => {
     setActiveSearchTerm(term);
+    setSelectedProductId(productId); // Set specific product ID if provided (null for Enter key)
     setPage(1); // Reset to first page when searching
   }, []);
 
@@ -251,7 +252,7 @@ const ProductList = () => {
       {/* Fixed Search and Categories Container */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-md pb-2">
         {/* Search and Sort Bar */}
-        <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4">
+        <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4 lg:mt-24">
           <SearchBar
             searchTerm={searchTerm}
             onSearchChange={handleSearchChange}

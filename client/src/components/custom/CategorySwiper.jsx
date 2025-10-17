@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -9,6 +9,19 @@ const CategorySwiper = React.memo(({
   selectedCategory, 
   onCategorySelect 
 }) => {
+  const [chunkSize, setChunkSize] = useState(4);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Desktop/laptop: 8 categories, Mobile/tablet: 4 categories
+      setChunkSize(window.innerWidth >= 1024 ? 8 : 4);
+    };
+    
+    handleResize(); // Set initial value
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const categoryChunks = useMemo(() => {
     const chunkArray = (array, size) => {
       const result = [];
@@ -17,8 +30,8 @@ const CategorySwiper = React.memo(({
       }
       return result;
     };
-    return chunkArray(categories, 4);
-  }, [categories]);
+    return chunkArray(categories, chunkSize);
+  }, [categories, chunkSize]);
 
   return (
     <div className="relative px-2 sm:px-10">
@@ -34,7 +47,7 @@ const CategorySwiper = React.memo(({
       >
         {categoryChunks.map((chunk, idx) => (
           <SwiperSlide key={idx}>
-            <div className="grid grid-cols-4 mt-4 pb-6 gap-2">
+            <div className="grid grid-cols-4 lg:grid-cols-8 mt-4 pb-6 gap-2">
               {chunk.filter(cat => cat && cat._id).map((cat, index) => (
                 <CategoryItem
                   key={cat._id}
@@ -91,7 +104,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
 const NavigationButtons = React.memo(() => (
   <div className="hidden lg:block">
     {/* Previous Button */}
-    <div className="custom-swiper-button-prev absolute top-[120px] left-0 z-20 -translate-y-1/2 cursor-pointer">
+    <div className="custom-swiper-button-prev absolute top-1/2 left-0 z-20 -translate-y-1/2 cursor-pointer">
       <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
         <svg
           className="w-4 h-4 text-black drop-shadow"
@@ -106,7 +119,7 @@ const NavigationButtons = React.memo(() => (
     </div>
 
     {/* Next Button */}
-    <div className="custom-swiper-button-next absolute top-[120px] right-0 z-20 -translate-y-1/2 cursor-pointer">
+    <div className="custom-swiper-button-next absolute top-1/2 right-0 z-20 -translate-y-1/2 cursor-pointer">
       <div className="p-3 rounded-r-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
         <svg
           className="w-4 h-4 text-black drop-shadow"

@@ -86,7 +86,7 @@ const Footer = () => {
   </div>
 
   {/* Bottom Bar */}
-  <div className="relative container mx-auto mt-6 mb-12 px-4 lg:px-0 border-t border-gray-200 pt-6 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+  <div className="relative container mx-auto mt-6 mb-12 lg:mb-0 px-4 lg:px-0 border-t border-gray-200 pt-6 animate-fade-in" style={{ animationDelay: '0.6s' }}>
     <p className="text-center text-gray-500 text-sm">
       © {new Date().getFullYear()} <span className='text-red-700'>GULTRADERS.</span> All rights reserved.
     </p>

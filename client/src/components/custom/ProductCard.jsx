@@ -126,7 +126,7 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/5 sm:w-full' : ''
         }`}
       >
-        <h3 className="font-semibold text-sm line-clamp-2">
+        <h3 className="font-medium text-xs line-clamp-2">
           {searchTerm ? 
             highlightSearchTerm(
               product.title.split(' ').map(word =>
@@ -142,12 +142,12 @@ const ProductCard = React.memo(({
         
         <div className="flex-grow" />
 
-        <div className="flex flex-col lg:flex-row gap-1.5 mt-2">
-          <div className="flex sm:flex-row items-center gap-2 justify-between">
-            <div className="flex w-full lg:w-28 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-2 mt-2">
+          <div className="flex items-center justify-center lg:justify-start">
+            <div className="flex w-24 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={handleDecrease}
-                className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-6 h-6 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 disabled={currentQuantity <= 1}
                 aria-label="Decrease quantity"
               >
@@ -160,7 +160,7 @@ const ProductCard = React.memo(({
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                className="w-10 text-center bg-transparent focus:outline-none text-sm py-1 text-black
+                className="w-8 text-center bg-transparent focus:outline-none text-xs py-1 text-black
                 appearance-none 
                 [&::-webkit-outer-spin-button]:appearance-none 
                 [&::-webkit-inner-spin-button]:appearance-none 
@@ -169,7 +169,7 @@ const ProductCard = React.memo(({
 
               <button
                 onClick={handleIncrease}
-                className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-6 h-6 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 disabled={currentQuantity >= product.stock}
                 aria-label="Increase quantity"
               >
@@ -181,7 +181,7 @@ const ProductCard = React.memo(({
           <button
             onClick={handleAddClick}
             disabled={isDisabled}
-            className={`text-sm mt-2 lg:mt-0 lg:w-32 cursor-pointer px-4 md:px-5 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 ${
+            className={`text-xs mt-2 lg:mt-0 lg:flex-1 cursor-pointer px-3 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 ${
               isInCart
                 ? 'bg-green-600 hover:bg-green-700'
                 : isDisabled
