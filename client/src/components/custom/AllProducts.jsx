@@ -38,6 +38,7 @@ const AllProducts = () => {
   const { categories } = useSelector((state) => state.categories);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -49,7 +50,7 @@ const AllProducts = () => {
   const [currentPageLocal, setCurrentPageLocal] = useState(1);
 
   // Debounced search to reduce API calls
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedSearchTerm = useDebounce(activeSearchTerm, 300);
 
   // Form sta
   const [formData, setFormData] = useState({
@@ -65,6 +66,11 @@ const AllProducts = () => {
     description: ''
   });
 
+  // Update active search term when user types
+  useEffect(() => {
+    setActiveSearchTerm(searchTerm);
+  }, [searchTerm]);
+
   // Fetch products and categories on component mount
   useEffect(() => {
     dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12 }));
@@ -73,14 +79,32 @@ const AllProducts = () => {
 
   // Fetch products with debounced search
   useEffect(() => {
+    // Reset to page 1 when search term changes
+    if (debouncedSearchTerm !== activeSearchTerm && currentPageLocal > 1) {
+      setCurrentPageLocal(1);
+      return;
+    }
+    
     dispatch(fetchProducts({ 
       category: selectedCategory, 
       searchTerm: debouncedSearchTerm, 
       page: currentPageLocal, 
       limit: 12,
       stockFilter 
-    }));
-  }, [dispatch, selectedCategory, debouncedSearchTerm, currentPageLocal, stockFilter]);
+    })).then((res) => {
+      // Go back one page if current page has no results
+      if (res.payload?.data?.length === 0 && currentPageLocal > 1) {
+        setCurrentPageLocal((prev) => prev - 1);
+      }
+    }).catch((error) => {
+      console.error('Error fetching products:', error);
+    });
+  }, [dispatch, selectedCategory, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm]);
+
+  // Scroll to top on page change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPageLocal]);
 
   // Use products directly since filtering is now done on the backend
   const filteredProducts = products || [];
@@ -210,7 +234,7 @@ const AllProducts = () => {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
               />
-              {status === 'loading' && (
+              {status === 'loading' && products.length === 0 && (
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
                 </div>
@@ -276,7 +300,7 @@ const AllProducts = () => {
         gridView === 'grid' 
           ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
-      } ${status === 'loading' && products.length > 0 ? 'opacity-75 pointer-events-none' : ''}`}>
+      }`}>
         {filteredProducts.map((product) => (
           <Card 
             key={product._id} 
@@ -416,17 +440,10 @@ const AllProducts = () => {
 
       {/* Results Info */}
       <div className="text-center text-sm text-gray-500 mt-4">
-        {status === 'loading' && products.length > 0 ? (
-          <span className="flex items-center justify-center gap-2">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
-            Searching...
-          </span>
-        ) : (
-          <>
-            Showing {filteredProducts.length} of {totalItems} products
-            {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
-          </>
-        )}
+        <>
+          Showing {filteredProducts.length} of {totalItems} products
+          {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
+        </>
       </div>
 
       {/* Empty State */}

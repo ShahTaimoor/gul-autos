@@ -12,6 +12,7 @@ import {
   UserCheck,
   ShoppingCart,
   UserCog,
+  ImageIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -33,6 +34,7 @@ const items = [
   { title: "Products", url: "/admin/dashboard", icon: FilePlus2Icon },
   { title: "Create Category", url: "/admin/category", icon: ChartBarStacked },
   { title: "All Products", url: "/admin/dashboard/all-products", icon: GalleryVerticalEnd },
+  { title: "Media", url: "/admin/dashboard/media", icon: ImageIcon },
   { title: "Orders", url: "/admin/dashboard/orders", icon: PackageSearch, showBadge: true },
   { title: "Users", url: "/admin/dashboard/users", icon: UserCheck },
   { title: "Admin Profile", url: "/admin/profile", icon: UserCog },

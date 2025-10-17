@@ -28,6 +28,7 @@ const CreateProducts = lazy(() => import('./components/custom/CreateProducts'));
 const AllProducts = lazy(() => import('./components/custom/AllProducts'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
+const Media = lazy(() => import('./pages/Media'));
 
 const App = () => {
   const router = createBrowserRouter([
@@ -153,6 +154,16 @@ const App = () => {
         <ProtectedRoute>
           <AdminLayout>
             <Orders />
+          </AdminLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/dashboard/media',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <Media />
           </AdminLayout>
         </ProtectedRoute>
       ),
