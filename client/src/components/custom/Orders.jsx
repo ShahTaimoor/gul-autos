@@ -465,13 +465,7 @@ Phone: ${order.phone}
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-sm">
-                        {order.userId?.name
-                          ? capitalizeFirst(order.userId.name)
-                          : user?.name
-                            ? capitalizeFirst(user.name)
-                            : "Shop Name"}
-                      </CardTitle>
+                     
                       <p className="text-sm text-muted-foreground">
                         {new Date(order.createdAt).toLocaleString('en-US', {
                           timeZone: 'Asia/Karachi',
@@ -526,7 +520,11 @@ Phone: ${order.phone}
                   </div>
 
                   <div className="space-y-2 mb-2">
-                    <p className="text-sm font-medium">Shipping Info</p>
+                  <span className='text-muted-foreground'>Shop Name:</span> {order.userId?.name
+                          ? capitalizeFirst(order.userId.name)
+                          : user?.name
+                            ? capitalizeFirst(user.name)
+                            : "Shop Name"}
                     <div className="text-sm">
                       <p className="truncate"><span className="text-muted-foreground">Address:</span> {order.address}</p>
                       <p><span className="text-muted-foreground">City:</span> {order.city}</p>
