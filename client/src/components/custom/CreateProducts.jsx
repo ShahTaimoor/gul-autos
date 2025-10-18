@@ -20,17 +20,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import { AddProduct, importProductsFromExcel } from '@/redux/slices/products/productSlice';
+import { AddProduct, importProductsFromExcel, fetchProducts } from '@/redux/slices/products/productSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { FileSpreadsheet, Upload, Download } from 'lucide-react';
+import { FileSpreadsheet, Upload, Download, ImageIcon, X, Search, Eye } from 'lucide-react';
+import LazyImage from '../ui/LazyImage';
+import Pagination from '../custom/Pagination';
 
 const CreateProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { categories } = useSelector((state) => state.categories);
+  const { products } = useSelector((state) => state.products);
   const [loading, setLoading] = useState(false);
   const [excelFile, setExcelFile] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [mediaSearchTerm, setMediaSearchTerm] = useState('');
+  const [selectedMediaImage, setSelectedMediaImage] = useState(null);
+  const [mediaCurrentPage, setMediaCurrentPage] = useState(1);
+  const [mediaTotalPages, setMediaTotalPages] = useState(1);
+  const [mediaTotalItems, setMediaTotalItems] = useState(0);
 
   // Initial input values
   const initialValues = {
@@ -140,6 +149,68 @@ const CreateProducts = () => {
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
+
+  // Fetch products for media picker with pagination
+  useEffect(() => {
+    if (showMediaPicker) {
+      dispatch(fetchProducts({ 
+        category: 'all', 
+        searchTerm: mediaSearchTerm, 
+        page: mediaCurrentPage, 
+        limit: 20,
+        stockFilter: 'active'
+      }));
+    }
+  }, [dispatch, showMediaPicker, mediaSearchTerm, mediaCurrentPage]);
+
+  // Update pagination info when products change
+  useEffect(() => {
+    if (showMediaPicker && products) {
+      // Calculate total pages based on products with images
+      const productsWithImages = products.filter(product => 
+        product && product._id && (product.picture?.secure_url || product.image)
+      );
+      const totalPages = Math.ceil(productsWithImages.length / 20);
+      setMediaTotalPages(totalPages);
+      setMediaTotalItems(productsWithImages.length);
+    }
+  }, [products, showMediaPicker]);
+
+  // Filter products for media picker - only show products with images
+  const filteredMediaProducts = products?.filter(product => 
+    product && 
+    product._id && 
+    (product.picture?.secure_url || product.image)
+  ) || [];
+
+  const handleMediaPageChange = (page) => {
+    setMediaCurrentPage(page);
+  };
+
+  const handleMediaSearchChange = (e) => {
+    setMediaSearchTerm(e.target.value);
+    setMediaCurrentPage(1); // Reset to first page when searching
+  };
+
+  const handleMediaSelect = (product) => {
+    setSelectedMediaImage(product);
+    setShowMediaPicker(false);
+    // Convert the selected product image to a file-like object
+    const imageUrl = product.picture?.secure_url || product.image;
+    if (imageUrl) {
+      // Create a file object from the image URL
+      fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+          const file = new File([blob], `${product.title}.jpg`, { type: blob.type });
+          setInputValues(prev => ({ ...prev, picture: file }));
+        })
+        .catch(error => {
+          console.error('Error fetching image:', error);
+          toast.error('Failed to load selected image');
+        });
+    }
+  };
 
   return (
     <Card className="w-full max-w-4xl lg:min-w-[900px] lg:min-h-[700px] mx-auto p-4 sm:p-6 md:p-8">
@@ -252,6 +323,24 @@ const CreateProducts = () => {
             {/* Image Upload */}
             <div className="md:col-span-2 flex flex-col space-y-1.5">
               <Label>Upload Image</Label>
+              
+              {/* Media Picker Button */}
+              <div className="mb-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowMediaPicker(true);
+                    setMediaCurrentPage(1);
+                    setMediaSearchTerm('');
+                  }}
+                  className="w-full flex items-center gap-2"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  Choose from Existing Images
+                </Button>
+              </div>
+
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors duration-200">
                 <div className="space-y-1 text-center">
                   <svg
@@ -431,6 +520,112 @@ const CreateProducts = () => {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Media Picker Modal */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold">Choose from Existing Images</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowMediaPicker(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Search */}
+            <div className="p-4 border-b">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search images by product name or description..."
+                  value={mediaSearchTerm}
+                  onChange={handleMediaSearchChange}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Media Grid */}
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              {filteredMediaProducts.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredMediaProducts.map((product) => (
+                    <div
+                      key={product._id}
+                      className="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-200"
+                      onClick={() => handleMediaSelect(product)}
+                    >
+                      <div className="aspect-square bg-gray-50">
+                        <LazyImage
+                          src={product.picture?.secure_url || product.image}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                          fallback="/logo.jpeg"
+                          quality={85}
+                        />
+                        
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <Eye className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                      
+                      {/* Product title */}
+                      <div className="p-2 bg-white">
+                        <p className="text-xs text-gray-600 truncate" title={product.title}>
+                          {product.title}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <ImageIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+                  <p className="text-gray-500">
+                    {mediaSearchTerm 
+                      ? 'Try adjusting your search criteria'
+                      : 'No product images available'
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {filteredMediaProducts.length > 0 && mediaTotalPages > 1 && (
+              <div className="p-4 border-t">
+                <Pagination
+                  currentPage={mediaCurrentPage}
+                  totalPages={mediaTotalPages}
+                  onPageChange={handleMediaPageChange}
+                />
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="p-4 border-t bg-gray-50">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  {filteredMediaProducts.length} images available
+                  {mediaTotalPages > 1 && ` (Page ${mediaCurrentPage} of ${mediaTotalPages})`}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMediaPicker(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };
