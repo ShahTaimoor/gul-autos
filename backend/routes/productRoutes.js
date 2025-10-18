@@ -456,6 +456,20 @@ router.get('/get-products', async (req, res) => {
         }
       });
       
+      // If searching for "grill", exclude products that are clearly not grills
+      if (keywords.includes('grill') || keywords.includes('grille')) {
+        const excludeTerms = ['perfume', 'air freshener', 'fragrance', 'scent'];
+        excludeTerms.forEach(term => {
+          query.$and = query.$and || [];
+          query.$and.push({
+            $and: [
+              { title: { $not: { $regex: `\\b${term}\\b`, $options: 'i' } } },
+              { description: { $not: { $regex: `\\b${term}\\b`, $options: 'i' } } }
+            ]
+          });
+        });
+      }
+      
       // If we have both keywords and years, require both to match
       if (keywords.length > 0 && years.length > 0) {
         const keywordPatterns = [];
@@ -465,8 +479,8 @@ router.get('/get-products', async (req, res) => {
         keywords.forEach(keyword => {
           const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
           keywordPatterns.push(
-            { title: { $regex: escapedKeyword, $options: 'i' } },
-            { description: { $regex: escapedKeyword, $options: 'i' } }
+            { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+            { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
           );
         });
         
@@ -501,8 +515,8 @@ router.get('/get-products', async (req, res) => {
             const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             return {
               $or: [
-                { title: { $regex: escapedKeyword, $options: 'i' } },
-                { description: { $regex: escapedKeyword, $options: 'i' } }
+                { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+                { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
               ]
             };
           });

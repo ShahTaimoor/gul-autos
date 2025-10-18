@@ -122,8 +122,8 @@ const SearchBar = React.memo(({
   const handleSuggestionClick = useCallback((suggestion) => {
     const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
     
-    // Clear the search input when clicking on a product suggestion
-    onSearchChange('');
+    // Keep the search text visible - don't clear the input
+    // onSearchChange(''); // Removed this line to keep search text
     setShowSuggestions(false);
     
     // Submit the search when clicking a suggestion
@@ -153,6 +153,7 @@ const SearchBar = React.memo(({
       setShowSuggestions(false);
       searchInputRef.current?.blur(); // Close keyboard
     } else if (e.key === 'Enter') {
+      setShowSuggestions(false); // Hide suggestions when Enter is pressed
       handleSearchSubmitAction();
       searchInputRef.current?.blur(); // Close keyboard
     }
