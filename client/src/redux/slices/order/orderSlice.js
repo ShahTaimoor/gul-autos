@@ -85,6 +85,19 @@ export const deleteOrder = createAsyncThunk(
   }
 );
 
+// Bulk Delete Orders
+export const bulkDeleteOrders = createAsyncThunk(
+  'orders/bulkDeleteOrders',
+  async (orderIds, thunkAPI) => {
+    try {
+      const res = await orderService.bulkDeleteOrders(orderIds);
+      return { orderIds, ...res };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  }
+);
+
 const initialState = {
   orders: [],
   metrics: null,
@@ -169,6 +182,18 @@ const ordersSlice = createSlice({
         state.orders = state.orders.filter(order => order._id !== action.payload.orderId);
       })
       .addCase(deleteOrder.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(bulkDeleteOrders.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(bulkDeleteOrders.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        // Remove all deleted orders from the orders array
+        state.orders = state.orders.filter(order => !action.payload.orderIds.includes(order._id));
+      })
+      .addCase(bulkDeleteOrders.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })

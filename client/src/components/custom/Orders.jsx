@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import OrderData from './OrderData';
-import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount, deleteOrder } from '@/redux/slices/order/orderSlice';
+import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount, deleteOrder, bulkDeleteOrders } from '@/redux/slices/order/orderSlice';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
@@ -54,7 +54,7 @@ const Orders = () => {
   const [localOrders, setLocalOrders] = useState([]);
   const [packerNames, setPackerNames] = useState({});
   const [page, setPage] = useState(1);
-  const limit = 30;
+  const [limit, setLimit] = useState(30);
   const totalPages = useSelector((state) => state.orders.totalPages) || 1;
   const clickTimer = useRef(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -132,9 +132,30 @@ const Orders = () => {
     }
   };
 
+  const handleDeleteAllOrders = async () => {
+    try {
+      const allOrderIds = filteredOrders.map(order => order._id);
+      await dispatch(bulkDeleteOrders(allOrderIds)).unwrap();
+      toast.success(`All ${allOrderIds.length} orders deleted successfully and stock restored`);
+      
+      // Clear local orders state
+      setLocalOrders([]);
+      
+      // Refresh pending order count
+      dispatch(fetchPendingOrderCount());
+    } catch (error) {
+      toast.error(error?.message || 'Failed to delete all orders');
+    }
+  };
+
+  const handleLimitChange = (newLimit) => {
+    setLimit(parseInt(newLimit));
+    setPage(1); // Reset to first page when changing limit
+  };
+
   useEffect(() => {
     dispatch(fetchOrdersAdmin({ page, limit }));
-  }, [dispatch, page]);
+  }, [dispatch, page, limit]);
 
 useEffect(() => {
   if (status === 'succeeded') {
@@ -371,6 +392,54 @@ Phone: ${order.phone}
                   className="border p-1 rounded-md"
                 />
               )}
+
+              <Select value={limit.toString()} onValueChange={handleLimitChange}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="30">30</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {filteredOrders.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="gap-2">
+                      <Trash2 className="h-4 w-4" />
+                      Delete All ({filteredOrders.length})
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete All Orders</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete ALL {filteredOrders.length} orders? This action will:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Permanently remove all {filteredOrders.length} orders from the system</li>
+                          <li>Restore the product stock that was deducted for all orders</li>
+                          <li>This action cannot be undone</li>
+                        </ul>
+                        <p className="mt-2 font-semibold text-red-600">
+                          This is a destructive action that will affect all displayed orders!
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAllOrders}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Delete All Orders
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </div>
         </div>
@@ -390,7 +459,7 @@ Phone: ${order.phone}
             </p>
           </div>
         ) : (
-          <div className="grid w-[350px] lg:w-[900px] xl:w-[1400px] grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOrders.map((order) => (
               <Card key={order._id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
