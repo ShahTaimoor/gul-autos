@@ -122,13 +122,14 @@ const SearchBar = React.memo(({
   const handleSuggestionClick = useCallback((suggestion) => {
     const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
     
-    onSearchChange(suggestionText);
+    // Clear the search input when clicking on a product suggestion
+    onSearchChange('');
     setShowSuggestions(false);
     
     // Submit the search when clicking a suggestion
     if (onSearchSubmit) {
       // Pass the product ID to show only that specific product
-      onSearchSubmit(suggestionText, suggestion.product?._id);
+      onSearchSubmit('', suggestion.product?._id);
     }
     
     // Scroll to top to see results
