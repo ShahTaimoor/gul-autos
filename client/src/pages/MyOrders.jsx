@@ -88,9 +88,7 @@ const MyOrders = () => {
                 <div className="absolute top-2 right-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="icon" className="h-8 w-8">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                     
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
