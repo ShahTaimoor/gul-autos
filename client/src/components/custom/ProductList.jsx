@@ -299,25 +299,7 @@ const ProductList = () => {
       {/* Spacer to prevent content from going under fixed header */}
       <div className="h-52"></div>
 
-      {/* Selected Product Indicator */}
-      {selectedProductId && (
-        <div className="mb-4 px-2 sm:px-0">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-blue-700 font-medium">
-                Showing specific product from search
-              </span>
-            </div>
-            <button
-              onClick={handleClearSelectedProduct}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium underline"
-            >
-              Show all products
-            </button>
-          </div>
-        </div>
-      )}
+     
 
       {/* Product Grid */}
       <ProductGrid
