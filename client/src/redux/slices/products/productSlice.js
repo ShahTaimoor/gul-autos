@@ -74,6 +74,18 @@ export const importProductsFromExcel = createAsyncThunk(
     }
 );
 
+export const updateProductStock = createAsyncThunk(
+    'products/updateProductStock',
+    async ({ id, stock }, thunkAPI) => {
+        try {
+            const res = await productService.updateProductStock({ id, stock });
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
+
 const initialState = {
     products: [],
     singleProducts: null,
@@ -185,6 +197,27 @@ export const productsSlice = createSlice({
                 // The products will be refetched by the component
             })
             .addCase(importProductsFromExcel.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+            .addCase(updateProductStock.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(updateProductStock.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const updatedProduct = action.payload.product;
+                
+                // Find and update the product in the current list
+                const index = state.products.findIndex(p => p._id === updatedProduct._id);
+                if (index !== -1) {
+                    state.products[index] = {
+                        ...state.products[index],
+                        stock: updatedProduct.stock
+                    };
+                }
+            })
+            .addCase(updateProductStock.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })

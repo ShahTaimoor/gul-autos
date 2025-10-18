@@ -361,6 +361,47 @@ router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.sing
   }
 });
 
+// @route PUT /api/products/update-product-stock/:id
+// @desc Update product stock status
+// @access Private/Admin
+router.put('/update-product-stock/:id', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stock } = req.body;
+
+    if (stock === undefined || stock === null) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Stock value is required' 
+      });
+    }
+
+    const product = await Product.findById(id);
+    
+    if (!product) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Product not found' 
+      });
+    }
+
+    product.stock = parseInt(stock);
+    await product.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Product stock updated successfully',
+      product
+    });
+  } catch (error) {
+    console.error('Error updating product stock:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while updating product stock' 
+    });
+  }
+});
+
 // @route DELETE /api/products/delete-product/:id
 // @desc Delete a product by ID
 // @access Private/Admin

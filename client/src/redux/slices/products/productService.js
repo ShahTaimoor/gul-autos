@@ -109,6 +109,24 @@ const importProductsFromExcel = async (excelFile) => {
     }
 };
 
-const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel };
+// update product stock status
+const updateProductStock = async ({ id, stock }) => {
+    try {
+        const axiosResponse = await axiosInstance.put(
+            `/update-product-stock/${id}`,
+            { stock },
+            {
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock };
 
 export default productService;

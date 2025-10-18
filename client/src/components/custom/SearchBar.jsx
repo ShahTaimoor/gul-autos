@@ -128,8 +128,8 @@ const SearchBar = React.memo(({
     
     // Submit the search when clicking a suggestion
     if (onSearchSubmit) {
-      // Pass the product ID to show only that specific product
-      onSearchSubmit('', suggestion.product?._id);
+      // Pass the search term and product ID to show only that specific product
+      onSearchSubmit(suggestionText, suggestion.product?._id);
     }
     
     // Scroll to top to see results

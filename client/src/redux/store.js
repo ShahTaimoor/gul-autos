@@ -5,6 +5,7 @@ import cartSlice from './slices/cart/cartSlice'
 import categoriesReducer from './slices/categories/categoriesSlice'
 import productsReducer from './slices/products/productSlice'
 import ordersReducer from './slices/order/orderSlice'
+import { setStoreReference } from './slices/auth/axiosInstance'
 
 export const store = configureStore({
     reducer: {
@@ -15,3 +16,6 @@ export const store = configureStore({
         orders: ordersReducer,
     },
 })
+
+// Set the store reference for axiosInstance
+setStoreReference(store)

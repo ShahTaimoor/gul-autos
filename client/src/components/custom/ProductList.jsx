@@ -105,16 +105,18 @@ const ProductList = () => {
     if (searchTerm && searchTerm.trim()) {
       const searchWords = searchTerm.toLowerCase().split(/\s+/);
       
-      // If searching for specific parts like "grill", only show products that contain that term
-      if (searchWords.includes('grill') || searchWords.includes('grille')) {
-        // Filter to only show products that actually contain "grill" in title or description
-        filtered = filtered.filter(product => {
-          const title = (product.title || '').toLowerCase();
-          const description = (product.description || '').toLowerCase();
-          return title.includes('grill') || title.includes('grille') || 
-                 description.includes('grill') || description.includes('grille');
+      // Apply comprehensive search filtering for all search terms
+      filtered = filtered.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        // Check if all search words are present in either title or description
+        return searchWords.every(word => {
+          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
+          return regex.test(title) || regex.test(description);
         });
-      }
+      });
     }
     
     return filtered;

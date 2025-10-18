@@ -1,7 +1,5 @@
 // src/features/auth/axiosInstance.js
 import axios from 'axios';
-import {store} from '../../store';
-import { logout, setTokenExpired } from './authSlice';
 import { toast } from 'sonner';
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -10,6 +8,13 @@ const axiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
 });
+
+// Store reference will be set after store is created
+let storeRef = null;
+
+export const setStoreReference = (store) => {
+  storeRef = store;
+};
 
 axiosInstance.interceptors.response.use(
   (response) => response,
@@ -27,9 +32,12 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error); // Pass the original error
       }
 
-      // Clear auth state immediately
-      store.dispatch(logout());
-      store.dispatch(setTokenExpired());
+      // Clear auth state immediately if store is available
+      if (storeRef) {
+        const { logout, setTokenExpired } = require('./authSlice');
+        storeRef.dispatch(logout());
+        storeRef.dispatch(setTokenExpired());
+      }
 
       // Show toast notification
       if (typeof window !== 'undefined') {

@@ -109,22 +109,22 @@ const Media = () => {
     // If a specific product was selected from suggestions, show only that product
     if (selectedProductId) {
       filtered = filtered.filter(product => product._id === selectedProductId);
-    }
-    
-    // Additional filtering for search precision
-    if (searchTerm && searchTerm.trim()) {
+      // Don't apply additional search filtering when a specific product is selected
+    } else if (searchTerm && searchTerm.trim()) {
+      // Apply comprehensive search filtering for all search terms
       const searchWords = searchTerm.toLowerCase().split(/\s+/);
       
-      // If searching for specific parts like "grill", only show products that contain that term
-      if (searchWords.includes('grill') || searchWords.includes('grille')) {
-        // Filter to only show products that actually contain "grill" in title or description
-        filtered = filtered.filter(product => {
-          const title = (product.title || '').toLowerCase();
-          const description = (product.description || '').toLowerCase();
-          return title.includes('grill') || title.includes('grille') || 
-                 description.includes('grill') || description.includes('grille');
+      filtered = filtered.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        // Check if all search words are present in either title or description
+        return searchWords.every(word => {
+          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
+          return regex.test(title) || regex.test(description);
         });
-      }
+      });
     }
 
     setFilteredProducts(filtered);

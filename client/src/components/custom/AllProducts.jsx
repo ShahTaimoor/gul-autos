@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
-import { AddProduct, deleteSingleProduct, fetchProducts } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock } from '@/redux/slices/products/productSlice';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
@@ -98,7 +98,7 @@ const AllProducts = () => {
 
   // Fetch products on component mount
   useEffect(() => {
-    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12 }));
+    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12, stockFilter: 'all' }));
   }, [dispatch]);
 
   // Fetch products with debounced search
@@ -114,7 +114,7 @@ const AllProducts = () => {
       searchTerm: debouncedSearchTerm, 
       page: currentPageLocal, 
       limit: 12,
-      stockFilter: stockFilter === 'all' ? 'active' : stockFilter,
+      stockFilter: stockFilter,
       sortBy: 'az'
     })).then((res) => {
       // Go back one page if current page has no results
@@ -131,7 +131,7 @@ const AllProducts = () => {
     const fetchSuggestions = async () => {
       try {
         const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
+        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=all&sortBy=az`);
         const data = await response.json();
         if (data?.data) {
           setAllProducts(data.data);
@@ -162,16 +162,18 @@ const AllProducts = () => {
     if (searchTerm && searchTerm.trim()) {
       const searchWords = searchTerm.toLowerCase().split(/\s+/);
       
-      // If searching for specific parts like "grill", only show products that contain that term
-      if (searchWords.includes('grill') || searchWords.includes('grille')) {
-        // Filter to only show products that actually contain "grill" in title or description
-        filtered = filtered.filter(product => {
-          const title = (product.title || '').toLowerCase();
-          const description = (product.description || '').toLowerCase();
-          return title.includes('grill') || title.includes('grille') || 
-                 description.includes('grill') || description.includes('grille');
+      // Apply comprehensive search filtering for all search terms
+      filtered = filtered.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        // Check if all search words are present in either title or description
+        return searchWords.every(word => {
+          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
+          return regex.test(title) || regex.test(description);
         });
-      }
+      });
     }
     
     return filtered;
@@ -219,6 +221,21 @@ const AllProducts = () => {
   const handleEdit = useCallback((product) => {
     navigate(`/admin/dashboard/update/${product._id}`);
   }, [navigate]);
+
+  // Handle stock toggle
+  const handleStockToggle = useCallback(async (product) => {
+    try {
+      const newStock = product.stock > 0 ? 0 : 1;
+      await dispatch(updateProductStock({ 
+        id: product._id, 
+        stock: newStock 
+      })).unwrap();
+      
+      toast.success(`Product ${newStock > 0 ? 'restocked' : 'marked as out of stock'}`);
+    } catch (error) {
+      toast.error(error || 'Failed to update stock status');
+    }
+  }, [dispatch]);
 
 
   // Handle page change
@@ -376,24 +393,40 @@ const AllProducts = () => {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(product)}
-                  className="flex-1 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(product)}
+                    className="flex-1 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(product._id)}
+                    className="transition-all duration-200 hover:bg-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
                 
+                {/* Out of Stock Button */}
                 <Button
-                  variant="destructive"
+                  variant={product.stock > 0 ? "outline" : "secondary"}
                   size="sm"
-                  onClick={() => handleDelete(product._id)}
-                  className="transition-all duration-200 hover:bg-red-600"
+                  onClick={() => handleStockToggle(product)}
+                  className={`w-full transition-all duration-200 ${
+                    product.stock > 0 
+                      ? 'hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600' 
+                      : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                  }`}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
                 </Button>
               </div>
             </div>
