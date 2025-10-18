@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -12,6 +12,10 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import LazyImage from '../ui/LazyImage';
+import SearchBar from './SearchBar';
+import Pagination from './Pagination';
+import { trackSearch } from '@/utils/searchAnalytics';
+import { getPopularSearches } from '@/utils/searchAnalytics';
 
 import {
   Trash2,
@@ -20,61 +24,81 @@ import {
   PackageSearch,
   Plus,
   X,
-  Filter,
-  Grid3X3,
-  List,
-  Eye,
-  EyeOff
+  Eye
 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { AddProduct, deleteSingleProduct, fetchProducts } from '@/redux/slices/products/productSlice';
-import { AllCategory, AddCategory, deleteCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { products, status, currentPage, totalPages, totalItems } = useSelector((state) => state.products);
-  const { categories } = useSelector((state) => state.categories);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedProductId, setSelectedProductId] = useState(null); // For specific product from suggestion
   const [stockFilter, setStockFilter] = useState('all');
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [gridView, setGridView] = useState('grid');
-  const [showFilters, setShowFilters] = useState(false);
+  const [gridType, setGridType] = useState('grid2'); // Changed from gridView to gridType to match ProductList
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPageLocal, setCurrentPageLocal] = useState(1);
+  const [previewImage, setPreviewImage] = useState(null);
 
-  // Debounced search to reduce API calls
-  const debouncedSearchTerm = useDebounce(activeSearchTerm, 300);
+  // State for all products (for suggestions)
+  const [allProducts, setAllProducts] = useState([]);
 
-  // Form sta
+  // Search history and popular searches
+  const [searchHistory, setSearchHistory] = useState([]);
+  const [popularSearches, setPopularSearches] = useState([
+    'toyota corolla grill',
+    'honda civic bumper',
+    'nissan altima headlight',
+    'mazda 3 taillight',
+    'hyundai elantra mirror'
+  ]);
+
+  // Debounced search to reduce API calls - reduced delay for better responsiveness
+  const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
+
+  // Form state
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
-    category: '',
     stock: ''
   });
 
-  const [categoryFormData, setCategoryFormData] = useState({
-    name: '',
-    description: ''
-  });
+
+
+  // Load search history and popular searches from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('searchHistory');
+    if (savedHistory) {
+      try {
+        setSearchHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Error parsing search history:', error);
+        setSearchHistory([]);
+      }
+    }
+    
+    // Load popular searches from analytics
+    const analyticsPopularSearches = getPopularSearches();
+    if (analyticsPopularSearches.length > 0) {
+      setPopularSearches(analyticsPopularSearches);
+    }
+  }, []);
 
   // Update active search term when user types
   useEffect(() => {
     setActiveSearchTerm(searchTerm);
   }, [searchTerm]);
 
-  // Fetch products and categories on component mount
+  // Fetch products on component mount
   useEffect(() => {
     dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12 }));
-    dispatch(AllCategory());
   }, [dispatch]);
 
   // Fetch products with debounced search
@@ -86,11 +110,12 @@ const AllProducts = () => {
     }
     
     dispatch(fetchProducts({ 
-      category: selectedCategory, 
+      category: 'all', 
       searchTerm: debouncedSearchTerm, 
       page: currentPageLocal, 
       limit: 12,
-      stockFilter 
+      stockFilter: stockFilter === 'all' ? 'active' : stockFilter,
+      sortBy: 'az'
     })).then((res) => {
       // Go back one page if current page has no results
       if (res.payload?.data?.length === 0 && currentPageLocal > 1) {
@@ -99,15 +124,58 @@ const AllProducts = () => {
     }).catch((error) => {
       console.error('Error fetching products:', error);
     });
-  }, [dispatch, selectedCategory, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm]);
+  }, [dispatch, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm]);
+
+  // Fetch products for suggestions (only once on mount) - increased limit for better suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
+        const data = await response.json();
+        if (data?.data) {
+          setAllProducts(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching products for suggestions:', error);
+      }
+    };
+    fetchSuggestions();
+  }, []);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPageLocal]);
 
-  // Use products directly since filtering is now done on the backend
-  const filteredProducts = products || [];
+  // Products are now sorted on the backend, so we use them directly
+  const sortedProducts = useMemo(() => {
+    let filtered = products.filter((product) => product && product._id);
+    
+    // If a specific product was selected from suggestions, show only that product
+    if (selectedProductId) {
+      filtered = filtered.filter(product => product._id === selectedProductId);
+      return filtered;
+    }
+    
+    // Additional filtering for search precision
+    if (searchTerm && searchTerm.trim()) {
+      const searchWords = searchTerm.toLowerCase().split(/\s+/);
+      
+      // If searching for specific parts like "grill", only show products that contain that term
+      if (searchWords.includes('grill') || searchWords.includes('grille')) {
+        // Filter to only show products that actually contain "grill" in title or description
+        filtered = filtered.filter(product => {
+          const title = (product.title || '').toLowerCase();
+          const description = (product.description || '').toLowerCase();
+          return title.includes('grill') || title.includes('grille') || 
+                 description.includes('grill') || description.includes('grille');
+        });
+      }
+    }
+    
+    return filtered;
+  }, [products, searchTerm, selectedProductId]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -127,27 +195,13 @@ const AllProducts = () => {
       toast.success('Product added successfully!');
       setShowCreateForm(false);
 
-      setFormData({ title: '', description: '', price: '', category: '', stock: '' });
+      setFormData({ title: '', description: '', price: '', stock: '' });
     } catch (error) {
       toast.error(error.message || 'Something went wrong!');
     } finally {
       setIsSubmitting(false);
     }
   }, [dispatch, formData, isSubmitting]);
-
-  // Handle category form submission
-  const handleCategorySubmit = useCallback(async (e) => {
-    e.preventDefault();
-    try {
-      await dispatch(AddCategory(categoryFormData)).unwrap();
-      toast.success('Category created successfully!');
-      setShowCategoryForm(false);
-
-      setCategoryFormData({ name: '', description: '' });
-    } catch (error) {
-      toast.error(error.message || 'Something went wrong!');
-    }
-  }, [dispatch, categoryFormData]);
 
   // Handle product deletion
   const handleDelete = useCallback(async (productId) => {
@@ -161,42 +215,49 @@ const AllProducts = () => {
     }
   }, [dispatch]);
 
-  // Handle category deletion
-  const handleCategoryDelete = useCallback(async (categoryId) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      try {
-        await dispatch(deleteCategory(categoryId)).unwrap();
-        toast.success('Category deleted successfully!');
-      } catch (error) {
-        toast.error(error.message || 'Something went wrong!');
-      }
-    }
-  }, [dispatch]);
-
   // Handle edit product
   const handleEdit = useCallback((product) => {
     navigate(`/admin/dashboard/update/${product._id}`);
   }, [navigate]);
 
-  // Handle edit category
-  const handleCategoryEdit = useCallback((category) => {
-    setSelectedProduct(category);
-    setCategoryFormData({
-      name: category.name,
-      description: category.description
-    });
-    setShowCategoryForm(true);
-  }, []);
 
   // Handle page change
   const handlePageChange = useCallback((page) => {
     setCurrentPageLocal(page);
   }, []);
 
-  // Handle search with debounce
+  // Enhanced handlers for search and interactions
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
+    setSelectedProductId(null); // Clear selected product when typing manually
     setCurrentPageLocal(1); // Reset to first page when searching
+  }, []);
+
+  const handleSearchSubmit = useCallback((term, productId = null) => {
+    setActiveSearchTerm(term);
+    setSelectedProductId(productId); // Set specific product ID if provided (null for Enter key)
+    setCurrentPageLocal(1); // Reset to first page when searching
+    
+    // Track search for analytics
+    if (term.trim()) {
+      trackSearch(term);
+      
+      // Add to search history
+      if (!searchHistory.includes(term.trim())) {
+        const newHistory = [term.trim(), ...searchHistory.slice(0, 4)];
+        setSearchHistory(newHistory);
+        localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+      }
+    }
+  }, [searchHistory]);
+
+
+  const handleGridTypeChange = useCallback((type) => {
+    setGridType(type);
+  }, []);
+
+  const handlePreviewImage = useCallback((image) => {
+    setPreviewImage(image);
   }, []);
 
   // Only show main loader for initial loading, not for search/filter operations
@@ -221,42 +282,21 @@ const AllProducts = () => {
        
       </div>
 
-      {/* Search and Filters */}
+      {/* Enhanced Search and Filters - All in One Line */}
       <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
+        <div className="flex flex-col lg:flex-row gap-4 items-center">
+          {/* Enhanced Search Bar */}
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10 pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-              />
-              {status === 'loading' && products.length === 0 && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Category Filter */}
-          <div className="w-full lg:w-48">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category._id} value={category.name}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchBar
+              searchTerm={searchTerm}
+              onSearchChange={handleSearchChange}
+              onSearchSubmit={handleSearchSubmit}
+              gridType={gridType}
+              onGridTypeChange={handleGridTypeChange}
+              searchHistory={searchHistory}
+              popularSearches={popularSearches}
+              products={allProducts}
+            />
           </div>
 
           {/* Stock Filter */}
@@ -272,51 +312,33 @@ const AllProducts = () => {
               </SelectContent>
             </Select>
           </div>
-
-          {/* View Toggle */}
-          <div className="flex gap-1 p-1 bg-gray-100 rounded-lg">
-            <Button
-              variant={gridView === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setGridView('grid')}
-              className="transition-all duration-200"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={gridView === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setGridView('list')}
-              className="transition-all duration-200"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Enhanced Products Grid */}
       <div className={`grid gap-6 ${
-        gridView === 'grid' 
+        gridType === 'grid2' 
           ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'
       }`}>
-        {filteredProducts.map((product) => (
+        {sortedProducts.map((product) => (
           <Card 
             key={product._id} 
             className={`p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-              gridView === 'list' ? 'flex flex-row items-center gap-4' : ''
+              gridType === 'grid3' ? 'flex flex-row items-center gap-4' : ''
             }`}
           >
             {/* Product Image */}
-            <div className={`relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 ${
-              gridView === 'list' ? 'w-24 h-24 flex-shrink-0' : 'w-full'
-            }`}>
+            <div className={`relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer ${
+              gridType === 'grid3' ? 'w-24 h-24 flex-shrink-0' : 'w-full'
+            }`}
+            onClick={() => handlePreviewImage(product.image || product.picture?.secure_url)}
+            >
               <LazyImage
                 src={product.image || product.picture?.secure_url}
                 alt={product.title}
-                className="w-full h-full"
-                fallback="/placeholder-product.jpg"
+                className="w-full h-full object-cover"
+                fallback="/logo.jpeg"
                 quality={85}
               />
               
@@ -326,26 +348,19 @@ const AllProducts = () => {
                   {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
                 </Badge>
               </div>
+
+              {/* Hover overlay for image preview */}
+              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <Eye className="h-8 w-8 text-white" />
+              </div>
             </div>
 
             {/* Product Info */}
-            <div className={`mt-4 ${gridView === 'list' ? 'flex-1' : ''}`}>
+            <div className={`mt-4 ${gridType === 'grid3' ? 'flex-1' : ''}`}>
               <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
                 {product.title}
               </h3>
               
-              {/* Category Badge */}
-              {product.category && (
-                <div className="mb-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {(product.category.name || product.category)
-                      .split(' ')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                      .join(' ')
-                    }
-                  </Badge>
-                </div>
-              )}
               
               <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                 {product.description}
@@ -386,82 +401,65 @@ const AllProducts = () => {
         ))}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center mt-8 space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageLocal - 1)}
-            disabled={currentPageLocal === 1}
-            className="transition-all duration-200"
-          >
-            Previous
-          </Button>
-          
-          <div className="flex items-center space-x-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPageLocal <= 3) {
-                pageNum = i + 1;
-              } else if (currentPageLocal >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPageLocal - 2 + i;
-              }
-              
-              return (
-                <Button
-                  key={pageNum}
-                  variant={currentPageLocal === pageNum ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(pageNum)}
-                  className="transition-all duration-200"
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handlePageChange(currentPageLocal + 1)}
-            disabled={currentPageLocal === totalPages}
-            className="transition-all duration-200"
-          >
-            Next
-          </Button>
-        </div>
-      )}
+      {/* Enhanced Pagination */}
+      <Pagination
+        currentPage={currentPageLocal}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
       {/* Results Info */}
       <div className="text-center text-sm text-gray-500 mt-4">
-        <>
-          Showing {filteredProducts.length} of {totalItems} products
-          {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
-        </>
+        Showing {sortedProducts.length} of {totalItems} products
+        {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
       </div>
 
       {/* Empty State */}
-      {filteredProducts.length === 0 && (
+      {sortedProducts.length === 0 && (
         <div className="text-center py-12">
           <PackageSearch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
           <p className="text-gray-500 mb-6">
-            {searchTerm || selectedCategory !== 'all' || stockFilter !== 'all'
+            {searchTerm || stockFilter !== 'all'
               ? 'Try adjusting your filters or search terms'
               : 'Get started by adding your first product'}
           </p>
-          {!searchTerm && selectedCategory === 'all' && stockFilter === 'all' && (
+          {!searchTerm && stockFilter === 'all' && (
             <Button onClick={() => setShowCreateForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setPreviewImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product image preview"
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
+              loading="eager"
+            />
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-2 right-2 md:top-4 md:right-4 lg:right-24 xl:right-24 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2 text-sm md:text-base"
+              aria-label="Close preview"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -476,7 +474,7 @@ const AllProducts = () => {
                 size="sm"
                 onClick={() => {
                   setShowCreateForm(false);
-                  setFormData({ title: '', description: '', price: '', category: '', stock: '' });
+                  setFormData({ title: '', description: '', price: '', stock: '' });
                 }}
               >
                 <X className="h-4 w-4" />
@@ -532,21 +530,6 @@ const AllProducts = () => {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                  <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-blue-500">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((category) => (
-                      <SelectItem key={category._id} value={category._id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <Button 
                 type="submit" 
@@ -560,54 +543,6 @@ const AllProducts = () => {
         </div>
       )}
 
-      {/* Create Category Modal */}
-      {showCategoryForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Create Category</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowCategoryForm(false);
-                  setCategoryFormData({ name: '', description: '' });
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <form onSubmit={handleCategorySubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="categoryName">Name</Label>
-                <Input
-                  id="categoryName"
-                  value={categoryFormData.name}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="categoryDescription">Description</Label>
-                <Textarea
-                  id="categoryDescription"
-                  value={categoryFormData.description}
-                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <Button type="submit" className="w-full transition-all duration-200 hover:scale-105">
-                Create Category
-              </Button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
