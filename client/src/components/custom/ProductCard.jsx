@@ -126,7 +126,7 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/5 sm:w-full' : ''
         }`}
       >
-        <h3 className="font-medium text-xs line-clamp-2">
+        <h3 className="font-medium text-xs line-clamp-2 leading-tight">
           {searchTerm ? 
             highlightSearchTerm(
               product.title.split(' ').map(word =>

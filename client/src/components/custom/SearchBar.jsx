@@ -185,8 +185,8 @@ const SearchBar = React.memo(({
   );
 
   return (
-    <div className="px-2 sm:px-0">
-      <div className="flex items-center gap-3">
+    <div className="px-1 sm:px-0">
+      <div className="flex items-center gap-2">
         {/* Search Input */}
         <div className="relative flex-1" ref={suggestionsRef}>
           <div className="relative w-full group">
@@ -198,8 +198,8 @@ const SearchBar = React.memo(({
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
               placeholder=" Search products by name or description..."
-              className="w-full border-2 border-[#FED700] rounded-2xl px-4 py-3 pr-10 text-sm outline-none bg-white/80 backdrop-blur-sm
-              focus:outline-none focus:ring-4 focus:ring-[#EFD700] focus:border-[#FED700]
+              className="w-full border-2 border-[#FED700] rounded-xl px-3 py-2 pr-8 text-sm outline-none bg-white/80 backdrop-blur-sm
+              focus:outline-none focus:ring-2 focus:ring-[#EFD700] focus:border-[#FED700]
               transition-all duration-300 ease-out shadow-sm hover:shadow-md hover:border-[#EFD700]
               placeholder:text-gray-400"
               aria-label="Search products"
@@ -260,7 +260,7 @@ const SearchBar = React.memo(({
         <div className="relative" ref={gridDropdownRef}>
           <button
             onClick={() => setShowGridDropdown(!showGridDropdown)}
-            className="flex items-center gap-2 bg-white/60 shadow-sm backdrop-blur-sm px-3 py-2 rounded-full border border-gray-200 hover:bg-gray-100 transition-all duration-200"
+            className="flex items-center gap-1.5 bg-white/60 shadow-sm backdrop-blur-sm px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100 transition-all duration-200"
             aria-label="Select grid layout"
           >
             {React.createElement(currentGridButton.icon, { className: "h-4 w-4 text-gray-700" })}

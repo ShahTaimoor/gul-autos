@@ -58,33 +58,33 @@ const CartProduct = ({ product, quantity }) => {
   };
 
   return (
-    <div className="flex justify-between items-center gap-3 p-3 border-b">
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center space-x-3">
         <CartImage
           src={image}
           alt={title}
-          className="w-16 h-12 rounded-lg border object-cover"
+          className="w-12 h-12 rounded-md border border-gray-200 object-cover"
           fallback="/fallback.jpg"
           quality={80}
         />
-        <div className="max-w-[200px]">
-          <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">{title}</h4>
-          <p className="text-xs text-gray-500">Rs. {price}</p>
+        <div className="min-w-0 flex-1">
+          <h4 className="font-medium text-sm text-gray-900 line-clamp-2">{title}</h4>
+          <p className="text-sm font-semibold text-blue-600">Rs. {price}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 border rounded-full">
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center border border-gray-200 rounded-md">
           <button
             onClick={handleDecrease}
-            className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200"
+            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={inputQty <= 1}
           >
             −
           </button>
-          <span className="w-8 text-center text-sm font-medium">{inputQty}</span>
+          <span className="w-8 text-center text-sm font-medium text-gray-900">{inputQty}</span>
           <button
             onClick={handleIncrease}
-            className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200"
+            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={inputQty >= stock}
           >
             +
@@ -92,7 +92,7 @@ const CartProduct = ({ product, quantity }) => {
         </div>
         <button
           onClick={handleRemove}
-          className="text-red-500 hover:text-red-600 text-sm"
+          className="text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
         >
           Remove
         </button>
@@ -178,113 +178,114 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-white/40 shadow-lg px-4 py-3 flex items-center justify-between ${isMobile ? 'hidden' : 'block'}`}>
-      {/* Left side: Logo + contact */}
-      <div className="flex items-center gap-6">
-        <Link to="/" className="group">
-          <div className="relative">
-            <img
-              src="/logo.jpeg"
-              alt="GULTRADERS Logo"
-              className="h-16 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm ${isMobile ? 'hidden' : 'block'}`}>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+        <div className="flex items-center justify-between h-14">
+          {/* Left side: Logo + Brand */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="flex-shrink-0">
+                <img
+                  src="/logo.jpeg"
+                  alt="GULTRADERS Logo"
+                  className="h-8 w-auto object-contain"
+                />
+              </div>
+              <div className="hidden sm:block">
+                <div className="text-base font-semibold text-gray-900">GULTRADERS</div>
+                <div className="text-xs text-gray-500">Car Accessories</div>
+              </div>
+            </Link>
           </div>
-        </Link>
-        <div className="hidden md:block">
-          <p className="text-sm text-gray-700 font-semibold">
-            Contact: <span className="text-blue-600 font-bold">+92 311 4000096</span>
-          </p>
-          <p className="text-xs text-gray-500 font-medium">
-            CAR ACCESSORIES
-          </p>
-        </div>
-      </div>
 
-      {/* Center: PWA Install Button */}
-      <div className="flex-1 flex justify-center">
-        {/* PWA Install Button - Always visible on mobile */}
-        {isMobile && (
-          <button
-            onClick={handleInstallClick}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-bold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            title="Install App on Home Screen"
-          >
-            <Smartphone size={18} />
-            <span className="hidden sm:inline">Install App</span>
-            <span className="sm:hidden">Install</span>
-          </button>
-        )}
-
-        {/* PWA Install Button for Desktop - only when available */}
-        {!isMobile && showInstallButton && (
-          <button
-            onClick={handleInstallClick}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
-            title="Install App"
-          >
-            <Download size={16} />
-            <span>Install App</span>
-          </button>
-        )}
-      </div>
-
-      {/* Right side: Cart + Auth controls */}
-      <div className="flex items-center gap-3">
-        {/* Cart Icon */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-all duration-200">
-              <ShoppingCart size={24} className="text-gray-700" />
-              {totalQuantity > 0 && (
-                <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-red-500 text-white border-0 min-w-[20px] h-[20px] flex items-center justify-center">
-                  {totalQuantity}
-                </Badge>
-              )}
-            </button>
-          </SheetTrigger>
-          <SheetContent className="w-full sm:w-[400px]">
-            <SheetHeader>
-              <SheetTitle className="text-lg font-bold">Your Cart</SheetTitle>
-              <SheetDescription>Total Items: {totalQuantity}</SheetDescription>
-            </SheetHeader>
-            <div className="mt-4 max-h-[60vh] overflow-y-auto">
-              {cartItems.length > 0 ? (
-                cartItems.map((item) => (
-                  <CartProduct
-                    key={item.product._id}
-                    product={item.product}
-                    quantity={item.quantity}
-                  />
-                ))
-              ) : (
-                <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
-              )}
+          {/* Center: Contact Info */}
+          <div className="hidden md:flex items-center space-x-6">
+            <div className="flex items-center space-x-1.5">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Online Store</span>
             </div>
-            <SheetFooter className="mt-6">
-              <SheetClose asChild>
-                <Button
-                  onClick={handleBuyNow}
-                  disabled={cartItems.length === 0}
-                  className="w-full"
-                >
-                  Checkout
-                </Button>
-              </SheetClose>
-            </SheetFooter>
-          </SheetContent>
-        </Sheet>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Contact:</span>
+              <span className="ml-1 text-blue-600 font-semibold">+92 311 4000096</span>
+            </div>
+          </div>
 
-        {user == null ? (
-          <Link
-            to="/login"
-            className="px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-          >
-            Login
-          </Link>
-        ) : (
-          <LogoutToggle user={user} />
-        )}
+          {/* Right side: Actions */}
+          <div className="flex items-center space-x-3">
+            {/* PWA Install Button for Desktop */}
+            {!isMobile && showInstallButton && (
+              <button
+                onClick={handleInstallClick}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                title="Install App"
+              >
+                <Download size={16} className="mr-2" />
+                Install App
+              </button>
+            )}
+
+            {/* Cart */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
+                  <ShoppingCart size={20} />
+                  {totalQuantity > 0 && (
+                    <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-blue-600 text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                      {totalQuantity}
+                    </Badge>
+                  )}
+                </button>
+              </SheetTrigger>
+              <SheetContent className="w-full sm:w-[400px]">
+                <SheetHeader>
+                  <SheetTitle className="text-lg font-semibold text-gray-900">Shopping Cart</SheetTitle>
+                  <SheetDescription className="text-gray-600">
+                    {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in your cart
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 max-h-[60vh] overflow-y-auto">
+                  {cartItems.length > 0 ? (
+                    cartItems.map((item) => (
+                      <CartProduct
+                        key={item.product._id}
+                        product={item.product}
+                        quantity={item.quantity}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+                      <p className="text-gray-500">Your cart is empty</p>
+                    </div>
+                  )}
+                </div>
+                <SheetFooter className="mt-6">
+                  <SheetClose asChild>
+                    <Button
+                      onClick={handleBuyNow}
+                      disabled={cartItems.length === 0}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
+                    >
+                      Proceed to Checkout
+                    </Button>
+                  </SheetClose>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+
+            {/* Auth */}
+            {user == null ? (
+              <Link
+                to="/login"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Sign In
+              </Link>
+            ) : (
+              <LogoutToggle user={user} />
+            )}
+          </div>
+        </div>
       </div>
     </nav>
 

@@ -300,8 +300,8 @@ const AllProducts = () => {
       </div>
 
       {/* Enhanced Search and Filters - All in One Line */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-4 items-center">
+      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+        <div className="flex flex-col lg:flex-row gap-3 items-center">
           {/* Enhanced Search Bar */}
           <div className="flex-1">
             <SearchBar
@@ -317,7 +317,7 @@ const AllProducts = () => {
           </div>
 
           {/* Stock Filter */}
-          <div className="w-full lg:w-48">
+          <div className="w-full lg:w-40">
             <Select value={stockFilter} onValueChange={setStockFilter}>
               <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
                 <SelectValue placeholder="Filter by stock" />
@@ -333,7 +333,7 @@ const AllProducts = () => {
       </div>
 
       {/* Enhanced Products Grid */}
-      <div className={`grid gap-6 ${
+      <div className={`grid gap-4 ${
         gridType === 'grid2' 
           ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
           : 'grid-cols-1'

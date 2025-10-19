@@ -269,11 +269,11 @@ const ProductList = () => {
   const loadingProducts = status === 'loading';
 
   return (
-    <div className="max-w-7xl lg:mx-auto lg:px-4 py-6">
+    <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
       {/* Fixed Search and Categories Container */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-gray-200/50 shadow-md pb-2">
         {/* Search and Sort Bar */}
-        <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4 lg:mt-24">
+        <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4 lg:mt-14">
           <SearchBar
             searchTerm={searchTerm}
             onSearchChange={handleSearchChange}
