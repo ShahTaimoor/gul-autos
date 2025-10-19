@@ -17,6 +17,9 @@ const fileFilter = async (req, file, cb) => {
       return cb(new Error('Unsupported image format. Please use JPEG, PNG, or WebP'), false);
     }
 
+    // Log the file type for debugging
+    console.log(`📁 Uploading ${file.mimetype} file: ${(file.size / 1024).toFixed(2)}KB`);
+
     cb(null, true);
   } catch (error) {
     cb(error, false);

@@ -9,17 +9,42 @@ cloudinary.config({
 
 const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
   try {
-    // Convert to WebP with optimization
-    const { convertToWebP } = require('./imageProcessor');
-    const webpBuffer = await convertToWebP(buffer, {
-      quality: 80,
-      width: 1200,
-      height: 1200,
-      fit: 'inside',
-      ...options
-    });
+    const { convertToWebP, getImageMetadata } = require('./imageProcessor');
     
-    console.log(`🔄 Converting image to WebP: ${(buffer.length / 1024).toFixed(2)}KB → ${(webpBuffer.length / 1024).toFixed(2)}KB`);
+    // Check if the image is already WebP format
+    let metadata;
+    let webpBuffer;
+    
+    try {
+      metadata = await getImageMetadata(buffer);
+      const isAlreadyWebP = metadata.format === 'webp';
+      
+      if (isAlreadyWebP) {
+        console.log(`📁 Image is already WebP format: ${(buffer.length / 1024).toFixed(2)}KB`);
+        webpBuffer = buffer;
+      } else {
+        // Convert to WebP with optimization
+        webpBuffer = await convertToWebP(buffer, {
+          quality: 80,
+          width: 1200,
+          height: 1200,
+          fit: 'inside',
+          ...options
+        });
+        
+        console.log(`🔄 Converting image to WebP: ${(buffer.length / 1024).toFixed(2)}KB → ${(webpBuffer.length / 1024).toFixed(2)}KB`);
+      }
+    } catch (metadataError) {
+      // If metadata extraction fails, assume it needs conversion
+      console.log('⚠️ Could not determine image format, attempting conversion...');
+      webpBuffer = await convertToWebP(buffer, {
+        quality: 80,
+        width: 1200,
+        height: 1200,
+        fit: 'inside',
+        ...options
+      });
+    }
     
     const base64String = `data:image/webp;base64,${webpBuffer.toString('base64')}`;
 

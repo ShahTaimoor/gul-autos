@@ -22,9 +22,10 @@ import {
 } from '../ui/select';
 import { AddProduct, importProductsFromExcel, fetchProducts } from '@/redux/slices/products/productSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { FileSpreadsheet, Upload, Download, ImageIcon, X, Search, Eye } from 'lucide-react';
+import { FileSpreadsheet, Upload, Download, ImageIcon, X, Search, Eye, Zap } from 'lucide-react';
 import LazyImage from '../ui/LazyImage';
 import Pagination from '../custom/Pagination';
+import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl, isWebPSupported } from '@/utils/imageConverter';
 
 const CreateProducts = () => {
   const dispatch = useDispatch();
@@ -40,6 +41,9 @@ const CreateProducts = () => {
   const [mediaCurrentPage, setMediaCurrentPage] = useState(1);
   const [mediaTotalPages, setMediaTotalPages] = useState(1);
   const [mediaTotalItems, setMediaTotalItems] = useState(0);
+  const [isConverting, setIsConverting] = useState(false);
+  const [conversionInfo, setConversionInfo] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
   // Initial input values
   const initialValues = {
@@ -66,6 +70,74 @@ const CreateProducts = () => {
 
   const handleCategorySearch = (e) => {
     setCategorySearch(e.target.value);
+  };
+
+  // Handle image file selection and conversion
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check if it's a supported image format
+    if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
+      toast.error('Please select a JPEG, PNG, or WebP image file');
+      return;
+    }
+
+    setIsConverting(true);
+    setConversionInfo(null);
+
+    try {
+      // Get original image info
+      const originalInfo = await getImageInfo(file);
+      
+      // Convert to WebP if it's JPEG or PNG
+      let processedFile = file;
+      if (file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+        processedFile = await convertToWebP(file, {
+          quality: 0.85,
+          maxWidth: 1200,
+          maxHeight: 1200,
+          maintainAspectRatio: true
+        });
+        
+        // Show conversion info
+        const compressionRatio = ((1 - processedFile.size / file.size) * 100).toFixed(1);
+        setConversionInfo({
+          original: {
+            size: (file.size / 1024).toFixed(2),
+            type: file.type.split('/')[1].toUpperCase()
+          },
+          converted: {
+            size: (processedFile.size / 1024).toFixed(2),
+            type: 'WEBP'
+          },
+          compression: compressionRatio
+        });
+
+        toast.success(`Image optimized! Size reduced by ${compressionRatio}%`);
+      } else {
+        toast.info('Image is already in WebP format');
+      }
+
+      // Create preview URL
+      const newPreviewUrl = createPreviewUrl(processedFile);
+      if (previewUrl) {
+        revokePreviewUrl(previewUrl);
+      }
+      setPreviewUrl(newPreviewUrl);
+
+      // Update form state
+      setInputValues(prev => ({
+        ...prev,
+        picture: processedFile
+      }));
+
+    } catch (error) {
+      console.error('Image conversion error:', error);
+      toast.error(`Image conversion failed: ${error.message}`);
+    } finally {
+      setIsConverting(false);
+    }
   };
 
   // Filter categories based on search - show only if search is empty or category starts with search
@@ -150,6 +222,15 @@ const CreateProducts = () => {
     dispatch(AllCategory());
   }, [dispatch]);
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        revokePreviewUrl(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
   // Fetch products for media picker with pagination
   useEffect(() => {
     if (showMediaPicker) {
@@ -192,23 +273,64 @@ const CreateProducts = () => {
     setMediaCurrentPage(1); // Reset to first page when searching
   };
 
-  const handleMediaSelect = (product) => {
+  const handleMediaSelect = async (product) => {
     setSelectedMediaImage(product);
     setShowMediaPicker(false);
-    // Convert the selected product image to a file-like object
+    
     const imageUrl = product.picture?.secure_url || product.image;
     if (imageUrl) {
-      // Create a file object from the image URL
-      fetch(imageUrl)
-        .then(response => response.blob())
-        .then(blob => {
-          const file = new File([blob], `${product.title}.jpg`, { type: blob.type });
-          setInputValues(prev => ({ ...prev, picture: file }));
-        })
-        .catch(error => {
-          console.error('Error fetching image:', error);
-          toast.error('Failed to load selected image');
-        });
+      setIsConverting(true);
+      setConversionInfo(null);
+      
+      try {
+        // Fetch the image
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `${product.title}.jpg`, { type: blob.type });
+        
+        // Convert to WebP if it's not already
+        let processedFile = file;
+        if (file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+          processedFile = await convertToWebP(file, {
+            quality: 0.85,
+            maxWidth: 1200,
+            maxHeight: 1200,
+            maintainAspectRatio: true
+          });
+          
+          // Show conversion info
+          const compressionRatio = ((1 - processedFile.size / file.size) * 100).toFixed(1);
+          setConversionInfo({
+            original: {
+              size: (file.size / 1024).toFixed(2),
+              type: file.type.split('/')[1].toUpperCase()
+            },
+            converted: {
+              size: (processedFile.size / 1024).toFixed(2),
+              type: 'WEBP'
+            },
+            compression: compressionRatio
+          });
+
+          toast.success(`Image optimized! Size reduced by ${compressionRatio}%`);
+        }
+
+        // Create preview URL
+        const newPreviewUrl = createPreviewUrl(processedFile);
+        if (previewUrl) {
+          revokePreviewUrl(previewUrl);
+        }
+        setPreviewUrl(newPreviewUrl);
+
+        // Update form state
+        setInputValues(prev => ({ ...prev, picture: processedFile }));
+        
+      } catch (error) {
+        console.error('Error processing selected image:', error);
+        toast.error('Failed to process selected image');
+      } finally {
+        setIsConverting(false);
+      }
     }
   };
 
@@ -366,41 +488,84 @@ const CreateProducts = () => {
                         id="picture"
                         name="picture"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
                         className="sr-only"
-                        onChange={(e) =>
-                          setInputValues((prev) => ({
-                            ...prev,
-                            picture: e.target.files[0],
-                          }))
-                        }
+                        onChange={handleImageChange}
+                        disabled={isConverting}
                       />
                     </label>
                     <p className="pl-1">or drag and drop</p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    PNG, JPG, GIF, WEBP up to 5MB
+                    PNG, JPG, WEBP up to 5MB • Auto-converted to WebP
                   </p>
                 </div>
               </div>
 
+              {/* Conversion Status */}
+              {isConverting && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-blue-600 animate-pulse" />
+                    <span className="text-sm text-blue-800">Optimizing image...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Conversion Info */}
+              {conversionInfo && (
+                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Image Optimized!</span>
+                  </div>
+                  <div className="text-xs text-green-700 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Original: {conversionInfo.original.size}KB ({conversionInfo.original.type})</span>
+                      <span>→</span>
+                      <span>Optimized: {conversionInfo.converted.size}KB ({conversionInfo.converted.type})</span>
+                    </div>
+                    <div className="text-center font-medium">
+                      {conversionInfo.compression}% size reduction
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Preview */}
               {inputValues.picture && (
                 <div className="mt-2 space-y-2">
-                  <img
-                    src={URL.createObjectURL(inputValues.picture)}
-                    alt="Preview"
-                    className="w-32 h-32 object-cover rounded"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setInputValues((v) => ({ ...v, picture: null }))
-                    }
-                    className="text-sm font-medium text-red-600 hover:text-red-500"
-                  >
-                    Remove Image
-                  </button>
+                  <div className="relative">
+                    <img
+                      src={previewUrl || URL.createObjectURL(inputValues.picture)}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded border"
+                    />
+                    {inputValues.picture.type === 'image/webp' && (
+                      <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
+                        WebP
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputValues((v) => ({ ...v, picture: null }));
+                        setConversionInfo(null);
+                        if (previewUrl) {
+                          revokePreviewUrl(previewUrl);
+                          setPreviewUrl(null);
+                        }
+                      }}
+                      className="text-sm font-medium text-red-600 hover:text-red-500"
+                    >
+                      Remove Image
+                    </button>
+                    {inputValues.picture.type === 'image/webp' && (
+                      <span className="text-xs text-green-600 font-medium">✓ Optimized</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
