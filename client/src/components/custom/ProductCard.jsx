@@ -143,8 +143,9 @@ const ProductCard = React.memo(({
         <div className="flex-grow" />
 
         <div className="flex flex-row gap-2 mt-2">
-          <div className="flex items-center justify-center">
-            <div className="flex w-20 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+          {/* Quantity Controls - 50% width on desktop */}
+          <div className="flex items-center justify-center w-1/2">
+            <div className="flex w-full justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={handleDecrease}
                 className="w-5 h-5 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
@@ -178,10 +179,11 @@ const ProductCard = React.memo(({
             </div>
           </div>
 
+          {/* Add to Cart Button - 50% width on desktop */}
           <button
             onClick={handleAddClick}
             disabled={isDisabled}
-            className={`text-xs flex-1 cursor-pointer px-2 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 ${
+            className={`text-xs w-1/2 cursor-pointer px-2 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 ${
               isInCart
                 ? 'bg-green-600 hover:bg-green-700'
                 : isDisabled
