@@ -142,12 +142,12 @@ const ProductCard = React.memo(({
         
         <div className="flex-grow" />
 
-        <div className="flex flex-col lg:flex-row gap-2 mt-2">
-          <div className="flex items-center justify-center lg:justify-start">
-            <div className="flex w-24 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+        <div className="flex flex-row gap-2 mt-2">
+          <div className="flex items-center justify-center">
+            <div className="flex w-20 justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={handleDecrease}
-                className="w-6 h-6 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-5 h-5 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 disabled={currentQuantity <= 1}
                 aria-label="Decrease quantity"
               >
@@ -160,7 +160,7 @@ const ProductCard = React.memo(({
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                className="w-8 text-center bg-transparent focus:outline-none text-xs py-1 text-black
+                className="w-6 text-center bg-transparent focus:outline-none text-xs py-1 text-black
                 appearance-none 
                 [&::-webkit-outer-spin-button]:appearance-none 
                 [&::-webkit-inner-spin-button]:appearance-none 
@@ -169,7 +169,7 @@ const ProductCard = React.memo(({
 
               <button
                 onClick={handleIncrease}
-                className="w-6 h-6 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-5 h-5 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 disabled={currentQuantity >= product.stock}
                 aria-label="Increase quantity"
               >
@@ -181,7 +181,7 @@ const ProductCard = React.memo(({
           <button
             onClick={handleAddClick}
             disabled={isDisabled}
-            className={`text-xs mt-2 lg:mt-0 lg:flex-1 cursor-pointer px-3 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 ${
+            className={`text-xs flex-1 cursor-pointer px-2 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 ${
               isInCart
                 ? 'bg-green-600 hover:bg-green-700'
                 : isDisabled
@@ -191,11 +191,23 @@ const ProductCard = React.memo(({
             aria-label={isInCart ? 'Added to cart' : 'Add to cart'}
           >
             {isInCart ? (
-              'Added to Cart'
+              <>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="hidden sm:inline">Added to Cart</span>
+                <span className="sm:hidden">Added</span>
+              </>
             ) : isAddingToCart ? (
               <OneLoader size="small" text="Adding..." showText={false} />
             ) : (
-              'Add to Cart'
+              <>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                </svg>
+                <span className="hidden sm:inline">Add to Cart</span>
+                <span className="sm:hidden">Add</span>
+              </>
             )}
           </button>
         </div>
