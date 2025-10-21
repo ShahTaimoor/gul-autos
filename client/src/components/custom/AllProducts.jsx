@@ -23,7 +23,15 @@ import {
   PackageSearch,
   Plus,
   X,
-  Eye
+  Eye,
+  Grid3X3,
+  List,
+  Filter,
+  SortAsc,
+  MoreVertical,
+  Star,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -211,322 +219,545 @@ const AllProducts = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">All Products</h1>
-          <p className="text-gray-600 mt-2">Manage your product catalog</p>
-        </div>
-       
-      </div>
-      
-      {/* Enhanced Search and Filters - All in One Line */}
-      <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-3 items-center">
-          {/* Enhanced Search Bar */}
-          <div className="flex-1">
-            <SearchBar
-              searchTerm={search.searchTerm}
-              onSearchChange={handleSearchChange}
-              onSearchSubmit={handleSearchSubmit}
-              gridType={gridType}
-              onGridTypeChange={handleGridTypeChange}
-              searchHistory={search.searchHistory}
-              popularSearches={search.popularSearches}
-              products={search.allProducts}
-            />
-          </div>
-          {/* Category Filter - Searchable Select */}
-          <div className="w-full lg:w-20">
-            <Select value={search.category} onValueChange={handleCategorySelect}>
-              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
-                <SelectValue placeholder="Search or select category" />
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2">
-                  <Input
-                    placeholder="Search categories..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    className="mb-2"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                {filteredCategories.map((cat) => (
-                  <SelectItem key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-                {filteredCategories.length === 0 && (
-                  <div className="p-2 text-sm text-gray-500 text-center">
-                    No categories found
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Professional Header with Stats */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-blue-600 bg-clip-text text-transparent">
+                Product Management
+              </h1>
+              <p className="text-gray-600 text-lg">Manage your product catalog with advanced tools</p>
+            </div>
+            
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <PackageSearch className="h-5 w-5 text-blue-600" />
                   </div>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Stock Filter */}
-          <div className="w-full lg:w-40">
-            <Select value={search.stockFilter} onValueChange={search.setStockFilter}>
-              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
-                <SelectValue placeholder="Filter by stock" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stock</SelectItem>
-                <SelectItem value="active">In Stock</SelectItem>
-                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-      
-      {/* Enhanced Products Grid */}
-      <div className={`grid gap-4 ${
-        gridType === 'grid2' 
-          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
-          : 'grid-cols-1'
-      }`}>
-        {sortedProducts.map((product) => (
-          <Card 
-            key={product._id} 
-            className={`p-6 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-              gridType === 'grid3' ? 'flex flex-row items-center gap-4' : ''
-            }`}
-          >
-            {/* Product Image */}
-            <div className={`relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer ${
-              gridType === 'grid3' ? 'w-24 h-24 flex-shrink-0' : 'w-full'
-            }`}
-            onClick={() => handlePreviewImage(product.image || product.picture?.secure_url)}
-            >
-              <LazyImage
-                src={product.image || product.picture?.secure_url}
-                alt={product.title}
-                className="w-full h-full object-cover"
-                fallback="/logo.jpeg"
-                quality={85}
-              />
-              
-              {/* Stock Badge */}
-              <div className="absolute top-2 right-2">
-                <Badge variant={product.stock > 0 ? 'default' : 'destructive'}>
-                  {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                </Badge>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{totalItems}</p>
+                    <p className="text-sm text-gray-500">Total Products</p>
+                  </div>
+                </div>
               </div>
-
-              {/* Hover overlay for image preview */}
-              <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <Eye className="h-8 w-8 text-white" />
+              
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {products.filter(p => p.stock > 0).length}
+                    </p>
+                    <p className="text-sm text-gray-500">In Stock</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <BarChart3 className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {products.filter(p => p.stock === 0).length}
+                    </p>
+                    <p className="text-sm text-gray-500">Out of Stock</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <Star className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{categories?.length || 0}</p>
+                    <p className="text-sm text-gray-500">Categories</p>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+        
+        {/* Professional Search and Filter Section */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+            {/* Enhanced Search Bar with Suggestions */}
+            <div className="flex-1 min-w-0">
+              <SearchBar
+                searchTerm={search.searchTerm}
+                onSearchChange={handleSearchChange}
+                onSearchSubmit={handleSearchSubmit}
+                gridType={gridType}
+                onGridTypeChange={handleGridTypeChange}
+                products={products}
+                searchHistory={[]}
+                popularSearches={[]}
+              />
+            </div>
+            
+            {/* Filter Controls - Fixed Alignment */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+              {/* Category Filter */}
+              <div className="flex-1 sm:min-w-[180px]">
+                <Select value={search.category} onValueChange={handleCategorySelect}>
+                  <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <SelectValue placeholder="All Categories" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="p-3">
+                      <Input
+                        placeholder="Search categories..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        className="mb-3"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    {filteredCategories.map((cat) => (
+                      <SelectItem key={cat._id} value={cat._id} className="py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Stock Filter */}
+              <div className="flex-1 sm:min-w-[140px]">
+                <Select value={search.stockFilter} onValueChange={search.setStockFilter}>
+                  <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <SelectValue placeholder="Stock Status" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    <SelectItem value="active">In Stock</SelectItem>
+                    <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Sort Filter */}
+              <div className="flex-1 sm:min-w-[140px]">
+                <Select value={search.sortBy} onValueChange={search.setSortBy}>
+                  <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+                    <div className="flex items-center gap-2">
+                      <SortAsc className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <SelectValue placeholder="Sort By" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="az">Name A-Z</SelectItem>
+                    <SelectItem value="za">Name Z-A</SelectItem>
+                    <SelectItem value="price-low">Price Low-High</SelectItem>
+                    <SelectItem value="price-high">Price High-Low</SelectItem>
+                    <SelectItem value="stock">Stock Level</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      
+        {/* Professional Products Grid */}
+        <div className="space-y-6">
+          {/* Results Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Products ({sortedProducts.length})
+              </h2>
+              {search.searchTerm && (
+                <Badge variant="secondary" className="px-3 py-1">
+                  Search: "{search.searchTerm}"
+                </Badge>
+              )}
+              {search.stockFilter !== 'all' && (
+                <Badge variant="outline" className="px-3 py-1">
+                  {search.stockFilter === 'active' ? 'In Stock' : 'Out of Stock'}
+                </Badge>
+              )}
+            </div>
+            
+          </div>
 
-            {/* Product Info */}
-            <div className={`mt-4 ${gridType === 'grid3' ? 'flex-1' : ''}`}>
-              <h3 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">
-                {product.title}
+          {/* Products Grid */}
+          <div className={`grid gap-6 ${
+            gridType === 'grid2' 
+              ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+              : 'grid-cols-1'
+          }`}>
+            {sortedProducts.map((product) => (
+              <Card 
+                key={product._id} 
+                className={`group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 ${
+                  gridType === 'grid3' ? 'flex flex-row items-center gap-6 p-6' : 'p-0'
+                }`}
+              >
+                {/* Product Image */}
+                <div className={`relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 transition-all duration-500 group-hover:scale-105 cursor-pointer ${
+                  gridType === 'grid3' 
+                    ? 'w-20 h-20 flex-shrink-0 rounded-xl' 
+                    : 'aspect-square w-full'
+                }`}
+                onClick={() => handlePreviewImage(product.image || product.picture?.secure_url)}
+                >
+                  <LazyImage
+                    src={product.image || product.picture?.secure_url}
+                    alt={product.title}
+                    className="w-full h-full object-cover"
+                    fallback="/logo.jpeg"
+                    quality={90}
+                  />
+                  
+                  {/* Stock Badge */}
+                  <div className="absolute top-3 right-3">
+                    <Badge 
+                      variant={product.stock > 0 ? 'default' : 'destructive'}
+                      className={`px-3 py-1 text-xs font-medium ${
+                        product.stock > 0 
+                          ? 'bg-green-100 text-green-800 border-green-200' 
+                          : 'bg-red-100 text-red-800 border-red-200'
+                      }`}
+                    >
+                      {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                    </Badge>
+                  </div>
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                    <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                      <Eye className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Info */}
+                <div className={`${gridType === 'grid3' ? 'flex-1 space-y-3' : 'p-6 space-y-4'}`}>
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-lg text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+                      {product.title}
+                    </h3>
+                    
+                    <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                      {product.description}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <span className="text-2xl font-bold text-gray-900">
+                        PKR {product.price?.toLocaleString()}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                        <span className="text-sm text-gray-500">
+                          Stock: {product.stock}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(product)}
+                        className="flex-1 h-10 rounded-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(product._id)}
+                        className="h-10 px-3 rounded-lg border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Stock Toggle */}
+                    <Button
+                      variant={product.stock > 0 ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => handleStockToggle(product)}
+                      className={`w-full h-10 rounded-lg transition-all duration-200 ${
+                        product.stock > 0 
+                          ? 'border-2 border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300' 
+                          : 'bg-green-600 hover:bg-green-700 text-white'
+                      }`}
+                    >
+                      {product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Professional Pagination */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mt-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-600">
+              Showing <span className="font-semibold text-gray-900">{pagination.startItem}</span> to{' '}
+              <span className="font-semibold text-gray-900">{pagination.endItem}</span> of{' '}
+              <span className="font-semibold text-gray-900">{totalItems}</span> products
+              {pagination.totalPages > 1 && (
+                <span className="ml-2 text-gray-500">
+                  (Page {pagination.currentPage} of {pagination.totalPages})
+                </span>
+              )}
+            </div>
+            
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        </div>
+
+        {/* Professional Empty State */}
+        {sortedProducts.length === 0 && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <PackageSearch className="h-12 w-12 text-blue-600" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                {search.searchTerm || search.stockFilter !== 'all' 
+                  ? 'No products match your criteria' 
+                  : 'No products found'
+                }
               </h3>
               
-              
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                {product.description}
+              <p className="text-gray-600 mb-8 leading-relaxed">
+                {search.searchTerm || search.stockFilter !== 'all'
+                  ? 'Try adjusting your search terms or filters to find what you\'re looking for.'
+                  : 'Get started by adding your first product to build your catalog.'
+                }
               </p>
               
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl font-bold text-blue-600">
-                  PKR {product.price}
-                </span>
-                <span className="text-sm text-gray-500">
-                  Stock: {product.stock}
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {search.searchTerm || search.stockFilter !== 'all' ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        search.clearSearch();
+                        search.setStockFilter('all');
+                      }}
+                      className="px-6 py-3 rounded-xl"
+                    >
+                      Clear Filters
+                    </Button>
+                    <Button
+                      onClick={() => setShowCreateForm(true)}
+                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </>
+                ) : (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEdit(product)}
-                    className="flex-1 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                    onClick={() => setShowCreateForm(true)}
+                    className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg"
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create Your First Product
                   </Button>
-                  
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(product._id)}
-                    className="transition-all duration-200 hover:bg-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Out of Stock Button */}
-                <Button
-                  variant={product.stock > 0 ? "outline" : "secondary"}
-                  size="sm"
-                  onClick={() => handleStockToggle(product)}
-                  className={`w-full transition-all duration-200 ${
-                    product.stock > 0 
-                      ? 'hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600' 
-                      : 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                  }`}
-                >
-                  {product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
-                </Button>
+                )}
               </div>
             </div>
-          </Card>
-        ))}
-      </div>
+          </div>
+        )}
 
-      {/* Enhanced Pagination */}
-      <Pagination
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        onPageChange={handlePageChange}
-      />
-
-      {/* Results Info */}
-      <div className="text-center text-sm text-gray-500 mt-4">
-        Showing {pagination.startItem}-{pagination.endItem} of {totalItems} products
-        {pagination.totalPages > 1 && ` (Page ${pagination.currentPage} of ${pagination.totalPages})`}
-      </div>
-
-      {/* Empty State */}
-      {sortedProducts.length === 0 && (
-        <div className="text-center py-12">
-          <PackageSearch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-          <p className="text-gray-500 mb-6">
-            {search.searchTerm || search.stockFilter !== 'all'
-              ? 'Try adjusting your filters or search terms'
-              : 'Get started by adding your first product'}
-          </p>
-          {!search.searchTerm && search.stockFilter === 'all' && (
-            <Button onClick={() => setShowCreateForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Image Preview Modal */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
-          onClick={() => setPreviewImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Product image preview"
-        >
+        {/* Professional Image Preview Modal */}
+        {previewImage && (
           <div
-            className="relative w-full max-w-5xl max-h-[90vh] flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center px-4"
+            onClick={() => setPreviewImage(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Product image preview"
           >
-            <img
-              src={previewImage}
-              alt="Preview"
-              className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
-              loading="eager"
-            />
-            <button
-              onClick={() => setPreviewImage(null)}
-              className="absolute top-2 right-2 md:top-4 md:right-4 lg:right-24 xl:right-24 bg-black/70 hover:bg-red-500 text-white rounded-full p-1 px-2 text-sm md:text-base"
-              aria-label="Close preview"
+            <div
+              className="relative w-full max-w-6xl max-h-[95vh] flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
             >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Create Product Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Create Product</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowCreateForm(false);
-                  setFormData({ title: '', description: '', price: '', stock: '' });
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <img
+                  src={previewImage}
+                  alt="Product Preview"
+                  className="object-contain w-full h-auto max-h-[90vh]"
+                  loading="eager"
+                />
+                <button
+                  onClick={() => setPreviewImage(null)}
+                  className="absolute top-4 right-4 bg-white/90 hover:bg-red-500 hover:text-white text-gray-700 rounded-full p-2 transition-all duration-200 shadow-lg"
+                  aria-label="Close preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                  className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    required
-                    className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    required
-                    className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-
-              <Button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Processing...' : 'Create Product'}
-              </Button>
-            </form>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* Professional Create Product Modal */}
+        {showCreateForm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Create New Product</h2>
+                    <p className="text-blue-100 mt-1">Add a new product to your catalog</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setFormData({ title: '', description: '', price: '', stock: '' });
+                    }}
+                    className="text-white hover:bg-white/20 rounded-full p-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-8 max-h-[calc(95vh-120px)] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="title" className="text-sm font-semibold text-gray-700">
+                        Product Title *
+                      </Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        placeholder="Enter product title"
+                        required
+                        className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="price" className="text-sm font-semibold text-gray-700">
+                        Price (PKR) *
+                      </Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="0.00"
+                        required
+                        className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
+                      Description *
+                    </Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Describe your product..."
+                      required
+                      rows={4}
+                      className="border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 resize-none"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="stock" className="text-sm font-semibold text-gray-700">
+                      Stock Quantity *
+                    </Label>
+                    <Input
+                      id="stock"
+                      type="number"
+                      value={formData.stock}
+                      onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                      placeholder="Enter stock quantity"
+                      required
+                      className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowCreateForm(false);
+                        setFormData({ title: '', description: '', price: '', stock: '' });
+                      }}
+                      className="flex-1 h-12 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-200"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="flex-1 h-12 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Creating...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Create Product
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

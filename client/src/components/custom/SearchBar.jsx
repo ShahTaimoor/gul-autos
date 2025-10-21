@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { Input } from '../ui/input';
-import { LayoutPanelLeft, Grid2x2, ChevronDown, X } from 'lucide-react';
+import { LayoutPanelLeft, Grid2x2, ChevronDown, X, Search } from 'lucide-react';
 import { trackSearch } from '@/utils/searchAnalytics';
 
 const SearchBar = React.memo(({ 
@@ -191,11 +191,12 @@ const SearchBar = React.memo(({
   );
 
   return (
-    <div className="px-1 sm:px-0">
+    <div className="w-full">
       <div className="flex items-center gap-2">
         {/* Search Input */}
         <div className="relative flex-1" ref={suggestionsRef}>
           <div className="relative w-full group">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               ref={searchInputRef}
               id="search"
@@ -203,11 +204,8 @@ const SearchBar = React.memo(({
               value={searchTerm}
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
-              placeholder=" Search products by name or description..."
-              className="w-full border-2 border-[#FED700] rounded-xl px-3 py-2 pr-8 text-sm outline-none bg-white/80 backdrop-blur-sm
-              focus:outline-none focus:ring-2 focus:ring-[#EFD700] focus:border-[#FED700]
-              transition-all duration-300 ease-out shadow-sm hover:shadow-md hover:border-[#EFD700]
-              placeholder:text-gray-400"
+              placeholder="Search products by name, description, or category"
+              className="w-full pl-10 pr-8 h-12 text-base border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
               aria-label="Search products"
             />
             {/* Clear Search Button */}
