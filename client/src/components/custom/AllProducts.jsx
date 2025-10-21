@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useSearch } from '@/hooks/use-search';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -14,8 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import LazyImage from '../ui/LazyImage';
 import SearchBar from './SearchBar';
 import Pagination from './Pagination';
-import { trackSearch } from '@/utils/searchAnalytics';
-import { getPopularSearches } from '@/utils/searchAnalytics';
 
 import {
   Trash2,
@@ -37,31 +35,22 @@ const AllProducts = () => {
   const { products, status, currentPage, totalPages, totalItems } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
-  const [selectedProductId, setSelectedProductId] = useState(null); // For specific product from suggestion
-  const [stockFilter, setStockFilter] = useState('all');
-  const [category, setCategory] = useState('all');
+  // Use the search hook to eliminate duplication
+  const search = useSearch({
+    initialCategory: 'all',
+    initialPage: 1,
+    initialLimit: 12,
+    initialStockFilter: 'all',
+    initialSortBy: 'az'
+  });
+
+  // Local state for UI-specific functionality
   const [categorySearch, setCategorySearch] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [gridType, setGridType] = useState('grid2'); // Changed from gridView to gridType to match ProductList
+  const [gridType, setGridType] = useState('grid2');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentPageLocal, setCurrentPageLocal] = useState(1);
   const [previewImage, setPreviewImage] = useState(null);
-
-  // State for all products (for suggestions)
-  const [allProducts, setAllProducts] = useState([]);
-
-  // Search history and popular searches
-  const [searchHistory, setSearchHistory] = useState([]);
-  const [popularSearches, setPopularSearches] = useState([
-    'toyota corolla grill',
-    'honda civic bumper',
-    'nissan altima headlight',
-    'mazda 3 taillight',
-    'hyundai elantra mirror'
-  ]);
 
   // Memoized combined categories
   const combinedCategories = useMemo(() => [
@@ -77,9 +66,6 @@ const AllProducts = () => {
     );
   }, [combinedCategories, categorySearch]);
 
-  // Debounced search to reduce API calls - reduced delay for better responsiveness
-  const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
-
   // Form state
   const [formData, setFormData] = useState({
     title: '',
@@ -87,32 +73,6 @@ const AllProducts = () => {
     price: '',
     stock: ''
   });
-
-
-
-  // Load search history and popular searches from localStorage on component mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('searchHistory');
-    if (savedHistory) {
-      try {
-        setSearchHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error('Error parsing search history:', error);
-        setSearchHistory([]);
-      }
-    }
-    
-    // Load popular searches from analytics
-    const analyticsPopularSearches = getPopularSearches();
-    if (analyticsPopularSearches.length > 0) {
-      setPopularSearches(analyticsPopularSearches);
-    }
-  }, []);
-
-  // Update active search term when user types
-  useEffect(() => {
-    setActiveSearchTerm(searchTerm);
-  }, [searchTerm]);
 
   // Fetch categories
   useEffect(() => {
@@ -124,83 +84,20 @@ const AllProducts = () => {
     dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12, stockFilter: 'all' }));
   }, [dispatch]);
 
-  // Fetch products with debounced search
+  // Fetch products with debounced search using the hook
   useEffect(() => {
-    // Reset to page 1 when search term changes
-    if (debouncedSearchTerm !== activeSearchTerm && currentPageLocal > 1) {
-      setCurrentPageLocal(1);
-      return;
-    }
-    
-    dispatch(fetchProducts({ 
-      category: category, 
-      searchTerm: debouncedSearchTerm, 
-      page: currentPageLocal, 
-      limit: 12,
-      stockFilter: stockFilter,
-      sortBy: 'az'
-    })).then((res) => {
-      // Go back one page if current page has no results
-      if (res.payload?.data?.length === 0 && currentPageLocal > 1) {
-        setCurrentPageLocal((prev) => prev - 1);
-      }
-    }).catch((error) => {
-      console.error('Error fetching products:', error);
-    });
-  }, [dispatch, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm, category]);
-
-  // Fetch products for suggestions (only once on mount) - increased limit for better suggestions
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=all&sortBy=az`);
-        const data = await response.json();
-        if (data?.data) {
-          setAllProducts(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching products for suggestions:', error);
-      }
-    };
-    fetchSuggestions();
-  }, []);
+    search.handleSearch(search.debouncedSearchTerm);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy]);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPageLocal]);
+  }, [search.page]);
 
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
-    let filtered = products.filter((product) => product && product._id);
-    
-    // If a specific product was selected from suggestions, show only that product
-    if (selectedProductId) {
-      filtered = filtered.filter(product => product._id === selectedProductId);
-      return filtered;
-    }
-    
-    // Additional filtering for search precision
-    if (searchTerm && searchTerm.trim()) {
-      const searchWords = searchTerm.toLowerCase().split(/\s+/);
-      
-      // Apply comprehensive search filtering for all search terms
-      filtered = filtered.filter(product => {
-        const title = (product.title || '').toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        
-        // Check if all search words are present in either title or description
-        return searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(title) || regex.test(description);
-        });
-      });
-    }
-    
-    return filtered;
-  }, [products, searchTerm, selectedProductId]);
+    return search.filterProducts(products, search.searchTerm, search.selectedProductId);
+  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -263,43 +160,24 @@ const AllProducts = () => {
 
   // Handle page change
   const handlePageChange = useCallback((page) => {
-    setCurrentPageLocal(page);
-  }, []);
+    search.setPage(page);
+  }, [search]);
 
   // Handle category selection
   const handleCategorySelect = useCallback((categoryId) => {
-    setCategory(categoryId);
+    search.setCategory(categoryId);
     setCategorySearch(''); // Clear category search
-    setSearchTerm(''); // Clear search when selecting category
-    setActiveSearchTerm(''); // Clear active search
-    setSelectedProductId(null); // Clear selected product
-    setCurrentPageLocal(1); // Reset to first page when changing category
-  }, []);
+    search.clearSearch(); // Clear search when selecting category
+  }, [search]);
 
   // Enhanced handlers for search and interactions
   const handleSearchChange = useCallback((value) => {
-    setSearchTerm(value);
-    setSelectedProductId(null); // Clear selected product when typing manually
-    setCurrentPageLocal(1); // Reset to first page when searching
-  }, []);
+    search.handleSearchChange(value);
+  }, [search]);
 
   const handleSearchSubmit = useCallback((term, productId = null) => {
-    setActiveSearchTerm(term);
-    setSelectedProductId(productId); // Set specific product ID if provided (null for Enter key)
-    setCurrentPageLocal(1); // Reset to first page when searching
-    
-    // Track search for analytics
-    if (term.trim()) {
-      trackSearch(term);
-      
-      // Add to search history
-      if (!searchHistory.includes(term.trim())) {
-        const newHistory = [term.trim(), ...searchHistory.slice(0, 4)];
-        setSearchHistory(newHistory);
-        localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-      }
-    }
-  }, [searchHistory]);
+    search.handleSearchWithTracking(term, productId);
+  }, [search]);
 
 
   const handleGridTypeChange = useCallback((type) => {
@@ -338,19 +216,19 @@ const AllProducts = () => {
           {/* Enhanced Search Bar */}
           <div className="flex-1">
             <SearchBar
-              searchTerm={searchTerm}
+              searchTerm={search.searchTerm}
               onSearchChange={handleSearchChange}
               onSearchSubmit={handleSearchSubmit}
               gridType={gridType}
               onGridTypeChange={handleGridTypeChange}
-              searchHistory={searchHistory}
-              popularSearches={popularSearches}
-              products={allProducts}
+              searchHistory={search.searchHistory}
+              popularSearches={search.popularSearches}
+              products={search.allProducts}
             />
           </div>
           {/* Category Filter - Searchable Select */}
           <div className="w-full lg:w-20">
-            <Select value={category} onValueChange={handleCategorySelect}>
+            <Select value={search.category} onValueChange={handleCategorySelect}>
               <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
                 <SelectValue placeholder="Search or select category" />
               </SelectTrigger>
@@ -380,7 +258,7 @@ const AllProducts = () => {
           
           {/* Stock Filter */}
           <div className="w-full lg:w-40">
-            <Select value={stockFilter} onValueChange={setStockFilter}>
+            <Select value={search.stockFilter} onValueChange={search.setStockFilter}>
               <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
                 <SelectValue placeholder="Filter by stock" />
               </SelectTrigger>
@@ -498,7 +376,7 @@ const AllProducts = () => {
 
       {/* Enhanced Pagination */}
       <Pagination
-        currentPage={currentPageLocal}
+        currentPage={search.page}
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
@@ -506,7 +384,7 @@ const AllProducts = () => {
       {/* Results Info */}
       <div className="text-center text-sm text-gray-500 mt-4">
         Showing {sortedProducts.length} of {totalItems} products
-        {totalPages > 1 && ` (Page ${currentPageLocal} of ${totalPages})`}
+        {totalPages > 1 && ` (Page ${search.page} of ${totalPages})`}
       </div>
 
       {/* Empty State */}
@@ -515,11 +393,11 @@ const AllProducts = () => {
           <PackageSearch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
           <p className="text-gray-500 mb-6">
-            {searchTerm || stockFilter !== 'all'
+            {search.searchTerm || search.stockFilter !== 'all'
               ? 'Try adjusting your filters or search terms'
               : 'Get started by adding your first product'}
           </p>
-          {!searchTerm && stockFilter === 'all' && (
+          {!search.searchTerm && search.stockFilter === 'all' && (
             <Button onClick={() => setShowCreateForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Product

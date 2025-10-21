@@ -5,98 +5,36 @@ import { Button } from '../components/ui/button';
 import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
 import SearchBar from '../components/custom/SearchBar';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useSearch } from '@/hooks/use-search';
 import { Eye, Download, Filter, Upload, FileDown, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { trackSearch } from '@/utils/searchAnalytics';
-import { getPopularSearches } from '@/utils/searchAnalytics';
 
 const Media = () => {
   const dispatch = useDispatch();
   const { products, status, totalPages, currentPage } = useSelector((state) => state.products);
   
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState('');
-  const [selectedProductId, setSelectedProductId] = useState(null);
+  // Use the search hook to eliminate duplication
+  const search = useSearch({
+    initialCategory: 'all',
+    initialPage: 1,
+    initialLimit: 24,
+    initialStockFilter: 'all',
+    initialSortBy: 'az'
+  });
+
+  // Local state for UI-specific functionality
   const [previewImage, setPreviewImage] = useState(null);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [currentPageLocal, setCurrentPageLocal] = useState(1);
-  const [limit] = useState(24);
-  const [allProducts, setAllProducts] = useState([]);
-  const [searchHistory, setSearchHistory] = useState([]);
-  const [popularSearches, setPopularSearches] = useState([
-    'toyota corolla grill',
-    'honda civic bumper',
-    'nissan altima headlight',
-    'mazda 3 taillight',
-    'hyundai elantra mirror'
-  ]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Debounced search to reduce API calls - reduced delay for better responsiveness
-  const debouncedSearchTerm = useDebounce(activeSearchTerm, 300);
-
-  // Load search history and popular searches from localStorage on component mount
+  // Fetch products with debounced search using the hook
   useEffect(() => {
-    const savedHistory = localStorage.getItem('searchHistory');
-    if (savedHistory) {
-      try {
-        setSearchHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error('Error parsing search history:', error);
-        setSearchHistory([]);
-      }
-    }
-    
-    // Load popular searches from analytics
-    const analyticsPopularSearches = getPopularSearches();
-    if (analyticsPopularSearches.length > 0) {
-      setPopularSearches(analyticsPopularSearches);
-    }
-  }, []);
-
-  // Update active search term when user types
-  useEffect(() => {
-    setActiveSearchTerm(searchTerm);
-  }, [searchTerm]);
-
-  // Fetch products with debounced search
-  useEffect(() => {
-    // Reset to page 1 when search term changes
-    if (debouncedSearchTerm !== activeSearchTerm && currentPageLocal > 1) {
-      setCurrentPageLocal(1);
-      return;
-    }
-    
-    dispatch(fetchProducts({ 
-      category: 'all', 
-      searchTerm: debouncedSearchTerm, 
-      page: currentPageLocal, 
-      limit,
-      stockFilter: 'active'
-    }));
-  }, [dispatch, debouncedSearchTerm, currentPageLocal, limit, activeSearchTerm]);
-
-  // Fetch products for suggestions (only once on mount)
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
-        const data = await response.json();
-        if (data?.data) {
-          setAllProducts(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching products for suggestions:', error);
-      }
-    };
-    fetchSuggestions();
-  }, []);
+    search.handleSearch(search.debouncedSearchTerm);
+  }, [search.debouncedSearchTerm, search.page, search.category]);
 
   // Filter products to show only those with images and apply search filtering
   useEffect(() => {
@@ -106,29 +44,10 @@ const Media = () => {
       (product.picture?.secure_url || product.image)
     );
 
-    // If a specific product was selected from suggestions, show only that product
-    if (selectedProductId) {
-      filtered = filtered.filter(product => product._id === selectedProductId);
-      // Don't apply additional search filtering when a specific product is selected
-    } else if (searchTerm && searchTerm.trim()) {
-      // Apply comprehensive search filtering for all search terms
-      const searchWords = searchTerm.toLowerCase().split(/\s+/);
-      
-      filtered = filtered.filter(product => {
-        const title = (product.title || '').toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        
-        // Check if all search words are present in either title or description
-        return searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(title) || regex.test(description);
-        });
-      });
-    }
-
+    // Apply search filtering using the hook
+    filtered = search.filterProducts(filtered, search.searchTerm, search.selectedProductId);
     setFilteredProducts(filtered);
-  }, [products, searchTerm, selectedProductId]);
+  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
 
   const handlePreviewImage = useCallback((imageUrl) => {
     setPreviewImage(imageUrl);
@@ -153,34 +72,16 @@ const Media = () => {
   }, []);
 
   const handleSearchChange = useCallback((value) => {
-    setSearchTerm(value);
-    setSelectedProductId(null); // Clear selected product when typing manually
-    setCurrentPageLocal(1); // Reset to first page when searching
-  }, []);
+    search.handleSearchChange(value);
+  }, [search]);
 
   const handleSearchSubmit = useCallback((term, productId = null) => {
-    setActiveSearchTerm(term);
-    setSelectedProductId(productId); // Set specific product ID if provided (null for Enter key)
-    setCurrentPageLocal(1); // Reset to first page when searching
-    
-    // Track search for analytics
-    if (term.trim()) {
-      trackSearch(term);
-      
-      // Add to search history
-      if (!searchHistory.includes(term.trim())) {
-        const newHistory = [term.trim(), ...searchHistory.slice(0, 4)];
-        setSearchHistory(newHistory);
-        localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-      }
-    }
-  }, [searchHistory]);
-
-
+    search.handleSearchWithTracking(term, productId);
+  }, [search]);
 
   const handlePageChange = useCallback((page) => {
-    setCurrentPageLocal(page);
-  }, []);
+    search.setPage(page);
+  }, [search]);
 
   // Import functionality
   const handleFileSelect = useCallback((e) => {
@@ -391,12 +292,12 @@ const Media = () => {
           {/* Enhanced Search Bar */}
           <div className="flex-1">
             <SearchBar
-              searchTerm={searchTerm}
+              searchTerm={search.searchTerm}
               onSearchChange={handleSearchChange}
               onSearchSubmit={handleSearchSubmit}
-              searchHistory={searchHistory}
-              popularSearches={popularSearches}
-              products={allProducts}
+              searchHistory={search.searchHistory}
+              popularSearches={search.popularSearches}
+              products={search.allProducts}
             />
           </div>
 
@@ -427,7 +328,7 @@ const Media = () => {
       <div className="mb-6">
         <p className="text-sm text-gray-600">
           Showing {filteredProducts.length} product images
-          {searchTerm && ` for "${searchTerm}"`}
+          {search.searchTerm && ` for "${search.searchTerm}"`}
         </p>
       </div>
 
@@ -488,7 +389,7 @@ const Media = () => {
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
           <p className="text-gray-500">
-            {searchTerm
+            {search.searchTerm
               ? 'Try adjusting your search criteria'
               : 'No product images available'}
           </p>
@@ -499,7 +400,7 @@ const Media = () => {
       {filteredProducts.length > 0 && totalPages > 1 && (
         <div className="mt-8">
           <Pagination
-            currentPage={currentPageLocal}
+            currentPage={search.page}
             totalPages={totalPages}
             onPageChange={handlePageChange}
           />

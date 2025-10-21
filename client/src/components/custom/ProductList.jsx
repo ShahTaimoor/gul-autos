@@ -9,26 +9,27 @@ import CategorySwiper from './CategorySwiper';
 import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
-import { useDebounce } from '@/hooks/use-debounce';
-import { getPopularSearches } from '@/utils/searchAnalytics';
+import { useSearch } from '@/hooks/use-search';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
 
 const ProductList = () => {
-  // State management
-  const [category, setCategory] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
-  const [selectedProductId, setSelectedProductId] = useState(null); // For specific product from suggestion
+  // Use the search hook to eliminate duplication
+  const search = useSearch({
+    initialCategory: 'all',
+    initialPage: 1,
+    initialLimit: 24,
+    initialStockFilter: 'active',
+    initialSortBy: 'az'
+  });
+
+  // Local state for UI-specific functionality
   const [quantities, setQuantities] = useState({});
   const [addingProductId, setAddingProductId] = useState(null);
   const [gridType, setGridType] = useState('grid2');
-  const [sortOrder, setSortOrder] = useState('az');
-  const [page, setPage] = useState(1);
   const [previewImage, setPreviewImage] = useState(null);
   
-  const limit = 24;
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -38,47 +39,11 @@ const ProductList = () => {
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
 
-  // State for all products (for suggestions)
-  const [allProducts, setAllProducts] = useState([]);
-
-  // Debounced search to reduce API calls - reduced delay for better responsiveness
-  const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
-  const [enterSuggestionIds, setEnterSuggestionIds] = useState([]);
-
-  // Search history and popular searches
-  const [searchHistory, setSearchHistory] = useState([]);
-  const [popularSearches, setPopularSearches] = useState([
-    'toyota corolla grill',
-    'honda civic bumper',
-    'nissan altima headlight',
-    'mazda 3 taillight',
-    'hyundai elantra mirror'
-  ]);
-
   // Memoized combined categories
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
     ...(categories || [])
   ], [categories]);
-
-  // Load search history and popular searches from localStorage on component mount
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('searchHistory');
-    if (savedHistory) {
-      try {
-        setSearchHistory(JSON.parse(savedHistory));
-      } catch (error) {
-        console.error('Error parsing search history:', error);
-        setSearchHistory([]);
-      }
-    }
-    
-    // Load popular searches from analytics
-    const analyticsPopularSearches = getPopularSearches();
-    if (analyticsPopularSearches.length > 0) {
-      setPopularSearches(analyticsPopularSearches);
-    }
-  }, []);
 
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
@@ -89,62 +54,17 @@ const ProductList = () => {
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page]);
+  }, [search.page]);
 
-  // Fetch products with debounced search
+  // Fetch products with debounced search using the hook
   useEffect(() => {
-    // If we have explicit suggestion/product IDs, fetch strictly by those IDs
-    const hasSuggestionIds = enterSuggestionIds.length > 0;
-    const searchCategory = hasSuggestionIds ? 'all' : (debouncedSearchTerm ? 'all' : category);
-    const searchParam = hasSuggestionIds ? '' : debouncedSearchTerm;
-    
-    // Reset to page 1 when search term changes
-    if (debouncedSearchTerm !== activeSearchTerm && page > 1) {
-      setPage(1);
-      return;
-    }
-    
-    const productIdsParam = hasSuggestionIds ? enterSuggestionIds.join(',') : undefined;
-
-    dispatch(fetchProducts({ 
-      category: searchCategory, 
-      searchTerm: searchParam, 
-      page, 
-      limit, 
-      stockFilter: 'active',
-      sortBy: sortOrder,
-      productIds: productIdsParam
-    })).then((res) => {
-      // Go back one page if current page has no results
-      if (res.payload?.data?.length === 0 && page > 1) {
-        setPage((prev) => prev - 1);
-      }
-    }).catch((error) => {
-      console.error('Error fetching products:', error);
-    });
-  }, [dispatch, category, debouncedSearchTerm, page, limit, sortOrder, enterSuggestionIds]);
+    search.handleSearch(search.debouncedSearchTerm);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.sortBy, search.enterSuggestionIds]);
 
   // Fetch categories
   useEffect(() => {
     dispatch(AllCategory());
   }, [dispatch]);
-
-  // Fetch products for suggestions (only once on mount) - increased limit for better suggestions
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
-        const data = await response.json();
-        if (data?.data) {
-          setAllProducts(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching products for suggestions:', error);
-      }
-    };
-    fetchSuggestions();
-  }, []);
 
   // Initialize quantities when products change
   useEffect(() => {
@@ -191,65 +111,34 @@ const ProductList = () => {
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
-    setCategory(categoryId);
-    setSearchTerm(''); // Clear search when selecting category
-    setActiveSearchTerm(''); // Clear active search
-    setSelectedProductId(null); // Clear selected product
-    setEnterSuggestionIds([]); // Clear suggestion IDs when changing category
-    setPage(1); // Reset to first page when changing category
+    search.setCategory(categoryId);
+    search.clearSearch(); // Clear search when selecting category
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, []);
+  }, [search]);
 
   // Add function to clear selected product and return to normal view
   const handleClearSelectedProduct = useCallback(() => {
-    setSelectedProductId(null);
-    setSearchTerm('');
-    setActiveSearchTerm('');
-    setEnterSuggestionIds([]);
-  }, []);
-
-  const handleSearchChange = useCallback((value) => {
-    setSearchTerm(value);
-    setSelectedProductId(null); // Clear selected product when typing manually
-    setEnterSuggestionIds([]); // Clear suggestion IDs when typing manually
-    setPage(1); // Reset to first page when searching
-  }, []);
+    search.setSelectedProductId(null);
+    search.clearSearch();
+  }, [search]);
 
   const handleGridTypeChange = useCallback((type) => {
     setGridType(type);
   }, []);
 
   const handleSortChange = useCallback((order) => {
-    setSortOrder(order);
-    setPage(1); // Reset to first page when changing sort order
-  }, []);
+    search.setSortBy(order);
+  }, [search]);
 
   const handlePageChange = useCallback((newPage) => {
-    setPage(newPage);
-  }, []);
+    search.setPage(newPage);
+  }, [search]);
 
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
-  }, []);
-
-  // Handle search submission
-  const handleSearchSubmit = useCallback((term, productId = null, suggestionIds = []) => {
-    setActiveSearchTerm(term);
-    // Clear any previous selection
-    setSelectedProductId(null);
-    
-    // If a specific product ID is provided (from suggestion click), use it
-    if (productId) {
-      setEnterSuggestionIds([productId]);
-    } else {
-      // For Enter key or general search, use all suggestion IDs
-      setEnterSuggestionIds(Array.isArray(suggestionIds) ? suggestionIds : []);
-    }
-    
-    setPage(1); // Reset to first page when searching
   }, []);
 
   const loadingProducts = status === 'loading';
@@ -261,14 +150,14 @@ const ProductList = () => {
         {/* Search and Sort Bar */}
         <div className="max-w-7xl lg:mx-auto lg:px-4 pt-4 lg:mt-14">
           <SearchBar
-            searchTerm={searchTerm}
-            onSearchChange={handleSearchChange}
-            onSearchSubmit={handleSearchSubmit}
+            searchTerm={search.searchTerm}
+            onSearchChange={search.handleSearchChange}
+            onSearchSubmit={search.handleSearchWithTracking}
             gridType={gridType}
             onGridTypeChange={handleGridTypeChange}
-            searchHistory={searchHistory}
-            popularSearches={popularSearches}
-            products={allProducts}
+            searchHistory={search.searchHistory}
+            popularSearches={search.popularSearches}
+            products={search.allProducts}
           />
         </div>
 
@@ -276,8 +165,8 @@ const ProductList = () => {
         <div className="max-w-7xl lg:mx-auto lg:px-4">
           <CategorySwiper
             categories={combinedCategories}
-            selectedCategory={category}
-            onCategorySelect={handleCategorySelect}
+            selectedCategory={search.category}
+            onCategorySelect={search.setCategory}
           />
         </div>
       </div>
@@ -298,12 +187,12 @@ const ProductList = () => {
         addingProductId={addingProductId}
         cartItems={cartItems}
         onPreviewImage={handlePreviewImage}
-        searchTerm={searchTerm}
+        searchTerm={search.searchTerm}
       />
 
       {/* Pagination */}
       <Pagination
-        currentPage={page}
+        currentPage={search.page}
         totalPages={totalPages}
         onPageChange={handlePageChange}
       />
