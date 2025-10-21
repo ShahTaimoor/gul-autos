@@ -302,6 +302,24 @@ const Media = () => {
       return;
     }
 
+    // Check for duplicate names before uploading
+    const duplicateNames = [];
+    const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
+    
+    selectedFiles.forEach(file => {
+      const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+      const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      
+      if (existingNames.includes(sanitizedName)) {
+        duplicateNames.push(file.name);
+      }
+    });
+
+    if (duplicateNames.length > 0) {
+      toast.error(`Files with these names already exist: ${duplicateNames.join(', ')}`);
+      return;
+    }
+
     setIsImporting(true);
     try {
       const formData = new FormData();
@@ -331,8 +349,133 @@ const Media = () => {
     } finally {
       setIsImporting(false);
     }
-  }, [selectedFiles, fetchMedia]);
+  }, [selectedFiles, fetchMedia, uploadedMedia]);
 
+  // Export functionality for uploaded media
+  const handleUploadExport = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      try {
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+        
+        // Show progress
+        toast.info(`Starting export of ${filteredUploadedMedia.length} uploaded images...`);
+        
+        // Fetch images in parallel batches for better performance
+        const batchSize = 5; // Process 5 images at a time
+        let processedCount = 0;
+        
+        for (let i = 0; i < filteredUploadedMedia.length; i += batchSize) {
+          const batch = filteredUploadedMedia.slice(i, i + batchSize);
+          
+          // Process batch in parallel
+          const batchPromises = batch.map(async (media, batchIndex) => {
+            const imageUrl = media.url;
+            
+            if (imageUrl) {
+              try {
+                const response = await fetch(imageUrl, {
+                  // Add timeout to prevent hanging
+                  signal: AbortSignal.timeout(10000) // 10 second timeout
+                });
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const blob = await response.blob();
+                const fileName = `${media.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `uploaded_${i + batchIndex + 1}`}.jpg`;
+                return { fileName, blob, success: true };
+              } catch (error) {
+                console.warn(`Failed to fetch image for ${media.name}:`, error);
+                return { fileName: null, blob: null, success: false };
+              }
+            }
+            return { fileName: null, blob: null, success: false };
+          });
+          
+          // Wait for batch to complete
+          const batchResults = await Promise.all(batchPromises);
+          
+          // Add successful results to zip
+          batchResults.forEach(({ fileName, blob, success }) => {
+            if (success && fileName && blob) {
+              zip.file(fileName, blob);
+            }
+          });
+          
+          processedCount += batch.length;
+          
+          // Update progress
+          const progress = Math.round((processedCount / filteredUploadedMedia.length) * 100);
+          toast.info(`Exporting... ${progress}% (${processedCount}/${filteredUploadedMedia.length})`);
+        }
+
+        // Generate zip with progress indication
+        toast.info('Creating ZIP file...');
+        const zipBlob = await zip.generateAsync({ 
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 } // Balanced compression
+        });
+        
+        const url = URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `uploaded_media_export_${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success(`Successfully exported ${filteredUploadedMedia.length} uploaded images as ZIP`);
+      } catch (zipError) {
+        console.error('ZIP creation failed:', zipError);
+        
+        // Fallback: download images individually with progress
+        toast.info('ZIP creation failed, downloading images individually...');
+        
+        for (let i = 0; i < filteredUploadedMedia.length; i++) {
+          const media = filteredUploadedMedia[i];
+          const imageUrl = media.url;
+          
+          if (imageUrl) {
+            try {
+              const response = await fetch(imageUrl, {
+                signal: AbortSignal.timeout(5000) // 5 second timeout for individual downloads
+              });
+              const blob = await response.blob();
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              const fileName = `${media.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `uploaded_${i + 1}`}.jpg`;
+              link.download = fileName;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              
+              // Show progress for individual downloads
+              if ((i + 1) % 5 === 0 || i === filteredUploadedMedia.length - 1) {
+                toast.info(`Downloaded ${i + 1}/${filteredUploadedMedia.length} images`);
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch image for ${media.name}:`, error);
+            }
+          }
+        }
+        toast.success(`Successfully exported ${filteredUploadedMedia.length} uploaded images individually`);
+      }
+
+      setShowExportModal(false);
+    } catch (error) {
+      toast.error('Failed to export uploaded images');
+      console.error('Export error:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [filteredUploadedMedia]);
 
   // Export functionality
   const handleExport = useCallback(async () => {
@@ -635,6 +778,15 @@ const Media = () => {
                 <p className="text-gray-600">Upload new images to your media library</p>
               </div>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowExportModal(true)}
+                  className="flex items-center gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Export
+                </Button>
+
                 <Button
                   variant={deleteMode ? "destructive" : "outline"}
                   onClick={toggleDeleteMode}
@@ -962,19 +1114,49 @@ const Media = () => {
                     Selected {selectedFiles.length} files:
                   </p>
                   <div className="max-h-32 overflow-y-auto space-y-1">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="text-xs text-gray-500 truncate">
-                        {file.name}
-                      </div>
-                    ))}
+                    {selectedFiles.map((file, index) => {
+                      const fileName = file.name.replace(/\.[^/.]+$/, '');
+                      const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                      const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
+                      const isDuplicate = existingNames.includes(sanitizedName);
+                      
+                      return (
+                        <div key={index} className={`text-xs truncate flex items-center gap-2 ${
+                          isDuplicate ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {isDuplicate && <span className="text-red-500">⚠️</span>}
+                          <span className={isDuplicate ? 'font-medium' : ''}>{file.name}</span>
+                          {isDuplicate && <span className="text-red-500 text-xs">(already exists)</span>}
+                        </div>
+                      );
+                    })}
                   </div>
+                  {selectedFiles.some(file => {
+                    const fileName = file.name.replace(/\.[^/.]+$/, '');
+                    const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                    const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
+                    return existingNames.includes(sanitizedName);
+                  }) && (
+                    <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                      ⚠️ Some files have names that already exist. Please rename them or remove them from selection.
+                    </div>
+                  )}
                 </div>
               )}
 
               <div className="flex gap-2">
                 <Button
                   onClick={handleImport}
-                  disabled={isImporting || selectedFiles.length === 0}
+                  disabled={
+                    isImporting || 
+                    selectedFiles.length === 0 || 
+                    selectedFiles.some(file => {
+                      const fileName = file.name.replace(/\.[^/.]+$/, '');
+                      const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+                      const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
+                      return existingNames.includes(sanitizedName);
+                    })
+                  }
                   className="flex-1 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isImporting ? 'Uploading...' : 'Upload to Cloudinary'}
@@ -1001,7 +1183,9 @@ const Media = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Export Images</h2>
+              <h2 className="text-xl font-semibold">
+                Export {activeTab === 'gallery' ? 'Product Images' : 'Uploaded Images'}
+              </h2>
               <Button
                 variant="ghost"
                 size="sm"
@@ -1013,9 +1197,12 @@ const Media = () => {
 
             <div className="space-y-4">
               <div className="text-sm text-gray-600">
-                <p>Export all {filteredProducts.length} product images as a ZIP file.</p>
+                <p>
+                  Export all {activeTab === 'gallery' ? filteredProducts.length : filteredUploadedMedia.length} 
+                  {activeTab === 'gallery' ? ' product images' : ' uploaded images'} as a ZIP file.
+                </p>
                 <p className="mt-2 text-xs text-gray-500">
-                  Images will be named based on product titles and downloaded as a single ZIP file.
+                  Images will be named based on {activeTab === 'gallery' ? 'product titles' : 'uploaded file names'} and downloaded as a single ZIP file.
                 </p>
                 {isExporting && (
                   <div className="mt-3 p-3 bg-blue-50 rounded-lg">
@@ -1029,11 +1216,14 @@ const Media = () => {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={handleExport}
-                  disabled={isExporting || filteredProducts.length === 0}
+                  onClick={activeTab === 'gallery' ? handleExport : handleUploadExport}
+                  disabled={
+                    isExporting || 
+                    (activeTab === 'gallery' ? filteredProducts.length === 0 : filteredUploadedMedia.length === 0)
+                  }
                   className="flex-1 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isExporting ? 'Exporting...' : 'Export All Images'}
+                  {isExporting ? 'Exporting...' : `Export All ${activeTab === 'gallery' ? 'Product' : 'Uploaded'} Images`}
                 </Button>
                 
                 <Button
