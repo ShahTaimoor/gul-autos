@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -26,6 +26,7 @@ import { FileSpreadsheet, Upload, Download, ImageIcon, X, Search, Eye, Zap } fro
 import LazyImage from '../ui/LazyImage';
 import Pagination from '../custom/Pagination';
 import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl, isWebPSupported } from '@/utils/imageConverter';
+import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
 const CreateProducts = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,8 @@ const CreateProducts = () => {
   const [isConverting, setIsConverting] = useState(false);
   const [conversionInfo, setConversionInfo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [uploadedMedia, setUploadedMedia] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
 
   // Initial input values
   const initialValues = {
@@ -71,6 +74,34 @@ const CreateProducts = () => {
   const handleCategorySearch = (e) => {
     setCategorySearch(e.target.value);
   };
+
+  // Fetch media from database
+  const fetchMedia = useCallback(async () => {
+    setMediaLoading(true);
+    try {
+      console.log('Fetching media from:', axiosInstance.defaults.baseURL + '/media');
+      const response = await axiosInstance.get('/media');
+      
+      if (response.data.success) {
+        setUploadedMedia(response.data.data);
+        console.log('Fetched media from database:', response.data.data);
+      } else {
+        console.error('Media fetch failed:', response.data.message);
+        toast.error('Failed to fetch media: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      toast.error('Failed to fetch media: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setMediaLoading(false);
+    }
+  }, []);
 
   // Handle image file selection and conversion
   const handleImageChange = async (e) => {
@@ -231,37 +262,67 @@ const CreateProducts = () => {
     };
   }, [previewUrl]);
 
-  // Fetch products for media picker with pagination
+  // Fetch products and media for media picker with pagination
   useEffect(() => {
     if (showMediaPicker) {
+      // Fetch ALL products for media picker (no limit)
       dispatch(fetchProducts({ 
         category: 'all', 
         searchTerm: mediaSearchTerm, 
-        page: mediaCurrentPage, 
-        limit: 20,
+        page: 1, 
+        limit: 1000, // Fetch all products
         stockFilter: 'active'
       }));
+      // Also fetch uploaded media
+      fetchMedia();
     }
-  }, [dispatch, showMediaPicker, mediaSearchTerm, mediaCurrentPage]);
+  }, [dispatch, showMediaPicker, mediaSearchTerm, fetchMedia]);
 
   // Filter products for media picker - only show products with images
-  const filteredMediaProducts = products?.filter(product => 
+  const allProductsWithImages = products?.filter(product => 
     product && 
     product._id && 
     (product.picture?.secure_url || product.image)
   ) || [];
 
-  // Update pagination info when products change
+  // Add uploaded media to the filtered results
+  const mediaItems = uploadedMedia.map(media => ({
+    _id: media._id || media.id,
+    title: media.name || media.originalName,
+    picture: { secure_url: media.url },
+    isUploadedMedia: true,
+    uploadedAt: media.createdAt
+  }));
+
+  // Combine product images with uploaded media
+  const allMedia = [...allProductsWithImages, ...mediaItems];
+
+  // Apply search filter
+  const searchFilteredProducts = allMedia.filter(item => {
+    if (!mediaSearchTerm) return true;
+    const searchLower = mediaSearchTerm.toLowerCase();
+    return (
+      item.title?.toLowerCase().includes(searchLower) ||
+      item.description?.toLowerCase().includes(searchLower) ||
+      (item.isUploadedMedia && item.title?.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Apply client-side pagination
+  const itemsPerPage = 20;
+  const startIndex = (mediaCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const filteredMediaProducts = searchFilteredProducts.slice(startIndex, endIndex);
+
+  // Update pagination info when products or media change
   useEffect(() => {
-    if (showMediaPicker && products) {
-      // For now, we'll show pagination based on the current page
-      // In a real implementation, you'd want to fetch all products with images
-      // and implement client-side pagination, or modify the backend to filter by images
-      const totalPages = Math.max(1, Math.ceil(products.length / 20));
+    if (showMediaPicker && (products || uploadedMedia.length > 0)) {
+      const totalPages = Math.max(1, Math.ceil(searchFilteredProducts.length / itemsPerPage));
       setMediaTotalPages(totalPages);
-      setMediaTotalItems(products.length);
+      setMediaTotalItems(searchFilteredProducts.length);
     }
-  }, [products, showMediaPicker]);
+  }, [products, uploadedMedia, showMediaPicker, mediaSearchTerm, mediaCurrentPage, searchFilteredProducts.length]);
+
 
   const handleMediaPageChange = (page) => {
     setMediaCurrentPage(page);
@@ -715,7 +776,12 @@ const CreateProducts = () => {
 
             {/* Media Grid */}
             <div className="p-4 max-h-[60vh] overflow-y-auto">
-              {filteredMediaProducts.length > 0 ? (
+              {mediaLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className="ml-2 text-gray-600">Loading media...</span>
+                </div>
+              ) : filteredMediaProducts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {filteredMediaProducts.map((product) => (
                     <div
@@ -731,6 +797,14 @@ const CreateProducts = () => {
                           fallback="/logo.jpeg"
                           quality={85}
                         />
+                        
+                        {/* Uploaded Media Indicator */}
+                        {product.isUploadedMedia && (
+                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                            <Upload className="h-3 w-3" />
+                            Uploaded
+                          </div>
+                        )}
                         
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
@@ -762,8 +836,8 @@ const CreateProducts = () => {
             </div>
 
             {/* Pagination */}
-            {filteredMediaProducts.length > 0 && mediaTotalPages > 1 && (
-              <div className="p-4 border-t">
+            {mediaTotalPages > 1 && (
+              <div className="fixed bottom-11 left-14 right-0">
                 <Pagination
                   currentPage={mediaCurrentPage}
                   totalPages={mediaTotalPages}
@@ -775,10 +849,17 @@ const CreateProducts = () => {
             {/* Footer */}
             <div className="p-4 border-t bg-gray-50">
               <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-600">
-                  {filteredMediaProducts.length} images available
-                  {mediaTotalPages > 1 && ` (Page ${mediaCurrentPage} of ${mediaTotalPages})`}
-                </p>
+                <div className="text-sm text-gray-600">
+                  <p>
+                    {filteredMediaProducts.length} images available
+                    {mediaTotalPages > 1 && ` (Page ${mediaCurrentPage} of ${mediaTotalPages})`}
+                  </p>
+                  {uploadedMedia.length > 0 && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Including {uploadedMedia.length} uploaded media files
+                    </p>
+                  )}
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => setShowMediaPicker(false)}

@@ -7,8 +7,9 @@ import Pagination from '../components/custom/Pagination';
 import SearchBar from '../components/custom/SearchBar';
 import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
-import { Eye, Download, Filter, Upload, FileDown, Plus, X } from 'lucide-react';
+import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
+import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
 const Media = () => {
   const dispatch = useDispatch();
@@ -36,11 +37,50 @@ const Media = () => {
   // Local state for UI-specific functionality
   const [previewImage, setPreviewImage] = useState(null);
   const [filteredProducts, setFilteredProducts] = useState([]);
-  const [showImportModal, setShowImportModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+
+  // Fetch media from database
+  const fetchMedia = useCallback(async () => {
+    setMediaLoading(true);
+    try {
+      console.log('Fetching media from:', axiosInstance.defaults.baseURL + '/media');
+      const response = await axiosInstance.get('/media');
+      
+      if (response.data.success) {
+        setUploadedMedia(response.data.data);
+        console.log('Fetched media from database:', response.data.data);
+      } else {
+        console.error('Media fetch failed:', response.data.message);
+        toast.error('Failed to fetch media: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      toast.error('Failed to fetch media: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setMediaLoading(false);
+    }
+  }, []);
+
+  // Fetch media on component mount
+  useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
 
   // Fetch products with debounced search using the hook
   useEffect(() => {
@@ -49,16 +89,36 @@ const Media = () => {
 
   // Filter products to show only those with images and apply search filtering
   useEffect(() => {
+    console.log('useEffect triggered - products:', products.length, 'uploadedMedia:', uploadedMedia.length);
+    
     let filtered = products.filter(product => 
       product && 
       product._id && 
       (product.picture?.secure_url || product.image)
     );
 
+    // Add uploaded media to the filtered results
+    const mediaItems = uploadedMedia.map(media => ({
+      _id: media._id || media.id,
+      title: media.name || media.originalName,
+      picture: { secure_url: media.url },
+      isUploadedMedia: true,
+      uploadedAt: media.createdAt
+    }));
+
+    console.log('Media items created:', mediaItems);
+    console.log('Raw uploaded media:', uploadedMedia);
+
+    // Combine product images with uploaded media
+    const allMedia = [...filtered, ...mediaItems];
+    console.log('All media combined:', allMedia.length, 'items');
+    console.log('Combined media details:', allMedia);
+
     // Apply search filtering using the hook
-    filtered = search.filterProducts(filtered, search.searchTerm, search.selectedProductId);
-    setFilteredProducts(filtered);
-  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
+    const searchFiltered = search.filterProducts(allMedia, search.searchTerm, search.selectedProductId);
+    console.log('Final filtered products:', searchFiltered.length);
+    setFilteredProducts(searchFiltered);
+  }, [products, uploadedMedia, search.searchTerm, search.selectedProductId, search.filterProducts]);
 
   const handlePreviewImage = useCallback((imageUrl) => {
     setPreviewImage(imageUrl);
@@ -94,6 +154,85 @@ const Media = () => {
     pagination.setCurrentPage(page);
   }, [pagination]);
 
+  // Delete functionality
+  const handleDeleteSingle = useCallback(async (itemId) => {
+    setIsDeleting(true);
+    try {
+      const response = await axiosInstance.delete(`/media/${itemId}`);
+      
+      if (response.data.success) {
+        toast.success('Media deleted successfully');
+        // Refresh media list
+        await fetchMedia();
+        // Remove from selected items if it was selected
+        setSelectedItems(prev => prev.filter(id => id !== itemId));
+      } else {
+        throw new Error(response.data.message || 'Delete failed');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete media: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [fetchMedia]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedItems.length === 0) {
+      toast.error('No items selected for deletion');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await axiosInstance.delete('/media/bulk', {
+        data: { ids: selectedItems }
+      });
+      
+      if (response.data.success) {
+        toast.success(`Successfully deleted ${response.data.data.deletedCount} media items`);
+        // Refresh media list
+        await fetchMedia();
+        // Clear selection
+        setSelectedItems([]);
+        setDeleteMode(false);
+        setShowDeleteModal(false);
+      } else {
+        throw new Error(response.data.message || 'Bulk delete failed');
+      }
+    } catch (error) {
+      console.error('Bulk delete error:', error);
+      toast.error('Failed to delete media: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedItems, fetchMedia]);
+
+  const handleSelectItem = useCallback((itemId) => {
+    setSelectedItems(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (selectedItems.length === filteredProducts.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(filteredProducts.map(item => item._id));
+    }
+  }, [selectedItems.length, filteredProducts]);
+
+  const toggleDeleteMode = useCallback(() => {
+    setDeleteMode(prev => !prev);
+    if (deleteMode) {
+      setSelectedItems([]);
+    }
+  }, [deleteMode]);
+
   // Import functionality
   const handleFileSelect = useCallback((e) => {
     const files = Array.from(e.target.files);
@@ -108,50 +247,35 @@ const Media = () => {
 
     setIsImporting(true);
     try {
-      // Try to use JSZip if available, otherwise download files individually
-      try {
-        const JSZip = (await import('jszip')).default;
-        const zip = new JSZip();
-        
-        selectedFiles.forEach((file, index) => {
-          zip.file(`image_${index + 1}_${file.name}`, file);
-        });
+      const formData = new FormData();
+      selectedFiles.forEach((file, index) => {
+        formData.append('images', file);
+      });
 
-        const zipBlob = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(zipBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `media_import_${new Date().toISOString().split('T')[0]}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      const response = await axiosInstance.post('/media/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-        toast.success(`Successfully imported ${selectedFiles.length} images as ZIP`);
-      } catch (zipError) {
-        // Fallback: download files individually
-        selectedFiles.forEach((file, index) => {
-          const url = URL.createObjectURL(file);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `image_${index + 1}_${file.name}`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        });
-        toast.success(`Successfully imported ${selectedFiles.length} images individually`);
+      if (response.data.success) {
+        console.log('Upload successful, received data:', response.data.data);
+        toast.success(`Successfully uploaded ${response.data.data.length} images to Cloudinary`);
+        // Refresh media list from database
+        await fetchMedia();
+        setShowImportModal(false);
+        setSelectedFiles([]);
+      } else {
+        throw new Error(response.data.message || 'Upload failed');
       }
-
-      setShowImportModal(false);
-      setSelectedFiles([]);
     } catch (error) {
-      toast.error('Failed to import images');
-      console.error('Import error:', error);
+      toast.error('Failed to upload images: ' + (error.response?.data?.message || error.message));
+      console.error('Upload error:', error);
     } finally {
       setIsImporting(false);
     }
-  }, [selectedFiles]);
+  }, [selectedFiles, fetchMedia]);
+
 
   // Export functionality
   const handleExport = useCallback(async () => {
@@ -312,7 +436,7 @@ const Media = () => {
             />
           </div>
 
-          {/* Import/Export Buttons */}
+          {/* Import/Export/Delete Buttons */}
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -331,16 +455,75 @@ const Media = () => {
               <FileDown className="h-4 w-4" />
               Export
             </Button>
+
+            <Button
+              variant={deleteMode ? "destructive" : "outline"}
+              onClick={toggleDeleteMode}
+              className="flex items-center gap-2 transition-all duration-200 hover:bg-red-50 hover:border-red-300"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deleteMode ? 'Cancel Delete' : 'Delete Mode'}
+            </Button>
+
+            {deleteMode && selectedItems.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2 transition-all duration-200"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Selected ({selectedItems.length})
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Results Info */}
       <div className="mb-6">
-        <p className="text-sm text-gray-600">
-          Showing {filteredProducts.length} product images
-          {search.searchTerm && ` for "${search.searchTerm}"`}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Showing {filteredProducts.length} images
+            {search.searchTerm && ` for "${search.searchTerm}"`}
+            {uploadedMedia.length > 0 && (
+              <span className="ml-2 text-blue-600 font-medium">
+                ({uploadedMedia.length} uploaded media)
+              </span>
+            )}
+            {mediaLoading && (
+              <span className="ml-2 text-blue-600 animate-pulse">
+                Loading media...
+              </span>
+            )}
+          </p>
+          
+          {deleteMode && filteredProducts.length > 0 && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSelectAll}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                {selectedItems.length === filteredProducts.length ? (
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                ) : (
+                  <Square className="h-4 w-4" />
+                )}
+                {selectedItems.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
+              </button>
+              {selectedItems.length > 0 && (
+                <span className="text-sm text-red-600 font-medium">
+                  {selectedItems.length} selected
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        
+        {uploadedMedia.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1">
+            Uploaded media includes images from Cloudinary storage
+          </p>
+        )}
       </div>
 
       {/* Media Grid - Image Only */}
@@ -351,6 +534,25 @@ const Media = () => {
               key={product._id} 
               className="relative group transition-all duration-300 hover:scale-105"
             >
+              {/* Selection Checkbox */}
+              {deleteMode && (
+                <div className="absolute top-2 right-2 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectItem(product._id);
+                    }}
+                    className="bg-white/90 hover:bg-white rounded-full p-1 shadow-md transition-all"
+                  >
+                    {selectedItems.includes(product._id) ? (
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Square className="h-4 w-4 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+              )}
+
               {/* Product Image Only */}
               <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer w-full"
               onClick={() => handlePreviewImage(product.picture?.secure_url || product.image)}
@@ -362,6 +564,14 @@ const Media = () => {
                   fallback="/logo.jpeg"
                   quality={85}
                 />
+
+                {/* Uploaded Media Indicator */}
+                {product.isUploadedMedia && (
+                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <Upload className="h-3 w-3" />
+                    Uploaded
+                  </div>
+                )}
 
                 {/* Hover overlay with actions */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
@@ -388,6 +598,24 @@ const Media = () => {
                   >
                     <Download className="h-4 w-4" />
                   </Button>
+
+                  {/* Delete button for uploaded media */}
+                  {product.isUploadedMedia && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Are you sure you want to delete this media?')) {
+                          handleDeleteSingle(product._id);
+                        }
+                      }}
+                      className="bg-red-500/90 hover:bg-red-500 text-white"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -478,6 +706,9 @@ const Media = () => {
                   onChange={handleFileSelect}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Images will be automatically converted to WebP and uploaded to Cloudinary
+                </p>
               </div>
 
               {selectedFiles.length > 0 && (
@@ -501,7 +732,7 @@ const Media = () => {
                   disabled={isImporting || selectedFiles.length === 0}
                   className="flex-1 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isImporting ? 'Importing...' : 'Import Images'}
+                  {isImporting ? 'Uploading...' : 'Upload to Cloudinary'}
                 </Button>
                 
                 <Button
@@ -565,6 +796,60 @@ const Media = () => {
                   onClick={() => setShowExportModal(false)}
                   disabled={isExporting}
                   className="transition-all duration-200"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-red-600">Confirm Bulk Delete</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p>Are you sure you want to delete <strong>{selectedItems.length}</strong> media items?</p>
+                <p className="mt-2 text-red-600 font-medium">This action cannot be undone.</p>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  className="flex-1"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete {selectedItems.length} Items
+                    </>
+                  )}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
                 >
                   Cancel
                 </Button>

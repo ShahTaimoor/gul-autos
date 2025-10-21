@@ -441,6 +441,10 @@ router.get('/get-products', async (req, res) => {
       limit = parseInt(limit);
     }
     page = parseInt(page);
+    
+    // Ensure page and limit are valid positive numbers
+    if (page < 1) page = 1;
+    if (limit < 0) limit = 24; // Default limit if negative
 
     const query = {};
     if (stockFilter === 'active') {
@@ -738,7 +742,7 @@ router.get('/get-products', async (req, res) => {
           }
         },
         { $sort: { relevanceScore: -1, createdAt: -1 } },
-        { $skip: (page - 1) * (limit || 1) },
+        { $skip: limit === 0 ? 0 : (page - 1) * limit },
         { $limit: limit || 1000 },
         {
           $lookup: {
@@ -775,7 +779,7 @@ router.get('/get-products', async (req, res) => {
         .populate('user', 'name')
         .populate('category', 'name')
         .sort(sortObject)
-        .skip((page - 1) * (limit || 1))
+        .skip(limit === 0 ? 0 : (page - 1) * limit)
         .limit(limit || undefined);
     }
 

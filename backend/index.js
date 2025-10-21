@@ -6,6 +6,7 @@ const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const categoryRoute = require('./routes/categoryRoutes')
+const mediaRoutes = require('./routes/mediaRoutes');
 const cookieParser = require('cookie-parser')
 const { notFound, errorHandler } = require('./middleware/errorHandler')
 const cartRoutes = require('./routes/cartRoutes');
@@ -33,6 +34,7 @@ app.use('/api', userRoutes);
 app.use('/api', productRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', categoryRoute);
+app.use('/api', mediaRoutes);
 app.use('/api', cartRoutes);
 
 
