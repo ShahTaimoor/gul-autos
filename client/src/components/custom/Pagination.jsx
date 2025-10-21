@@ -56,7 +56,7 @@ const Pagination = React.memo(({
         <div className="absolute -top-20 -right-20 w-80 h-80 bg-yellow-100 rounded-full filter blur-3xl opacity-20"></div>
       </div>
 
-      <div className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto">
+      <div className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto scrollbar-hide max-w-full">
         {/* Previous Button */}
         <button
           onClick={handlePrevious}

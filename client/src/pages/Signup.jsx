@@ -86,23 +86,25 @@ const Signup = () => {
 
         <div className='mb-4 relative'>
           <label className='block text-sm font-semibold mb-2'>Password</label>
-          <Input
-            onChange={handleChange}
-            placeholder='Enter Your Password'
-            type={showPassword ? 'text' : 'password'} // Toggle between text and password
-            name='password'
-            value={inputValue.password}
-            required
-            className='h-11 sm:h-10 pr-10'
-          />
-          <button
-            type="button"
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1"
-            onClick={togglePasswordVisibility}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </button>
+          <div className='relative'>
+            <Input
+              onChange={handleChange}
+              placeholder='Enter Your Password'
+              type={showPassword ? 'text' : 'password'} // Toggle between text and password
+              name='password'
+              value={inputValue.password}
+              required
+              className='h-11 sm:h-10 pr-10 w-full'
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1 flex items-center justify-center"
+              onClick={togglePasswordVisibility}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         <Button className='w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 h-12 sm:h-auto' disabled={loading}>
