@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '@/hooks/use-search';
+import { usePagination } from '@/hooks/use-pagination';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -32,16 +33,26 @@ import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, status, currentPage, totalPages, totalItems } = useSelector((state) => state.products);
+  const { products, status, totalItems } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
 
   // Use the search hook to eliminate duplication
   const search = useSearch({
     initialCategory: 'all',
     initialPage: 1,
-    initialLimit: 12,
+    initialLimit: 24,
     initialStockFilter: 'all',
     initialSortBy: 'az'
+  });
+
+  // Use pagination hook to eliminate pagination duplication
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 24,
+    totalItems,
+    onPageChange: (page) => {
+      search.handlePageChange(page);
+    }
   });
 
   // Local state for UI-specific functionality
@@ -81,13 +92,13 @@ const AllProducts = () => {
 
   // Fetch products on component mount
   useEffect(() => {
-    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12, stockFilter: 'all' }));
+    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 24, stockFilter: 'all' }));
   }, [dispatch]);
 
   // Fetch products with debounced search using the hook
   useEffect(() => {
     search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy]);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy, search.handleSearch]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -158,10 +169,10 @@ const AllProducts = () => {
   }, [dispatch]);
 
 
-  // Handle page change
+  // Handle page change using pagination hook
   const handlePageChange = useCallback((page) => {
-    search.setPage(page);
-  }, [search]);
+    pagination.setCurrentPage(page);
+  }, [pagination]);
 
   // Handle category selection
   const handleCategorySelect = useCallback((categoryId) => {
@@ -376,15 +387,15 @@ const AllProducts = () => {
 
       {/* Enhanced Pagination */}
       <Pagination
-        currentPage={search.page}
-        totalPages={totalPages}
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
         onPageChange={handlePageChange}
       />
 
       {/* Results Info */}
       <div className="text-center text-sm text-gray-500 mt-4">
-        Showing {sortedProducts.length} of {totalItems} products
-        {totalPages > 1 && ` (Page ${search.page} of ${totalPages})`}
+        Showing {pagination.startItem}-{pagination.endItem} of {totalItems} products
+        {pagination.totalPages > 1 && ` (Page ${pagination.currentPage} of ${pagination.totalPages})`}
       </div>
 
       {/* Empty State */}

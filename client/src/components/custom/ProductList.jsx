@@ -10,6 +10,7 @@ import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
 import { useSearch } from '@/hooks/use-search';
+import { usePagination } from '@/hooks/use-pagination';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -35,9 +36,19 @@ const ProductList = () => {
 
   // Redux selectors
   const { categories } = useSelector((s) => s.categories);
-  const { products: productList = [], status, totalPages } = useSelector((s) => s.products);
+  const { products: productList = [], status, totalItems } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
+
+  // Use pagination hook to eliminate pagination duplication
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 24,
+    totalItems,
+    onPageChange: (page) => {
+      search.handlePageChange(page);
+    }
+  });
 
   // Memoized combined categories
   const combinedCategories = useMemo(() => [
@@ -59,7 +70,7 @@ const ProductList = () => {
   // Fetch products with debounced search using the hook
   useEffect(() => {
     search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.category, search.page, search.sortBy, search.enterSuggestionIds]);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.sortBy, search.enterSuggestionIds, search.handleSearch]);
 
   // Fetch categories
   useEffect(() => {
@@ -134,8 +145,8 @@ const ProductList = () => {
   }, [search]);
 
   const handlePageChange = useCallback((newPage) => {
-    search.setPage(newPage);
-  }, [search]);
+    pagination.setCurrentPage(newPage);
+  }, [pagination]);
 
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
@@ -192,8 +203,8 @@ const ProductList = () => {
 
       {/* Pagination */}
       <Pagination
-        currentPage={search.page}
-        totalPages={totalPages}
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
         onPageChange={handlePageChange}
       />
 

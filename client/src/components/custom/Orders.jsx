@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { usePagination } from '@/hooks/use-pagination';
 import { Button } from '../ui/button';
 import {
   Dialog,
@@ -53,11 +54,21 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [localOrders, setLocalOrders] = useState([]);
   const [packerNames, setPackerNames] = useState({});
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(30);
-  const totalPages = useSelector((state) => state.orders.totalPages) || 1;
+  const [limit] = useState(24);
+  const totalItems = useSelector((state) => state.orders.totalItems) || 0;
   const clickTimer = useRef(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Use pagination hook to eliminate pagination duplication
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 24,
+    totalItems,
+    onPageChange: (page) => {
+      // Fetch orders for the new page
+      dispatch(fetchOrdersAdmin({ page, limit, status: statusFilter, search: searchQuery }));
+    }
+  });
 
   const statusColors = {
     Pending: 'bg-yellow-100 text-yellow-800',
@@ -149,13 +160,15 @@ const Orders = () => {
   };
 
   const handleLimitChange = (newLimit) => {
-    setLimit(parseInt(newLimit));
-    setPage(1); // Reset to first page when changing limit
+    const newLimitValue = parseInt(newLimit);
+    // Reset to first page when changing limit
+    pagination.resetPagination();
+    dispatch(fetchOrdersAdmin({ page: 1, limit: newLimitValue }));
   };
 
   useEffect(() => {
-    dispatch(fetchOrdersAdmin({ page, limit }));
-  }, [dispatch, page, limit]);
+    dispatch(fetchOrdersAdmin({ page: pagination.currentPage, limit }));
+  }, [dispatch, pagination.currentPage, limit]);
 
 useEffect(() => {
   if (status === 'succeeded') {
@@ -660,27 +673,34 @@ Phone: ${order.phone}
           </div>
         )}
 
-        {orders.length > 0 && totalPages > 1 && (
+        {orders.length > 0 && pagination.totalPages > 1 && (
           <div className="flex justify-center mt-8 gap-2">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
+              onClick={pagination.goToPreviousPage}
+              disabled={!pagination.hasPreviousPage}
               className="px-3 py-1 rounded border bg-white disabled:opacity-50"
             >
               Previous
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+            {pagination.getVisiblePages().map((pg, index) => (
               <button
-                key={pg}
-                onClick={() => setPage(pg)}
-                className={`px-3 py-1 rounded border ${pg === page ? 'bg-yellow-400 text-white' : 'bg-white'}`}
+                key={pg === '...' ? `ellipsis-${index}` : pg}
+                onClick={() => typeof pg === 'number' && pagination.setCurrentPage(pg)}
+                disabled={pg === '...'}
+                className={`px-3 py-1 rounded border ${
+                  pg === pagination.currentPage 
+                    ? 'bg-yellow-400 text-white' 
+                    : pg === '...'
+                      ? 'bg-transparent text-gray-400 cursor-default'
+                      : 'bg-white'
+                }`}
               >
                 {pg}
               </button>
             ))}
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
+              onClick={pagination.goToNextPage}
+              disabled={!pagination.hasNextPage}
               className="px-3 py-1 rounded border bg-white disabled:opacity-50"
             >
               Next

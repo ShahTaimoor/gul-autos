@@ -6,12 +6,13 @@ import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
 import SearchBar from '../components/custom/SearchBar';
 import { useSearch } from '@/hooks/use-search';
+import { usePagination } from '@/hooks/use-pagination';
 import { Eye, Download, Filter, Upload, FileDown, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Media = () => {
   const dispatch = useDispatch();
-  const { products, status, totalPages, currentPage } = useSelector((state) => state.products);
+  const { products, status, totalItems } = useSelector((state) => state.products);
   
   // Use the search hook to eliminate duplication
   const search = useSearch({
@@ -20,6 +21,16 @@ const Media = () => {
     initialLimit: 24,
     initialStockFilter: 'all',
     initialSortBy: 'az'
+  });
+
+  // Use pagination hook to eliminate pagination duplication
+  const pagination = usePagination({
+    initialPage: 1,
+    initialLimit: 24,
+    totalItems,
+    onPageChange: (page) => {
+      search.handlePageChange(page);
+    }
   });
 
   // Local state for UI-specific functionality
@@ -34,7 +45,7 @@ const Media = () => {
   // Fetch products with debounced search using the hook
   useEffect(() => {
     search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.page, search.category]);
+  }, [search.debouncedSearchTerm, search.page, search.category, search.handleSearch]);
 
   // Filter products to show only those with images and apply search filtering
   useEffect(() => {
@@ -80,8 +91,8 @@ const Media = () => {
   }, [search]);
 
   const handlePageChange = useCallback((page) => {
-    search.setPage(page);
-  }, [search]);
+    pagination.setCurrentPage(page);
+  }, [pagination]);
 
   // Import functionality
   const handleFileSelect = useCallback((e) => {
@@ -397,11 +408,11 @@ const Media = () => {
       )}
 
       {/* Pagination */}
-      {filteredProducts.length > 0 && totalPages > 1 && (
+      {filteredProducts.length > 0 && pagination.totalPages > 1 && (
         <div className="mt-8">
           <Pagination
-            currentPage={search.page}
-            totalPages={totalPages}
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
           />
         </div>

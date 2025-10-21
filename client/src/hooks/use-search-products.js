@@ -48,12 +48,6 @@ export const useSearchProducts = ({
     const searchCategory = hasSuggestionIds ? 'all' : (searchTerm ? 'all' : category);
     const searchParam = hasSuggestionIds ? '' : searchTerm;
     
-    // Reset to page 1 when search term changes
-    if (page > 1) {
-      setPage(1);
-      return;
-    }
-    
     const productIdsParam = hasSuggestionIds ? enterSuggestionIds.join(',') : undefined;
 
     dispatch(fetchProducts({ 
@@ -105,6 +99,11 @@ export const useSearchProducts = ({
     return filtered;
   }, []);
 
+  // Handle page change without resetting search
+  const handlePageChange = useCallback((newPage) => {
+    setPage(newPage);
+  }, []);
+
   // Reset pagination when filters change
   const resetPagination = useCallback(() => {
     setPage(1);
@@ -140,11 +139,12 @@ export const useSearchProducts = ({
     
     // Actions
     setCategory: updateCategory,
-    setPage,
+    setPage: handlePageChange,
     setStockFilter: updateStockFilter,
     setSortBy: updateSortBy,
     setEnterSuggestionIds,
     handleSearch,
+    handlePageChange,
     filterProducts,
     resetPagination
   };

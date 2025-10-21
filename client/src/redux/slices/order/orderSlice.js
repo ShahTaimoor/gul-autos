@@ -62,7 +62,7 @@ export const fetchOrders = createAsyncThunk(
 // Fetch Orders (Admin)
 export const fetchOrdersAdmin = createAsyncThunk(
   'orders/fetchOrdersAdmin',
-  async ({ page = 1, limit = 30 } = {}, thunkAPI) => {
+  async ({ page = 1, limit = 24 } = {}, thunkAPI) => {
     try {
       const res = await orderService.getAllOrderAdmin(page, limit);
       return res;
