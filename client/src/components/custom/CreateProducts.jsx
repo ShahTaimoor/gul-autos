@@ -244,25 +244,24 @@ const CreateProducts = () => {
     }
   }, [dispatch, showMediaPicker, mediaSearchTerm, mediaCurrentPage]);
 
-  // Update pagination info when products change
-  useEffect(() => {
-    if (showMediaPicker && products) {
-      // Calculate total pages based on products with images
-      const productsWithImages = products.filter(product => 
-        product && product._id && (product.picture?.secure_url || product.image)
-      );
-      const totalPages = Math.ceil(productsWithImages.length / 20);
-      setMediaTotalPages(totalPages);
-      setMediaTotalItems(productsWithImages.length);
-    }
-  }, [products, showMediaPicker]);
-
   // Filter products for media picker - only show products with images
   const filteredMediaProducts = products?.filter(product => 
     product && 
     product._id && 
     (product.picture?.secure_url || product.image)
   ) || [];
+
+  // Update pagination info when products change
+  useEffect(() => {
+    if (showMediaPicker && products) {
+      // For now, we'll show pagination based on the current page
+      // In a real implementation, you'd want to fetch all products with images
+      // and implement client-side pagination, or modify the backend to filter by images
+      const totalPages = Math.max(1, Math.ceil(products.length / 20));
+      setMediaTotalPages(totalPages);
+      setMediaTotalItems(products.length);
+    }
+  }, [products, showMediaPicker]);
 
   const handleMediaPageChange = (page) => {
     setMediaCurrentPage(page);

@@ -10,8 +10,6 @@ const Success = () => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer)
-          navigate('/')
           return 0
         }
         return prev - 1
@@ -19,7 +17,13 @@ const Success = () => {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [navigate])
+  }, [])
+
+  useEffect(() => {
+    if (countdown === 0) {
+      navigate('/')
+    }
+  }, [countdown, navigate])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">

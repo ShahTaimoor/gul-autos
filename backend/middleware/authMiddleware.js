@@ -1,27 +1,55 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Middlewar to check if user is authorize
+// Enhanced middleware to check if user is authorized with access token
 const isAuthorized = async (req, res, next) => {
     try {
-        const { token } = req.cookies;
+        const { accessToken } = req.cookies;
 
-        if (!token) {
-            return res.status(401).json({ success: false, message: 'Please log in first.' });
+        if (!accessToken) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Access token not provided. Please log in first.' 
+            });
         }
 
-        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        // Verify access token
+        const decodedToken = jwt.verify(accessToken, process.env.JWT_SECRET);
+
+        // Check if token is not a refresh token
+        if (decodedToken.type === 'refresh') {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid token type. Please refresh your session.' 
+            });
+        }
 
         const user = await User.findById(decodedToken.id);
         if (!user) {
-            return res.status(401).json({ success: false, message: 'User not found.' });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'User not found.' 
+            });
         }
 
         req.user = user;
         next();
     } catch (error) {
         console.error('Error in isAuthorized middleware:', error.message);
-        return res.status(401).json({ success: false, message: 'Invalid or expired token.' });
+        
+        // Check if it's a token expiration error
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Access token expired. Please refresh your session.',
+                code: 'TOKEN_EXPIRED'
+            });
+        }
+        
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Invalid or expired token.' 
+        });
     }
 };
 

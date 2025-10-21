@@ -63,26 +63,6 @@ const Checkout = ({ closeModal }) => {
     }
   };
 
-  const generateWhatsAppMessage = (orderData, orderDetails) => {
-    const { address, phone, city } = formData;
-    const { data } = orderDetails;
-    
-    let message = `*New Order Placed from ${user?.name}`;
-    message += `*Phone:* ${phone}\n`;
-    message += `*City:* ${city}\n`;
-    message += `*Address:* ${address}\n\n`;
-    message += `*Order Details:*\n`;
-    message += `━━━━━━━━━━━━━━━━\n`;
-    
-    data.products.forEach((item, index) => {
-      const productTitle = item.id?.title || 'Product';
-      message += `${index + 1}. ${productTitle}\n`;
-      message += `   Qty: ${item.quantity} \n`;
-      
-    });
- 
-    return encodeURIComponent(message);
-  };
 
   const handleCheckout = async () => {
     const { address, phone, city } = formData;
@@ -114,14 +94,6 @@ const Checkout = ({ closeModal }) => {
       if (res.success) {
         dispatch(emptyCart());
         closeModal && closeModal();
-        
-        // Generate WhatsApp message and redirect
-        const whatsappMessage = generateWhatsAppMessage(orderData, res);
-        const whatsappNumber = '923130922988';
-        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
-        
-        // Open WhatsApp in new tab
-        window.open(whatsappUrl, '_blank');
         
         // Navigate to success page
         navigate('/success');

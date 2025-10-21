@@ -29,16 +29,20 @@ import {
 
 import { toast } from 'sonner';
 import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock } from '@/redux/slices/products/productSlice';
+import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { products, status, currentPage, totalPages, totalItems } = useSelector((state) => state.products);
+  const { categories } = useSelector((state) => state.categories);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState(''); // For actual search
   const [selectedProductId, setSelectedProductId] = useState(null); // For specific product from suggestion
   const [stockFilter, setStockFilter] = useState('all');
+  const [category, setCategory] = useState('all');
+  const [categorySearch, setCategorySearch] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [gridType, setGridType] = useState('grid2'); // Changed from gridView to gridType to match ProductList
@@ -58,6 +62,20 @@ const AllProducts = () => {
     'mazda 3 taillight',
     'hyundai elantra mirror'
   ]);
+
+  // Memoized combined categories
+  const combinedCategories = useMemo(() => [
+    { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
+    ...(categories || [])
+  ], [categories]);
+
+  // Filtered categories based on search
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch) return combinedCategories;
+    return combinedCategories.filter(cat => 
+      cat.name.toLowerCase().includes(categorySearch.toLowerCase())
+    );
+  }, [combinedCategories, categorySearch]);
 
   // Debounced search to reduce API calls - reduced delay for better responsiveness
   const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
@@ -96,6 +114,11 @@ const AllProducts = () => {
     setActiveSearchTerm(searchTerm);
   }, [searchTerm]);
 
+  // Fetch categories
+  useEffect(() => {
+    dispatch(AllCategory());
+  }, [dispatch]);
+
   // Fetch products on component mount
   useEffect(() => {
     dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 12, stockFilter: 'all' }));
@@ -110,7 +133,7 @@ const AllProducts = () => {
     }
     
     dispatch(fetchProducts({ 
-      category: 'all', 
+      category: category, 
       searchTerm: debouncedSearchTerm, 
       page: currentPageLocal, 
       limit: 12,
@@ -124,7 +147,7 @@ const AllProducts = () => {
     }).catch((error) => {
       console.error('Error fetching products:', error);
     });
-  }, [dispatch, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm]);
+  }, [dispatch, debouncedSearchTerm, currentPageLocal, stockFilter, activeSearchTerm, category]);
 
   // Fetch products for suggestions (only once on mount) - increased limit for better suggestions
   useEffect(() => {
@@ -243,6 +266,16 @@ const AllProducts = () => {
     setCurrentPageLocal(page);
   }, []);
 
+  // Handle category selection
+  const handleCategorySelect = useCallback((categoryId) => {
+    setCategory(categoryId);
+    setCategorySearch(''); // Clear category search
+    setSearchTerm(''); // Clear search when selecting category
+    setActiveSearchTerm(''); // Clear active search
+    setSelectedProductId(null); // Clear selected product
+    setCurrentPageLocal(1); // Reset to first page when changing category
+  }, []);
+
   // Enhanced handlers for search and interactions
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
@@ -298,7 +331,7 @@ const AllProducts = () => {
         </div>
        
       </div>
-
+      
       {/* Enhanced Search and Filters - All in One Line */}
       <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
         <div className="flex flex-col lg:flex-row gap-3 items-center">
@@ -315,7 +348,36 @@ const AllProducts = () => {
               products={allProducts}
             />
           </div>
-
+          {/* Category Filter - Searchable Select */}
+          <div className="w-full lg:w-20">
+            <Select value={category} onValueChange={handleCategorySelect}>
+              <SelectTrigger className="transition-all duration-200 hover:border-blue-500">
+                <SelectValue placeholder="Search or select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    placeholder="Search categories..."
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    className="mb-2"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                {filteredCategories.map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+                {filteredCategories.length === 0 && (
+                  <div className="p-2 text-sm text-gray-500 text-center">
+                    No categories found
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          
           {/* Stock Filter */}
           <div className="w-full lg:w-40">
             <Select value={stockFilter} onValueChange={setStockFilter}>
@@ -331,7 +393,7 @@ const AllProducts = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Enhanced Products Grid */}
       <div className={`grid gap-4 ${
         gridType === 'grid2' 

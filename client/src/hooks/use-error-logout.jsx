@@ -9,7 +9,8 @@ const useErrorLogout = () => {
     const handleErrorLogout = (error, otherTitle = 'Error Occred') => {
         if (error.response.status === 400) {
             dispatch(setUserLogout())
-            toast('Session Expired Please login Again to continue')
+            // No toast notification - rely on automatic redirect
+            // The ProtectedRoute component will handle the redirect to login page
         } else {
             toast(otherTitle)
         }

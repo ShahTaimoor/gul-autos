@@ -43,6 +43,7 @@ const ProductList = () => {
 
   // Debounced search to reduce API calls - reduced delay for better responsiveness
   const debouncedSearchTerm = useDebounce(activeSearchTerm, 150);
+  const [enterSuggestionIds, setEnterSuggestionIds] = useState([]);
 
   // Search history and popular searches
   const [searchHistory, setSearchHistory] = useState([]);
@@ -81,46 +82,9 @@ const ProductList = () => {
 
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
-    let filtered = productList.filter((product) => product && product._id && product.stock > 0);
-    
-    // If a specific product was selected from suggestions, show only that product
-    if (selectedProductId) {
-      // First check if the product is in the current productList
-      const foundProduct = filtered.find(product => product._id === selectedProductId);
-      if (foundProduct) {
-        return [foundProduct];
-      }
-      
-      // If not found in current productList, check allProducts (used for suggestions)
-      const foundInAllProducts = allProducts.find(product => product._id === selectedProductId);
-      if (foundInAllProducts) {
-        return [foundInAllProducts];
-      }
-      
-      // If still not found, return empty array
-      return [];
-    }
-    
-    // Additional filtering for search precision
-    if (searchTerm && searchTerm.trim()) {
-      const searchWords = searchTerm.toLowerCase().split(/\s+/);
-      
-      // Apply comprehensive search filtering for all search terms
-      filtered = filtered.filter(product => {
-        const title = (product.title || '').toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        
-        // Check if all search words are present in either title or description
-        return searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(title) || regex.test(description);
-        });
-      });
-    }
-    
-    return filtered;
-  }, [productList, searchTerm, selectedProductId, allProducts]);
+    // The backend already handles filtering, so we just need to ensure products exist and are valid
+    return productList.filter((product) => product && product._id);
+  }, [productList]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -129,8 +93,10 @@ const ProductList = () => {
 
   // Fetch products with debounced search
   useEffect(() => {
-    // When searching, ignore category filter to show all products
-    const searchCategory = debouncedSearchTerm ? 'all' : category;
+    // If we have explicit suggestion/product IDs, fetch strictly by those IDs
+    const hasSuggestionIds = enterSuggestionIds.length > 0;
+    const searchCategory = hasSuggestionIds ? 'all' : (debouncedSearchTerm ? 'all' : category);
+    const searchParam = hasSuggestionIds ? '' : debouncedSearchTerm;
     
     // Reset to page 1 when search term changes
     if (debouncedSearchTerm !== activeSearchTerm && page > 1) {
@@ -138,13 +104,16 @@ const ProductList = () => {
       return;
     }
     
+    const productIdsParam = hasSuggestionIds ? enterSuggestionIds.join(',') : undefined;
+
     dispatch(fetchProducts({ 
       category: searchCategory, 
-      searchTerm: debouncedSearchTerm, 
+      searchTerm: searchParam, 
       page, 
       limit, 
       stockFilter: 'active',
-      sortBy: sortOrder
+      sortBy: sortOrder,
+      productIds: productIdsParam
     })).then((res) => {
       // Go back one page if current page has no results
       if (res.payload?.data?.length === 0 && page > 1) {
@@ -153,7 +122,7 @@ const ProductList = () => {
     }).catch((error) => {
       console.error('Error fetching products:', error);
     });
-  }, [dispatch, category, debouncedSearchTerm, page, limit, sortOrder, activeSearchTerm]);
+  }, [dispatch, category, debouncedSearchTerm, page, limit, sortOrder, enterSuggestionIds]);
 
   // Fetch categories
   useEffect(() => {
@@ -226,7 +195,12 @@ const ProductList = () => {
     setSearchTerm(''); // Clear search when selecting category
     setActiveSearchTerm(''); // Clear active search
     setSelectedProductId(null); // Clear selected product
+    setEnterSuggestionIds([]); // Clear suggestion IDs when changing category
     setPage(1); // Reset to first page when changing category
+    // Scroll to top when selecting a category
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, []);
 
   // Add function to clear selected product and return to normal view
@@ -234,11 +208,13 @@ const ProductList = () => {
     setSelectedProductId(null);
     setSearchTerm('');
     setActiveSearchTerm('');
+    setEnterSuggestionIds([]);
   }, []);
 
   const handleSearchChange = useCallback((value) => {
     setSearchTerm(value);
     setSelectedProductId(null); // Clear selected product when typing manually
+    setEnterSuggestionIds([]); // Clear suggestion IDs when typing manually
     setPage(1); // Reset to first page when searching
   }, []);
 
@@ -260,9 +236,19 @@ const ProductList = () => {
   }, []);
 
   // Handle search submission
-  const handleSearchSubmit = useCallback((term, productId = null) => {
+  const handleSearchSubmit = useCallback((term, productId = null, suggestionIds = []) => {
     setActiveSearchTerm(term);
-    setSelectedProductId(productId); // Set specific product ID if provided (null for Enter key)
+    // Clear any previous selection
+    setSelectedProductId(null);
+    
+    // If a specific product ID is provided (from suggestion click), use it
+    if (productId) {
+      setEnterSuggestionIds([productId]);
+    } else {
+      // For Enter key or general search, use all suggestion IDs
+      setEnterSuggestionIds(Array.isArray(suggestionIds) ? suggestionIds : []);
+    }
+    
     setPage(1); // Reset to first page when searching
   }, []);
 

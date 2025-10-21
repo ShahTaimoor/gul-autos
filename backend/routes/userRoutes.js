@@ -3,6 +3,15 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const { isAuthorized, isAdmin, isSuperAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const mongoose = require('mongoose');
+
+// Simple refresh-token blacklist model (TTL via expiresAt)
+const blacklistedTokenSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true, index: true },
+  expiresAt: { type: Date, required: true, index: true },
+});
+blacklistedTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+const BlacklistedToken = mongoose.models.BlacklistedToken || mongoose.model('BlacklistedToken', blacklistedTokenSchema);
 
 const router = express.Router();
 
@@ -25,9 +34,9 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// Logi
+// Enhanced Login with Access & Refresh Tokens (supports rememberMe)
 router.post('/login', async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, rememberMe } = req.body;
 
   try {
     const user = await User.findOne({ name });
@@ -38,50 +47,229 @@ router.post('/login', async (req, res) => {
 
     user.password = undefined;
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXP || '365d',
-    });
+    // Create access token (short-lived)
+    const accessToken = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '15m' }
+    );
 
-    return res.cookie('token', token, {
+    // Create refresh token (long-lived; extended when rememberMe)
+    const refreshToken = jwt.sign(
+      { id: user._id, type: 'refresh' }, 
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, 
+      { expiresIn: rememberMe ? (process.env.REFRESH_TOKEN_EXPIRES || '30d') : '7d' }
+    );
+
+    // Set secure cookies for mobile compatibility
+    const cookieOptions = {
       httpOnly: true,
-      secure: true, 
-      sameSite: 'None',
-      maxAge: 365 * 24 * 60 * 60 * 1000,
-    }).status(200).json({
-      success: true,
-      user,
-      token,
-    });
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes for access token
+    };
+
+    const refreshCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+    };
+
+    return res
+      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('refreshToken', refreshToken, refreshCookieOptions)
+      .status(200).json({
+        success: true,
+        user,
+        accessToken,
+      });
   } catch (error) {
     console.error(error);
     res.status(500).send('Server error during login');
   }
 });
 
-// Logout
-router.get('/logout', (req, res) => {
-  return res.cookie('token', '', {
+// Refresh Token Endpoint
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+
+    if (!refreshToken) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Refresh token not provided' 
+      });
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(
+      refreshToken, 
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET
+    );
+
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid token type' 
+      });
+    }
+
+    // Get user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Check blacklist
+    const blacklisted = await BlacklistedToken.findOne({ token: refreshToken });
+    if (blacklisted) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Refresh token invalidated' 
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '15m' }
+    );
+
+    // Set new access token cookie
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    };
+
+    return res
+      .cookie('accessToken', newAccessToken, cookieOptions)
+      .status(200).json({
+        success: true,
+        accessToken: newAccessToken,
+        message: 'Token refreshed successfully'
+      });
+
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    // blacklist offending refresh token if present
+    const { refreshToken } = req.cookies || {};
+    if (refreshToken) {
+      try {
+        await BlacklistedToken.create({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000) });
+      } catch {}
+    }
+    return res.status(401).json({ success: false, message: 'Invalid or expired refresh token' });
+  }
+});
+
+// Enhanced Logout
+router.get('/logout', async (req, res) => {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     expires: new Date(0),
-  }).status(200).json({
-    success: true,
-    message: 'Logged out successfully',
-  });
+  };
+  // blacklist refresh token to prevent reuse
+  const { refreshToken } = req.cookies || {};
+  if (refreshToken) {
+    try { await BlacklistedToken.create({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000) }); } catch {}
+  }
+  return res
+    .cookie('accessToken', '', cookieOptions)
+    .cookie('refreshToken', '', cookieOptions)
+    .status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
 });
 
 // Add POST logout route for consistency
-router.post('/logout', (req, res) => {
-  return res.cookie('token', '', {
+router.post('/logout', async (req, res) => {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     expires: new Date(0),
-  }).status(200).json({
-    success: true,
-    message: 'Logged out successfully',
-  });
+  };
+  const { refreshToken } = req.cookies || {};
+  if (refreshToken) {
+    try { await BlacklistedToken.create({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000) }); } catch {}
+  }
+  return res
+    .cookie('accessToken', '', cookieOptions)
+    .cookie('refreshToken', '', cookieOptions)
+    .status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+});
+
+// Token verification endpoint for mobile auth checks
+router.get('/verify-token', async (req, res) => {
+  try {
+    const { accessToken } = req.cookies;
+
+    if (!accessToken) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'No access token provided' 
+      });
+    }
+
+    // Verify access token
+    const decoded = jwt.verify(accessToken, process.env.JWT_SECRET);
+    
+    // Check if token is not a refresh token
+    if (decoded.type === 'refresh') {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Invalid token type' 
+      });
+    }
+
+    // Get user to ensure they still exist
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Token is valid',
+      user: {
+        id: user._id,
+        name: user.name,
+        role: user.role
+      }
+    });
+
+  } catch (error) {
+    console.error('Token verification error:', error);
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Token expired',
+        code: 'TOKEN_EXPIRED'
+      });
+    }
+    
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Invalid token' 
+    });
+  }
 });
 
 // All users

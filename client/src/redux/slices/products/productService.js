@@ -19,12 +19,12 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 24, stockFilter, sortBy = 'az') => {
+const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 2000, stockFilter, sortBy = 'az', productIds) => {
     try {
       const response = await axiosInstance.get(
         '/get-products',
         {
-          params: { category, search: searchTerm, page, limit, stockFilter, sortBy },
+          params: { category, search: searchTerm, page, limit, stockFilter, sortBy, productIds },
           headers: { 'Content-Type': 'application/json' },
         }
       );

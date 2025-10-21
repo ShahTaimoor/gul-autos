@@ -30,7 +30,8 @@ const SearchBar = React.memo(({
     // Filter products that match the search term with precision
     const matchingProducts = products
       .filter(product => {
-        if (!product || !product.title) return false;
+        // Check if product exists, has title, and is active (stock > 0)
+        if (!product || !product.title || product.stock <= 0) return false;
         const title = product.title.toLowerCase();
         const description = (product.description || '').toLowerCase();
         
@@ -100,9 +101,14 @@ const SearchBar = React.memo(({
     if (searchTerm.trim()) {
       setShowSuggestions(false);
       
-      // Submit the search
+      // Build current suggestions list and pass their IDs to the parent so
+      // the backend can fetch exactly these products.
+      const currentSuggestions = generateSuggestions(searchTerm.trim());
+      const suggestionIds = currentSuggestions.map(s => s.product?._id).filter(Boolean);
+      
+      // Submit the search with suggestion IDs
       if (onSearchSubmit) {
-        onSearchSubmit(searchTerm.trim());
+        onSearchSubmit(searchTerm.trim(), null, suggestionIds);
       }
       
       // Track search for analytics
@@ -117,13 +123,13 @@ const SearchBar = React.memo(({
       // Scroll to top to see results
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [searchTerm, searchHistory, onSearchSubmit]);
+  }, [searchTerm, searchHistory, onSearchSubmit, generateSuggestions]);
 
   const handleSuggestionClick = useCallback((suggestion) => {
     const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
     
-    // Keep the search text visible - don't clear the input
-    // onSearchChange(''); // Removed this line to keep search text
+    // Update the search term to match the clicked suggestion
+    onSearchChange(suggestionText);
     setShowSuggestions(false);
     
     // Submit the search when clicking a suggestion

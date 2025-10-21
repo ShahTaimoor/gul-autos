@@ -15,7 +15,7 @@ import {
   SheetClose,
 } from "../ui/sheet";
 import { Button } from "../ui/button";
-import { Dialog, DialogContent } from "../ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -375,6 +375,10 @@ const BottomNavigation = () => {
       {/* Checkout Dialog */}
       <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
         <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Checkout</DialogTitle>
+            <DialogDescription>Complete your order</DialogDescription>
+          </DialogHeader>
           <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
         </DialogContent>
       </Dialog>

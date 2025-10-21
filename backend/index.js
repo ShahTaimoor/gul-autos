@@ -7,6 +7,7 @@ const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const categoryRoute = require('./routes/categoryRoutes')
 const cookieParser = require('cookie-parser')
+const { notFound, errorHandler } = require('./middleware/errorHandler')
 const cartRoutes = require('./routes/cartRoutes');
 
 dotenv.config();
@@ -39,6 +40,10 @@ app.use('/api', cartRoutes);
 app.get('/', (req, res) => {
     res.send('Welcome to Zaryab Auto API');
 });
+
+// Global error handling
+app.use(notFound)
+app.use(errorHandler)
 
 // Start the server
 const PORT = process.env.PORT || 5000;

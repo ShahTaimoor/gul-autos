@@ -15,6 +15,29 @@ export const store = configureStore({
         categories: categoriesReducer,
         orders: ordersReducer,
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: {
+                // Ignore these action types
+                ignoredActions: [
+                    'products/fetchAll/fulfilled',
+                    'products/getSingleProduct/fulfilled',
+                    'products/AddProduct/fulfilled',
+                    'products/updateSingleProduct/fulfilled',
+                    'products/importProductsFromExcel/fulfilled',
+                ],
+                // Ignore these field paths in all actions
+                ignoredActionPaths: ['payload.timestamp', 'payload.error.stack'],
+                // Ignore these paths in the state
+                ignoredPaths: [
+                    'products.products',
+                    'products.singleProducts',
+                    'auth.user',
+                ],
+                // Increase the warning threshold to 50ms
+                warnAfter: 50,
+            },
+        }),
 })
 
 // Set the store reference for axiosInstance

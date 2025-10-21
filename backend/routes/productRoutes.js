@@ -433,7 +433,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 24, stockFilter = 'all', sortBy = 'az' } = req.query;
+    let { category, search, page = 1, limit = 24, stockFilter = 'all', sortBy = 'az', productIds } = req.query;
 
     if (limit === 'all') {
       limit = 0; 
@@ -447,6 +447,18 @@ router.get('/get-products', async (req, res) => {
       query.stock = { $gt: 0 };
     } else if (stockFilter === 'out-of-stock') {
       query.stock = { $lte: 0 };
+    }
+
+    // Handle specific product IDs (from search suggestions)
+    if (productIds && productIds.trim()) {
+      const ids = productIds.split(',').filter(id => id.trim());
+      if (ids.length > 0) {
+        // Validate ObjectIds
+        const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
+        if (validIds.length > 0) {
+          query._id = { $in: validIds };
+        }
+      }
     }
 
     // Handle category filter

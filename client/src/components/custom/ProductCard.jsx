@@ -29,13 +29,28 @@ const ProductCard = React.memo(({
     };
   }, []);
 
-  const handleAddClick = useCallback(() => {
+  const handleAddClick = useCallback((e) => {
+    // Prevent default behavior and stop propagation for iPhone compatibility
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
       clickAudioRef.current.play();
     }
     onAddToCart(product);
   }, [onAddToCart, product]);
+
+  // iPhone Safari touch event handler
+  const handleTouchStart = useCallback((e) => {
+    // Don't prevent default for touch start to avoid passive listener issues
+    e.stopPropagation();
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    e.stopPropagation();
+    handleAddClick(e);
+  }, [handleAddClick]);
 
   const handleQuantityChange = useCallback((value) => {
     if (value === '') {
@@ -48,12 +63,14 @@ const ProductCard = React.memo(({
     }
   }, [onQuantityChange, product._id, product.stock]);
 
-  const handleDecrease = useCallback(() => {
+  const handleDecrease = useCallback((e) => {
+    e.stopPropagation();
     const newValue = Math.max((parseInt(quantity) || 1) - 1, 1);
     onQuantityChange(product._id, newValue, product.stock);
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
-  const handleIncrease = useCallback(() => {
+  const handleIncrease = useCallback((e) => {
+    e.stopPropagation();
     const newValue = Math.min((parseInt(quantity) || 1) + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
   }, [quantity, onQuantityChange, product._id, product.stock]);
@@ -148,7 +165,18 @@ const ProductCard = React.memo(({
             <div className="flex w-full justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={handleDecrease}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  handleDecrease(e);
+                }}
                 className="w-5 h-5 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                style={{
+                  touchAction: 'manipulation',
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
+                }}
                 disabled={currentQuantity <= 1}
                 aria-label="Decrease quantity"
               >
@@ -170,7 +198,18 @@ const ProductCard = React.memo(({
 
               <button
                 onClick={handleIncrease}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  handleIncrease(e);
+                }}
                 className="w-5 h-5 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                style={{
+                  touchAction: 'manipulation',
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none'
+                }}
                 disabled={currentQuantity >= product.stock}
                 aria-label="Increase quantity"
               >
@@ -182,6 +221,8 @@ const ProductCard = React.memo(({
           {/* Add to Cart Button - 50% width on desktop */}
           <button
             onClick={handleAddClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
             className={`text-xs w-1/2 cursor-pointer px-2 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 ${
               isInCart
@@ -190,6 +231,12 @@ const ProductCard = React.memo(({
                   ? 'bg-red-700 cursor-not-allowed'
                   : 'bg-black/80 hover:bg-black/90 hover:shadow-2xl'
             } text-white`}
+            style={{
+              touchAction: 'manipulation',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none'
+            }}
             aria-label={isInCart ? 'Added to cart' : 'Add to cart'}
           >
             {isInCart ? (
