@@ -15,27 +15,52 @@ const ToggleLogout = ({ user }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const clearCookies = () => {
+        const cookies = ['accessToken', 'refreshToken'];
+        const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
+        const paths = ['/', '/api', '/admin'];
+        
+        cookies.forEach(cookieName => {
+            domains.forEach(domain => {
+                paths.forEach(path => {
+                    // Clear with different combinations
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
+                    document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=.${domain};`;
+                    document.cookie = `${cookieName}=; max-age=0; path=${path};`;
+                    document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain};`;
+                    document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=.${domain};`;
+                });
+            });
+        });
+    };
+
     const handleLogout = () => {
+        // Always clear local data first
+        window.localStorage.removeItem('user');
+        dispatch(logout());
+        
+        // Clear cookies on client side as fallback
+        clearCookies();
+        
+        // Then try to logout from server
         axios
             .get(`${import.meta.env.VITE_API_URL}/logout`, {
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },
             })
             .then((response) => {
-                // Clear user data from localStorage
-                window.localStorage.removeItem('user');
-
-                // Dispatch the logout action to clear user data from Redux store
-                dispatch(logout());
-
+                // Clear cookies again after server response
+                clearCookies();
                 // Redirect to the login page
                 navigate('/login');
             })
             .catch((error) => {
-                // In case of error, still clear the localStorage
-                window.localStorage.removeItem('user');
-                const errorMessage = error.response?.data || 'Logout failed, please try again.';
-                console.error(errorMessage);
+                // Clear cookies again even if API fails
+                clearCookies();
+                // Even if API fails, user is already logged out locally
+                // Redirect to login page anyway
+                navigate('/login');
             });
     };
 

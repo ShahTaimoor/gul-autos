@@ -125,17 +125,17 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col justify-center items-center p-4'>
-      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-2xl border border-white/40 shadow-2xl'>
-        <div className='flex justify-center mb-8'>
+    <div className='min-h-screen  bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col justify-center items-center p-4 sm:p-6'>
+      <form onSubmit={handleSubmit} className='w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-white/40 shadow-2xl'>
+        <div className='flex justify-center mb-6 sm:mb-8'>
           <div className="relative">
-            <img src="/logo.jpeg" alt="GULTRADERS Logo" loading="eager" className="h-20 w-auto object-contain" />
+            <img src="/logo.jpeg" alt="GULTRADERS Logo" loading="eager" className="h-16 sm:h-20 w-auto object-contain" />
             <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl blur-sm"></div>
           </div>
         </div>
         
-        <h1 className='text-2xl font-bold text-center mb-2 text-gray-800'>Welcome Back</h1>
-        <p className='text-center mb-8 text-gray-600'>Sign in to your GULTRADERS account</p>
+        <h1 className='text-xl sm:text-2xl font-bold text-center mb-2 text-gray-800'>Welcome Back</h1>
+        <p className='text-center mb-6 sm:mb-8 text-sm sm:text-base text-gray-600'>Sign in to your GULTRADERS account</p>
 
         <div className='mb-4'>
           <label className='block text-sm font-semibold mb-2'>Shop Name</label>
@@ -148,6 +148,7 @@ const Login = () => {
             required
             disabled={loading}
             autoComplete="username"
+            className='h-11 sm:h-10'
           />
           {errorMsg.name && (
             <p className="text-red-500 text-xs mt-1">{errorMsg.name}</p>
@@ -163,14 +164,14 @@ const Login = () => {
             value={inputValue.password}
             onChange={handleChange}
             required
-            className='pr-10'
+            className='pr-10 h-11 sm:h-10'
             disabled={loading}
             autoComplete="current-password"
           />
           <button
             type="button"
             onClick={togglePasswordVisibility}
-            className='absolute right-3 top-9 cursor-pointer text-gray-500 hover:text-gray-700'
+            className='absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1'
             disabled={loading}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -181,7 +182,7 @@ const Login = () => {
         </div>
 
         <Button 
-          className='w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95' 
+          className='w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 h-12 sm:h-auto' 
           disabled={loading} 
           type='submit'
         >

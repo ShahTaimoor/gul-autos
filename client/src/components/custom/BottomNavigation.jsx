@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
 import { Badge } from "../ui/badge";
+import axios from "axios";
 import {
   Sheet,
   SheetTrigger,
@@ -189,14 +190,61 @@ const BottomNavigation = () => {
     setShowInstallPrompt(false);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    toast.success('Logged out successfully');
-    navigate('/');
+  const clearCookies = () => {
+    const cookies = ['accessToken', 'refreshToken'];
+    const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
+    const paths = ['/', '/api', '/admin'];
+    
+    cookies.forEach(cookieName => {
+      domains.forEach(domain => {
+        paths.forEach(path => {
+          // Clear with different combinations
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=.${domain};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=.${domain};`;
+        });
+      });
+    });
   };
 
-  // Don't render on desktop
-  if (!isMobile) return null;
+  const handleLogout = () => {
+    // Always clear local data first
+    window.localStorage.removeItem('user');
+    dispatch(logout());
+    
+    // Clear cookies on client side as fallback
+    clearCookies();
+    
+    // Then try to logout from server
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/logout`, {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      })
+      .then((response) => {
+        // Clear cookies again after server response
+        clearCookies();
+        toast.success('Logged out successfully');
+        navigate('/');
+      })
+      .catch((error) => {
+        // Clear cookies again even if API fails
+        clearCookies();
+        // Even if API fails, user is already logged out locally
+        toast.success('Logged out successfully');
+        navigate('/');
+      });
+  };
+
+  // Don't render on desktop - but ensure it shows on mobile
+  // Add debugging to check mobile detection
+  console.log('BottomNavigation - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
+  
+  // Always render but use responsive classes for visibility
+  // if (!isMobile) return null;
 
   const navItems = [
     {
@@ -241,7 +289,7 @@ const BottomNavigation = () => {
      
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-lg lg:hidden">
         <div className="flex items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           if (!item.show) return null;

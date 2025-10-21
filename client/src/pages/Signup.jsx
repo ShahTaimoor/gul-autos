@@ -52,17 +52,17 @@ const Signup = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col items-center justify-center p-4'>
-      <form onSubmit={handleSubmit} className='w-full max-w-md bg-white/80 backdrop-blur-xl p-8 rounded-2xl border border-white/40 shadow-2xl'>
-        <div className='flex justify-center mb-8'>
+    <div className='min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col items-center justify-center p-4 sm:p-6'>
+      <form onSubmit={handleSubmit} className='w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-white/40 shadow-2xl'>
+        <div className='flex justify-center mb-6 sm:mb-8'>
           <div className="relative">
-            <img src="/logo.jpeg" alt="GULTRADERS Logo" className="h-20 w-auto object-contain" />
+            <img src="/logo.jpeg" alt="GULTRADERS Logo" className="h-16 sm:h-20 w-auto object-contain" />
             <div className="absolute -inset-2 bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-2xl blur-sm"></div>
           </div>
         </div>
         
-        <h1 className='text-2xl font-bold text-center mb-2 text-gray-800'>Join GULTRADERS</h1>
-        <p className='text-center mb-8 text-gray-600'>Create your account to get started</p>
+        <h1 className='text-xl sm:text-2xl font-bold text-center mb-2 text-gray-800'>Join GULTRADERS</h1>
+        <p className='text-center mb-6 sm:mb-8 text-sm sm:text-base text-gray-600'>Create your account to get started</p>
 
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -80,6 +80,7 @@ const Signup = () => {
             name='name'
             value={inputValue.name}
             required
+            className='h-11 sm:h-10'
           />
         </div>
 
@@ -92,18 +93,19 @@ const Signup = () => {
             name='password'
             value={inputValue.password}
             required
+            className='h-11 sm:h-10 pr-10'
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 transform -translate-y-1/2"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1"
             onClick={togglePasswordVisibility}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
-            {showPassword ? <EyeOff className="h-5 w-5 mt-7 text-gray-500 mr-1.5" /> : <Eye className="h-5 w-5 mt-7 mr-1.5 text-gray-500" />}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
 
-        <Button className='w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95' disabled={loading}>
+        <Button className='w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 h-12 sm:h-auto' disabled={loading}>
           {loading ? (
             <OneLoader size="small" text="Signing Up..." showText={false} />
           ) : (

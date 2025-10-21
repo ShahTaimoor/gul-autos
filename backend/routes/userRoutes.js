@@ -171,17 +171,28 @@ router.post('/refresh-token', async (req, res) => {
 
 // Enhanced Logout
 router.get('/logout', async (req, res) => {
+  console.log('Logout request received');
+  console.log('Cookies received:', req.cookies);
+  
+  // Use same cookie options as login for consistency
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-    expires: new Date(0),
+    maxAge: 0, // Immediately expire the cookie
+    path: '/', // Ensure we clear cookies from root path
   };
+  
+  console.log('Cookie options for clearing:', cookieOptions);
+  
   // blacklist refresh token to prevent reuse
   const { refreshToken } = req.cookies || {};
   if (refreshToken) {
+    console.log('Blacklisting refresh token');
     try { await BlacklistedToken.create({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000) }); } catch {}
   }
+  
+  console.log('Clearing cookies...');
   return res
     .cookie('accessToken', '', cookieOptions)
     .cookie('refreshToken', '', cookieOptions)
@@ -193,16 +204,20 @@ router.get('/logout', async (req, res) => {
 
 // Add POST logout route for consistency
 router.post('/logout', async (req, res) => {
+  // Use same cookie options as login for consistency
   const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-    expires: new Date(0),
+    maxAge: 0, // Immediately expire the cookie
+    path: '/', // Ensure we clear cookies from root path
   };
+  
   const { refreshToken } = req.cookies || {};
   if (refreshToken) {
     try { await BlacklistedToken.create({ token: refreshToken, expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000) }); } catch {}
   }
+  
   return res
     .cookie('accessToken', '', cookieOptions)
     .cookie('refreshToken', '', cookieOptions)

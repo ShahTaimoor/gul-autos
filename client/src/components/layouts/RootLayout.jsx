@@ -3,18 +3,23 @@ import Navbar from '../custom/Navbar'
 import BottomNavigation from '../custom/BottomNavigation'
 import Footer from '../custom/Footer'
 import { useIsMobile } from '../../hooks/use-mobile'
+import { useLocation } from 'react-router-dom'
 
 const RootLayout = ({ children }) => {
     const isMobile = useIsMobile()
+    const location = useLocation()
+    
+    // Hide navigation on login/signup pages
+    const hideNavigation = location.pathname === '/login' || location.pathname === '/signup'
     
     return (
         <>
-            <Navbar />
-            <main className={isMobile ? 'pb-20' : ''}>
+            {!hideNavigation && <Navbar />}
+            <main className={isMobile && !hideNavigation ? 'pb-20' : ''}>
                 {children}
             </main>
-            <Footer />
-            <BottomNavigation />
+            {!hideNavigation && <Footer />}
+            {!hideNavigation && <BottomNavigation />}
         </>
     )
 }

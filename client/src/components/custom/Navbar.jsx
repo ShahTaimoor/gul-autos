@@ -109,6 +109,9 @@ const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Add debugging to check mobile detection
+  console.log('Navbar - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
 
   // Calculate total quantity
@@ -177,7 +180,7 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm ${isMobile ? 'hidden' : 'block'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Left side: Logo + Brand */}

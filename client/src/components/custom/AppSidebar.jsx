@@ -60,20 +60,50 @@ export function AppSidebar() {
     }
   }, [dispatch, user]);
 
-  // Handle logouTs
+  const clearCookies = () => {
+    const cookies = ['accessToken', 'refreshToken'];
+    const domains = [window.location.hostname, 'localhost', '127.0.0.1'];
+    const paths = ['/', '/api', '/admin'];
+    
+    cookies.forEach(cookieName => {
+      domains.forEach(domain => {
+        paths.forEach(path => {
+          // Clear with different combinations
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path};`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=${domain};`;
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; domain=.${domain};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=${domain};`;
+          document.cookie = `${cookieName}=; max-age=0; path=${path}; domain=.${domain};`;
+        });
+      });
+    });
+  };
+
+  // Handle logout
   const handleLogout = async () => {
     setLoading(true);
+    
+    // Always clear local data first
+    localStorage.removeItem("user");
+    dispatch(logout());
+    
+    // Clear cookies on client side as fallback
+    clearCookies();
+    
     try {
       await axios.get(`${import.meta.env.VITE_API_URL}/logout`, {
         withCredentials: true,
         headers: { "Content-Type": "application/json" },
       });
-      localStorage.removeItem("user");
-      dispatch(logout());
+      // Clear cookies again after server response
+      clearCookies();
       navigate("/login");
     } catch (error) {
-      console.error("Logout error:", error);
-      setMessage("An error occurred while logging out.");
+      // Clear cookies again even if API fails
+      clearCookies();
+      // Even if API fails, user is already logged out locally
+      navigate("/login");
     } finally {
       setLoading(false);
     }
