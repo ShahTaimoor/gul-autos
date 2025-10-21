@@ -149,7 +149,7 @@ router.post('/media/upload', isAuthorized, isAdminOrSuperAdmin, upload.array('im
 // @access Private/Admin
 router.get('/media', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = '' } = req.query;
+    const { page = 1, limit = 2000, search = '' } = req.query;
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.max(1, parseInt(limit));
     const skip = (pageNum - 1) * limitNum;
@@ -199,7 +199,7 @@ router.get('/media', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
 // @access Private/Admin
 router.get('/media/search', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
-    const { q, limit = 20, offset = 0 } = req.query;
+    const { q, limit = 2000, offset = 0 } = req.query;
 
     if (!q || q.trim().length === 0) {
       return res.status(400).json({

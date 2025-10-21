@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Button } from '../components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
 import SearchBar from '../components/custom/SearchBar';
 import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
-import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
@@ -35,6 +36,7 @@ const Media = () => {
   });
 
   // Local state for UI-specific functionality
+  const [activeTab, setActiveTab] = useState('gallery');
   const [previewImage, setPreviewImage] = useState(null);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -48,17 +50,28 @@ const Media = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+  
+  // Separate state for uploaded media display in Upload tab
+  const [filteredUploadedMedia, setFilteredUploadedMedia] = useState([]);
+  const [uploadSearchTerm, setUploadSearchTerm] = useState(''); // Search term for uploaded media
+  
+  // Pagination state for Upload tab
+  const [uploadCurrentPage, setUploadCurrentPage] = useState(1);
+  const [uploadPageSize, setUploadPageSize] = useState(24); // Set back to 24 per page as requested
+  const [uploadTotalPages, setUploadTotalPages] = useState(1);
+  const [showAllImages, setShowAllImages] = useState(false); // Option to show all images without pagination
 
   // Fetch media from database
   const fetchMedia = useCallback(async () => {
     setMediaLoading(true);
     try {
       console.log('Fetching media from:', axiosInstance.defaults.baseURL + '/media');
-      const response = await axiosInstance.get('/media');
+      // Request up to 2000 images from backend
+      const response = await axiosInstance.get('/media?limit=2000');
       
       if (response.data.success) {
         setUploadedMedia(response.data.data);
-        console.log('Fetched media from database:', response.data.data);
+        console.log('Fetched media from database:', response.data.data.length, 'images');
       } else {
         console.error('Media fetch failed:', response.data.message);
         toast.error('Failed to fetch media: ' + response.data.message);
@@ -91,34 +104,55 @@ const Media = () => {
   useEffect(() => {
     console.log('useEffect triggered - products:', products.length, 'uploadedMedia:', uploadedMedia.length);
     
+    // For Gallery tab: Show only product images (no uploaded media)
     let filtered = products.filter(product => 
       product && 
       product._id && 
       (product.picture?.secure_url || product.image)
     );
 
-    // Add uploaded media to the filtered results
-    const mediaItems = uploadedMedia.map(media => ({
-      _id: media._id || media.id,
-      title: media.name || media.originalName,
-      picture: { secure_url: media.url },
-      isUploadedMedia: true,
-      uploadedAt: media.createdAt
-    }));
-
-    console.log('Media items created:', mediaItems);
-    console.log('Raw uploaded media:', uploadedMedia);
-
-    // Combine product images with uploaded media
-    const allMedia = [...filtered, ...mediaItems];
-    console.log('All media combined:', allMedia.length, 'items');
-    console.log('Combined media details:', allMedia);
+    console.log('Product images filtered:', filtered.length, 'items');
 
     // Apply search filtering using the hook
-    const searchFiltered = search.filterProducts(allMedia, search.searchTerm, search.selectedProductId);
-    console.log('Final filtered products:', searchFiltered.length);
+    const searchFiltered = search.filterProducts(filtered, search.searchTerm, search.selectedProductId);
+    console.log('Final filtered products for Gallery:', searchFiltered.length);
     setFilteredProducts(searchFiltered);
-  }, [products, uploadedMedia, search.searchTerm, search.selectedProductId, search.filterProducts]);
+  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
+
+  // Filter uploaded media for Upload tab with pagination and search
+  useEffect(() => {
+    console.log('Filtering uploaded media for Upload tab:', uploadedMedia.length);
+    
+    // First apply search filter
+    let searchFiltered = uploadedMedia;
+    if (uploadSearchTerm && uploadSearchTerm.trim()) {
+      const searchLower = uploadSearchTerm.toLowerCase();
+      searchFiltered = uploadedMedia.filter(media => 
+        media.name?.toLowerCase().includes(searchLower) ||
+        media.originalName?.toLowerCase().includes(searchLower) ||
+        media.url?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    if (showAllImages) {
+      // Show all filtered images without pagination
+      setFilteredUploadedMedia(searchFiltered);
+      setUploadTotalPages(1);
+      console.log(`Showing all ${searchFiltered.length} filtered images`);
+    } else {
+      // Calculate pagination
+      const totalPages = Math.ceil(searchFiltered.length / uploadPageSize);
+      setUploadTotalPages(totalPages);
+      
+      // Get current page items
+      const startIndex = (uploadCurrentPage - 1) * uploadPageSize;
+      const endIndex = startIndex + uploadPageSize;
+      const paginatedMedia = searchFiltered.slice(startIndex, endIndex);
+      
+      console.log(`Upload pagination: page ${uploadCurrentPage}/${totalPages}, showing ${paginatedMedia.length} items`);
+      setFilteredUploadedMedia(paginatedMedia);
+    }
+  }, [uploadedMedia, uploadCurrentPage, uploadPageSize, showAllImages, uploadSearchTerm]);
 
   const handlePreviewImage = useCallback((imageUrl) => {
     setPreviewImage(imageUrl);
@@ -150,9 +184,32 @@ const Media = () => {
     search.handleSearchWithTracking(term, productId);
   }, [search]);
 
+  // Upload tab search handlers
+  const handleUploadSearchChange = useCallback((value) => {
+    setUploadSearchTerm(value);
+    setUploadCurrentPage(1); // Reset to first page when searching
+  }, []);
+
+  const handleUploadSearchSubmit = useCallback((term) => {
+    setUploadSearchTerm(term);
+    setUploadCurrentPage(1); // Reset to first page when searching
+  }, []);
+
   const handlePageChange = useCallback((page) => {
     pagination.setCurrentPage(page);
   }, [pagination]);
+
+  const handleUploadPageChange = useCallback((page) => {
+    setUploadCurrentPage(page);
+  }, []);
+
+  // Reset upload page when switching to upload tab
+  useEffect(() => {
+    if (activeTab === 'upload') {
+      setUploadCurrentPage(1);
+      setShowAllImages(false); // Reset to paginated view when switching to upload tab
+    }
+  }, [activeTab]);
 
   // Delete functionality
   const handleDeleteSingle = useCallback(async (itemId) => {
@@ -219,12 +276,12 @@ const Media = () => {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    if (selectedItems.length === filteredProducts.length) {
+    if (selectedItems.length === filteredUploadedMedia.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filteredProducts.map(item => item._id));
+      setSelectedItems(filteredUploadedMedia.map(item => item._id));
     }
-  }, [selectedItems.length, filteredProducts]);
+  }, [selectedItems.length, filteredUploadedMedia]);
 
   const toggleDeleteMode = useCallback(() => {
     setDeleteMode(prev => !prev);
@@ -421,230 +478,418 @@ const Media = () => {
         <p className="text-gray-600">Browse and manage all product images</p>
       </div>
 
-      {/* Enhanced Search Bar */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-        <div className="flex flex-col lg:flex-row gap-4 items-center">
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsTrigger value="gallery" className="flex items-center gap-2">
+            <Image className="h-4 w-4" />
+            Gallery
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <UploadIcon className="h-4 w-4" />
+            Upload
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Gallery Tab */}
+        <TabsContent value="gallery" className="space-y-6">
           {/* Enhanced Search Bar */}
-          <div className="flex-1">
-            <SearchBar
-              searchTerm={search.searchTerm}
-              onSearchChange={handleSearchChange}
-              onSearchSubmit={handleSearchSubmit}
-              searchHistory={search.searchHistory}
-              popularSearches={search.popularSearches}
-              products={search.allProducts}
-            />
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-center">
+              {/* Enhanced Search Bar */}
+              <div className="flex-1">
+                <SearchBar
+                  searchTerm={search.searchTerm}
+                  onSearchChange={handleSearchChange}
+                  onSearchSubmit={handleSearchSubmit}
+                  searchHistory={search.searchHistory}
+                  popularSearches={search.popularSearches}
+                  products={search.allProducts}
+                />
+              </div>
+
+              {/* Gallery Actions - Export Button */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowExportModal(true)}
+                  className="flex items-center gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Export
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Import/Export/Delete Buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
-            >
-              <Upload className="h-4 w-4" />
-              Import
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => setShowExportModal(true)}
-              className="flex items-center gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300"
-            >
-              <FileDown className="h-4 w-4" />
-              Export
-            </Button>
-
-            <Button
-              variant={deleteMode ? "destructive" : "outline"}
-              onClick={toggleDeleteMode}
-              className="flex items-center gap-2 transition-all duration-200 hover:bg-red-50 hover:border-red-300"
-            >
-              <Trash2 className="h-4 w-4" />
-              {deleteMode ? 'Cancel Delete' : 'Delete Mode'}
-            </Button>
-
-            {deleteMode && selectedItems.length > 0 && (
-              <Button
-                variant="destructive"
-                onClick={() => setShowDeleteModal(true)}
-                className="flex items-center gap-2 transition-all duration-200"
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Selected ({selectedItems.length})
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Results Info */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            Showing {filteredProducts.length} images
-            {search.searchTerm && ` for "${search.searchTerm}"`}
-            {uploadedMedia.length > 0 && (
-              <span className="ml-2 text-blue-600 font-medium">
-                ({uploadedMedia.length} uploaded media)
-              </span>
-            )}
-            {mediaLoading && (
-              <span className="ml-2 text-blue-600 animate-pulse">
-                Loading media...
-              </span>
-            )}
-          </p>
-          
-          {deleteMode && filteredProducts.length > 0 && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSelectAll}
-                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                {selectedItems.length === filteredProducts.length ? (
-                  <CheckSquare className="h-4 w-4 text-blue-600" />
-                ) : (
-                  <Square className="h-4 w-4" />
+          {/* Results Info */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600">
+                Showing {filteredProducts.length} product images
+                {search.searchTerm && ` for "${search.searchTerm}"`}
+                {mediaLoading && (
+                  <span className="ml-2 text-blue-600 animate-pulse">
+                    Loading images...
+                  </span>
                 )}
-                {selectedItems.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
-              </button>
-              {selectedItems.length > 0 && (
-                <span className="text-sm text-red-600 font-medium">
-                  {selectedItems.length} selected
-                </span>
-              )}
+              </p>
+              
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-1">
+              Product images from your inventory
+            </p>
+          </div>
+
+          {/* Media Grid - Image Only */}
+          {filteredProducts.length > 0 ? (
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+              {filteredProducts.map((product) => (
+                <div 
+                  key={product._id} 
+                  className="relative group transition-all duration-300 hover:scale-105"
+                >
+
+                  {/* Product Image Only */}
+                  <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer w-full"
+                  onClick={() => handlePreviewImage(product.picture?.secure_url || product.image)}
+                  >
+                    <LazyImage
+                      src={product.picture?.secure_url || product.image}
+                      alt={product.title || 'Product Image'}
+                      className="w-full h-full object-cover"
+                      fallback="/logo.jpeg"
+                      quality={85}
+                    />
+
+                    {/* Product Image Indicator */}
+                    <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                      <Image className="h-3 w-3" />
+                      Product
+                    </div>
+
+                    {/* Hover overlay with actions */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreviewImage(product.picture?.secure_url || product.image);
+                        }}
+                        className="bg-white/90 hover:bg-white text-black"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadImage(product.picture?.secure_url || product.image, product.title || 'product');
+                        }}
+                        className="bg-white/90 hover:bg-white text-black"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Filter className="h-16 w-16 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
+              <p className="text-gray-500">
+                {search.searchTerm
+                  ? 'Try adjusting your search criteria'
+                  : 'No product images available'}
+              </p>
             </div>
           )}
-        </div>
-        
-        {uploadedMedia.length > 0 && (
-          <p className="text-xs text-gray-500 mt-1">
-            Uploaded media includes images from Cloudinary storage
-          </p>
-        )}
-      </div>
 
-      {/* Media Grid - Image Only */}
-      {filteredProducts.length > 0 ? (
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-          {filteredProducts.map((product) => (
-            <div 
-              key={product._id} 
-              className="relative group transition-all duration-300 hover:scale-105"
-            >
-              {/* Selection Checkbox */}
-              {deleteMode && (
-                <div className="absolute top-2 right-2 z-10">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSelectItem(product._id);
-                    }}
-                    className="bg-white/90 hover:bg-white rounded-full p-1 shadow-md transition-all"
+          {/* Pagination */}
+          {filteredProducts.length > 0 && pagination.totalPages > 1 && (
+            <div className="mt-8">
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Upload Tab */}
+        <TabsContent value="upload" className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Upload Images</h2>
+                <p className="text-gray-600">Upload new images to your media library</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant={deleteMode ? "destructive" : "outline"}
+                  onClick={toggleDeleteMode}
+                  className="flex items-center gap-2 transition-all duration-200 hover:bg-red-50 hover:border-red-300"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {deleteMode ? 'Cancel Delete' : 'Delete Mode'}
+                </Button>
+
+                {deleteMode && selectedItems.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="flex items-center gap-2 transition-all duration-200"
                   >
-                    {selectedItems.includes(product._id) ? (
-                      <CheckSquare className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Square className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Product Image Only */}
-              <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer w-full"
-              onClick={() => handlePreviewImage(product.picture?.secure_url || product.image)}
-              >
-                <LazyImage
-                  src={product.picture?.secure_url || product.image}
-                  alt={product.title || 'Product Image'}
-                  className="w-full h-full object-cover"
-                  fallback="/logo.jpeg"
-                  quality={85}
-                />
-
-                {/* Uploaded Media Indicator */}
-                {product.isUploadedMedia && (
-                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                    <Upload className="h-3 w-3" />
-                    Uploaded
-                  </div>
+                    <Trash2 className="h-4 w-4" />
+                    Delete Selected ({selectedItems.length})
+                  </Button>
                 )}
 
-                {/* Hover overlay with actions */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePreviewImage(product.picture?.secure_url || product.image);
-                    }}
-                    className="bg-white/90 hover:bg-white text-black"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownloadImage(product.picture?.secure_url || product.image, product.title || 'product');
-                    }}
-                    className="bg-white/90 hover:bg-white text-black"
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
+                <Button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-2 transition-all duration-200 hover:scale-105 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Images
+                </Button>
+              </div>
+            </div>
 
-                  {/* Delete button for uploaded media */}
-                  {product.isUploadedMedia && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (window.confirm('Are you sure you want to delete this media?')) {
-                          handleDeleteSingle(product._id);
-                        }
-                      }}
-                      className="bg-red-500/90 hover:bg-red-500 text-white"
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+            {/* Search Bar for Upload Tab */}
+            <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+              <div className="flex flex-col lg:flex-row gap-4 items-center">
+                <div className="flex-1">
+                  <SearchBar
+                    searchTerm={uploadSearchTerm}
+                    onSearchChange={handleUploadSearchChange}
+                    onSearchSubmit={handleUploadSearchSubmit}
+                    searchHistory={[]}
+                    popularSearches={[]}
+                    products={[]}
+                  />
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <Filter className="h-16 w-16 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
-          <p className="text-gray-500">
-            {search.searchTerm
-              ? 'Try adjusting your search criteria'
-              : 'No product images available'}
-          </p>
-        </div>
-      )}
 
-      {/* Pagination */}
-      {filteredProducts.length > 0 && pagination.totalPages > 1 && (
-        <div className="mt-8">
-          <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
-          />
-        </div>
-      )}
+            {/* Upload Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <Upload className="h-5 w-5 text-blue-600 mt-0.5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-blue-900 mb-1">Upload Guidelines</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Supported formats: JPG, PNG, GIF, WebP</li>
+                    <li>• Images will be automatically converted to WebP for optimization</li>
+                    <li>• Maximum file size: 10MB per image</li>
+                    <li>• Images are uploaded to Cloudinary for fast delivery</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Upload Area */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                 onClick={() => setShowImportModal(true)}>
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-blue-100 rounded-full p-4">
+                  <Upload className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Drop images here or click to upload</h3>
+                  <p className="text-gray-600">Select multiple images to upload at once</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Uploaded Media Grid */}
+            {filteredUploadedMedia.length > 0 ? (
+              <div className="mt-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Uploaded Images</h3>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-500">
+                      Showing {filteredUploadedMedia.length} of {uploadedMedia.length} images
+                      {uploadSearchTerm && ` for "${uploadSearchTerm}"`}
+                    </span>
+                    {!showAllImages && uploadTotalPages > 1 && (
+                      <span className="text-sm text-gray-500">
+                        Page {uploadCurrentPage} of {uploadTotalPages}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={showAllImages ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setShowAllImages(!showAllImages);
+                          setUploadCurrentPage(1);
+                        }}
+                        className="text-xs"
+                      >
+                        {showAllImages ? 'Show Paginated' : 'Show All'}
+                      </Button>
+                      {!showAllImages && (
+                        <select
+                          value={uploadPageSize}
+                          onChange={(e) => {
+                            setUploadPageSize(Number(e.target.value));
+                            setUploadCurrentPage(1);
+                          }}
+                          className="text-xs border border-gray-300 rounded px-2 py-1"
+                        >
+                          <option value={12}>12 per page</option>
+                          <option value={24}>24 per page</option>
+                          <option value={48}>48 per page</option>
+                          <option value={96}>96 per page</option>
+                        </select>
+                      )}
+                      {deleteMode && filteredUploadedMedia.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleSelectAll}
+                            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                          >
+                            {selectedItems.length === filteredUploadedMedia.length ? (
+                              <CheckSquare className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )}
+                            {selectedItems.length === filteredUploadedMedia.length ? 'Deselect All' : 'Select All'}
+                          </button>
+                          {selectedItems.length > 0 && (
+                            <span className="text-sm text-red-600 font-medium">
+                              {selectedItems.length} selected
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                  {filteredUploadedMedia.map((media) => (
+                    <div key={media._id} className="relative group">
+                      {/* Selection Checkbox */}
+                      {deleteMode && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectItem(media._id);
+                            }}
+                            className="bg-white/90 hover:bg-white rounded-full p-1 shadow-md transition-all"
+                          >
+                            {selectedItems.includes(media._id) ? (
+                              <CheckSquare className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <Square className="h-4 w-4 text-gray-400" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="aspect-square bg-gray-50 overflow-hidden rounded-lg cursor-pointer"
+                           onClick={() => handlePreviewImage(media.url)}>
+                        <LazyImage
+                          src={media.url}
+                          alt={media.name || 'Uploaded Image'}
+                          className="w-full h-full object-cover"
+                          fallback="/logo.jpeg"
+                          quality={85}
+                        />
+                        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                          <Upload className="h-3 w-3" />
+                          Uploaded
+                        </div>
+                        
+                        {/* Hover overlay with actions */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePreviewImage(media.url);
+                            }}
+                            className="bg-white/90 hover:bg-white text-black"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadImage(media.url, media.name || 'uploaded-image');
+                            }}
+                            className="bg-white/90 hover:bg-white text-black"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm('Are you sure you want to delete this uploaded image?')) {
+                                handleDeleteSingle(media._id);
+                              }
+                            }}
+                            className="bg-red-500/90 hover:bg-red-500 text-white"
+                            disabled={isDeleting}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Upload Pagination */}
+                {!showAllImages && uploadTotalPages > 1 && (
+                  <div className="mt-8">
+                    <Pagination
+                      currentPage={uploadCurrentPage}
+                      totalPages={uploadTotalPages}
+                      onPageChange={handleUploadPageChange}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mt-8 text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <Upload className="h-16 w-16 mx-auto" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {uploadSearchTerm ? 'No images found' : 'No uploaded images yet'}
+                </h3>
+                <p className="text-gray-500">
+                  {uploadSearchTerm 
+                    ? 'Try adjusting your search criteria' 
+                    : 'Upload your first images to get started'
+                  }
+                </p>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Image Preview Modal */}
       {previewImage && (
