@@ -70,7 +70,7 @@ const ProductList = () => {
   // Fetch products with debounced search using the hook
   useEffect(() => {
     search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.category, search.page, search.sortBy, search.enterSuggestionIds, search.handleSearch]);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.sortBy]);
 
   // Fetch categories
   useEffect(() => {

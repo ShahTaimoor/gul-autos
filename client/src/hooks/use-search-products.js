@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { useDebounce } from './use-debounce';
@@ -23,6 +23,7 @@ export const useSearchProducts = ({
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [allProducts, setAllProducts] = useState([]);
   const [enterSuggestionIds, setEnterSuggestionIds] = useState([]);
+  const enterSuggestionIdsRef = useRef([]);
 
   // Fetch products for suggestions (only once on mount)
   useEffect(() => {
@@ -43,12 +44,18 @@ export const useSearchProducts = ({
 
   // Handle search with debounced term
   const handleSearch = useCallback((searchTerm, debounceDelay = 150) => {
-    // If we have explicit suggestion/product IDs, fetch strictly by those IDs
-    const hasSuggestionIds = enterSuggestionIds.length > 0;
-    const searchCategory = hasSuggestionIds ? 'all' : (searchTerm ? 'all' : category);
-    const searchParam = hasSuggestionIds ? '' : searchTerm;
+    // Clear suggestion IDs when search is cleared
+    if (!searchTerm || searchTerm.trim() === '') {
+      setEnterSuggestionIds([]);
+      enterSuggestionIdsRef.current = [];
+    }
     
-    const productIdsParam = hasSuggestionIds ? enterSuggestionIds.join(',') : undefined;
+    // If we have explicit suggestion/product IDs, fetch strictly by those IDs
+    const hasSuggestionIds = enterSuggestionIdsRef.current.length > 0 && (searchTerm && searchTerm.trim());
+    const searchCategory = hasSuggestionIds ? 'all' : category;
+    const searchParam = hasSuggestionIds ? '' : (searchTerm || '');
+    
+    const productIdsParam = hasSuggestionIds ? enterSuggestionIdsRef.current.join(',') : undefined;
 
     dispatch(fetchProducts({ 
       category: searchCategory, 
@@ -66,7 +73,7 @@ export const useSearchProducts = ({
     }).catch((error) => {
       console.error('Error fetching products:', error);
     });
-  }, [dispatch, category, page, limit, sortBy, enterSuggestionIds, stockFilter]);
+  }, [dispatch, category, page, limit, sortBy, stockFilter]);
 
   // Filter products based on search term (for additional client-side filtering)
   const filterProducts = useCallback((products, searchTerm, selectedProductId) => {
@@ -142,7 +149,10 @@ export const useSearchProducts = ({
     setPage: handlePageChange,
     setStockFilter: updateStockFilter,
     setSortBy: updateSortBy,
-    setEnterSuggestionIds,
+    setEnterSuggestionIds: (ids) => {
+      setEnterSuggestionIds(ids);
+      enterSuggestionIdsRef.current = ids;
+    },
     handleSearch,
     handlePageChange,
     filterProducts,

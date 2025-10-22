@@ -149,7 +149,7 @@ const SearchBar = React.memo(({
     setShowSuggestions(false);
     setSuggestions([]);
     if (onSearchSubmit) {
-      onSearchSubmit('');
+      onSearchSubmit('', null, []); // Clear search with empty suggestion IDs
     }
     searchInputRef.current?.focus();
   }, [onSearchChange, onSearchSubmit]);

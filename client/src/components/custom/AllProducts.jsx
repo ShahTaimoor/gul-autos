@@ -106,7 +106,7 @@ const AllProducts = () => {
   // Fetch products with debounced search using the hook
   useEffect(() => {
     search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy, search.handleSearch]);
+  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy]);
 
   // Scroll to top on page change
   useEffect(() => {

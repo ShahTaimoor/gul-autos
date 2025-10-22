@@ -88,15 +88,15 @@ const ProductCard = React.memo(({
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex flex-col h-full ${
-        gridType === 'grid3' ? 'sm:flex-col flex-row items-stretch' : ''
+      className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex h-full ${
+        gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
       }`}
     >
       <div
         className={`relative cursor-pointer overflow-hidden group ${
           gridType === 'grid3' 
-            ? 'w-2/5 sm:w-full aspect-square' 
-            : 'aspect-square'
+            ? 'w-1/4 sm:w-full aspect-square sm:aspect-square' 
+            : 'aspect-square w-full'
         }`}
       >
         <LazyImage
@@ -139,11 +139,13 @@ const ProductCard = React.memo(({
       </div>
 
       <div
-        className={`p-2 flex flex-col flex-grow ${
-          gridType === 'grid3' ? 'w-3/5 sm:w-full' : ''
+        className={`p-3 flex flex-col flex-grow ${
+          gridType === 'grid3' ? 'w-3/4 sm:w-full' : 'w-full'
         }`}
       >
-        <h3 className="font-medium text-xs line-clamp-2 leading-tight">
+        <h3 className={`font-medium line-clamp-2 leading-tight ${
+          gridType === 'grid3' ? 'text-sm' : 'text-xs'
+        }`}>
           {searchTerm ? 
             highlightSearchTerm(
               product.title.split(' ').map(word =>
@@ -157,9 +159,20 @@ const ProductCard = React.memo(({
           }
         </h3>
         
+        {/* Price display for list view */}
+        {gridType === 'grid3' && product.price && (
+          <div className="mt-2 mb-3">
+            <span className="text-lg font-bold text-blue-600">
+              ${product.price}
+            </span>
+          </div>
+        )}
+        
         <div className="flex-grow" />
 
-        <div className="flex flex-row gap-2 mt-2">
+        <div className={`flex flex-row gap-2 ${
+          gridType === 'grid3' ? 'mt-3' : 'mt-2'
+        }`}>
           {/* Quantity Controls - 50% width on desktop */}
           <div className="flex items-center justify-center w-1/2">
             <div className="flex w-full justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">

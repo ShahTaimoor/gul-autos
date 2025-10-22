@@ -34,6 +34,10 @@ export const useSearch = (options = {}) => {
       
       // Scroll to top to see results
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Clear search when term is empty
+      handleSearchSubmit('', productId, []);
+      searchProducts.setEnterSuggestionIds([]);
     }
   };
 
