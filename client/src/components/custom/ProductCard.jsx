@@ -88,7 +88,7 @@ const ProductCard = React.memo(({
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden hover:shadow-md transition-shadow flex h-full ${
+      className={`border rounded-lg lg:mt-6 overflow-hidden hover:shadow-md transition-shadow flex h-full ${
         gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
       }`}
     >
