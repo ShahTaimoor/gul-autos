@@ -914,7 +914,7 @@ const CreateProducts = () => {
       {/* Media Picker Modal */}
       {showMediaPicker && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden shadow-2xl flex flex-col">
             <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -948,8 +948,10 @@ const CreateProducts = () => {
               </div>
             </div>
 
+            
+
             {/* Media Grid */}
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 flex-1 overflow-y-auto">
               {mediaLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex items-center gap-3">
@@ -1015,50 +1017,20 @@ const CreateProducts = () => {
               )}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination - Bottom */}
             {mediaTotalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200">
-                <Pagination
-                  currentPage={mediaCurrentPage}
-                  totalPages={mediaTotalPages}
-                  onPageChange={handleMediaPageChange}
-                />
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-center">
+                  <Pagination
+                    currentPage={mediaCurrentPage}
+                    totalPages={mediaTotalPages}
+                    onPageChange={handleMediaPageChange}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Footer */}
-            <div className="p-6 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-medium">
-                        {filteredMediaProducts.length} images available
-                      </span>
-                    </div>
-                    {mediaTotalPages > 1 && (
-                      <div className="text-xs text-gray-500">
-                        Page {mediaCurrentPage} of {mediaTotalPages}
-                      </div>
-                    )}
-                  </div>
-                  {uploadedMedia.length > 0 && (
-                    <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                      <Upload className="h-3 w-3" />
-                      Including {uploadedMedia.length} uploaded media files
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowMediaPicker(false)}
-                  className="h-10 px-6 border-gray-300 hover:bg-gray-100"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
+           
           </div>
         </div>
       )}
