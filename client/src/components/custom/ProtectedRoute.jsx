@@ -44,16 +44,15 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [user, isAuthenticated, checkAuthentication]);
 
-  const publicPaths = ['/login', '/signup', '/admin/login'];
+  const publicPaths = ['/login', '/signup'];
 
   // Handle token expiration - redirect to login page
   if (tokenExpired) {
     dispatch(clearTokenExpired());
     dispatch(logout());
     
-    // Determine redirect path based on current route
-    const isAdminRoute = pathname.startsWith('/admin');
-    const redirectPath = isAdminRoute ? '/admin/login' : '/login';
+    // Redirect to login page
+    const redirectPath = '/login';
     
     // Use window.location for immediate redirect
     window.location.href = `${redirectPath}?expired=true`;
@@ -62,14 +61,13 @@ const ProtectedRoute = ({ children }) => {
 
   // Check if user is not authenticated and trying to access protected route
   if (!isAuthenticated && !publicPaths.includes(pathname)) {
-    const isAdminRoute = pathname.startsWith('/admin');
-    const redirectPath = isAdminRoute ? '/admin/login' : '/login';
+    const redirectPath = '/login';
     window.location.href = redirectPath;
     return null;
   }
 
-  // Admin or Super Admin trying to revisit /admin/login
-  if ((user?.role === 1 || user?.role === 2) && pathname === '/admin/login') {
+  // Admin or Super Admin trying to revisit /login
+  if ((user?.role === 1 || user?.role === 2) && pathname === '/login') {
     return <Navigate to="/admin/dashboard" replace />;
   }
 

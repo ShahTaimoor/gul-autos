@@ -6,11 +6,13 @@ import { AppSidebar } from "../custom/AppSidebar"
 const AdminLayout = ({ children }) => {
     return (
         <SidebarProvider>
-            <div className="flex flex-col md:flex-row min-h-screen">
+            <div className="flex min-h-screen w-full">
                 <AppSidebar />
-                <main className="flex-1 p-4">
-                    <SidebarTrigger />
-                    {children}
+                <main className="flex-1 w-full overflow-auto">
+                    <div className="p-4 w-full">
+                        <SidebarTrigger />
+                        {children}
+                    </div>
                 </main>
             </div>
         </SidebarProvider>

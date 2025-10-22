@@ -22,7 +22,24 @@ import {
 } from '../ui/select';
 import { AddProduct, importProductsFromExcel, fetchProducts } from '@/redux/slices/products/productSlice';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { FileSpreadsheet, Upload, Download, ImageIcon, X, Search, Eye, Zap } from 'lucide-react';
+import { 
+  FileSpreadsheet, 
+  Upload, 
+  Download, 
+  ImageIcon, 
+  X, 
+  Search, 
+  Eye, 
+  Zap, 
+  Plus,
+  Package,
+  DollarSign,
+  Hash,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 import LazyImage from '../ui/LazyImage';
 import Pagination from '../custom/Pagination';
 import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl, isWebPSupported } from '@/utils/imageConverter';
@@ -395,401 +412,560 @@ const CreateProducts = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl lg:min-w-[900px] lg:min-h-[700px] mx-auto p-4 sm:p-6 md:p-8">
-      <CardHeader>
-        <CardTitle>Create Products</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="single" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="single">Single Product</TabsTrigger>
-            <TabsTrigger value="excel">Excel Import</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="single" className="mt-6">
-            <form onSubmit={handleSubmit} encType="multipart/form-data">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Title */}
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="title">Product Title</Label>
-              <Input
-                value={inputValues.title}
-                onChange={handleChange}
-                id="title"
-                name="title"
-                placeholder="Product Title"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="w-full">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Package className="h-6 w-6 text-blue-600" />
             </div>
-
-            {/* Price */}
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="price">Product Price</Label>
-              <Input
-                value={inputValues.price}
-                onChange={handleChange}
-                id="price"
-                name="price"
-                type="number"
-                placeholder="Product Price"
-              />
-            </div>
-
-            {/* Category */}
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="category">Category</Label>
-              <Select
-                onValueChange={handleCategoryChange}
-                value={inputValues.category}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="max-h-60">
-                  {/* Search Input */}
-                  <div className="p-2 border-b">
-                    <Input
-                      placeholder="Type first letter to filter..."
-                      value={categorySearch}
-                      onChange={handleCategorySearch}
-                      className="h-8"
-                    />
-                  </div>
-                  
-                  {/* Category List */}
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredCategories.length > 0 ? (
-                      filteredCategories.map((category) => (
-                        <SelectItem key={category._id} value={category._id}>
-                          {category.name
-                            .split(' ')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                            .join(' ')
-                          }
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className="p-2 text-sm text-gray-500 text-center">
-                        No categories found
-                      </div>
-                    )}
-                  </div>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Stock */}
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="stock">Product Stock</Label>
-              <Input
-                value={inputValues.stock}
-                onChange={handleChange}
-                id="stock"
-                name="stock"
-                type="number"
-                placeholder="Product Stock"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2 flex flex-col space-y-1.5">
-              <Label htmlFor="description">Product Description</Label>
-              <Input
-                value={inputValues.description}
-                onChange={handleChange}
-                id="description"
-                name="description"
-                placeholder="Product Description"
-              />
-            </div>
-
-            {/* Image Upload */}
-            <div className="md:col-span-2 flex flex-col space-y-1.5">
-              <Label>Upload Image</Label>
-              
-              {/* Media Picker Button */}
-              <div className="mb-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowMediaPicker(true);
-                    setMediaCurrentPage(1);
-                    setMediaSearchTerm('');
-                  }}
-                  className="w-full flex items-center gap-2"
-                >
-                  <ImageIcon className="h-4 w-4" />
-                  Choose from Existing Images
-                </Button>
-              </div>
-
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors duration-200">
-                <div className="space-y-1 text-center">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="flex text-sm text-gray-600 justify-center">
-                    <label
-                      htmlFor="picture"
-                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
-                    >
-                      <span>Upload a file</span>
-                      <input
-                        id="picture"
-                        name="picture"
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp"
-                        className="sr-only"
-                        onChange={handleImageChange}
-                        disabled={isConverting}
-                      />
-                    </label>
-                    <p className="pl-1">or drag and drop</p>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    PNG, JPG, WEBP up to 5MB • Auto-converted to WebP
-                  </p>
-                </div>
-              </div>
-
-              {/* Conversion Status */}
-              {isConverting && (
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-blue-600 animate-pulse" />
-                    <span className="text-sm text-blue-800">Optimizing image...</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Conversion Info */}
-              {conversionInfo && (
-                <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Zap className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Image Optimized!</span>
-                  </div>
-                  <div className="text-xs text-green-700 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Original: {conversionInfo.original.size}KB ({conversionInfo.original.type})</span>
-                      <span>→</span>
-                      <span>Optimized: {conversionInfo.converted.size}KB ({conversionInfo.converted.type})</span>
-                    </div>
-                    <div className="text-center font-medium">
-                      {conversionInfo.compression}% size reduction
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Preview */}
-              {inputValues.picture && (
-                <div className="mt-2 space-y-2">
-                  <div className="relative">
-                    <img
-                      src={previewUrl || URL.createObjectURL(inputValues.picture)}
-                      alt="Preview"
-                      className="w-32 h-32 object-cover rounded border"
-                    />
-                    {inputValues.picture.type === 'image/webp' && (
-                      <div className="absolute top-1 right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded">
-                        WebP
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInputValues((v) => ({ ...v, picture: null }));
-                        setConversionInfo(null);
-                        if (previewUrl) {
-                          revokePreviewUrl(previewUrl);
-                          setPreviewUrl(null);
-                        }
-                      }}
-                      className="text-sm font-medium text-red-600 hover:text-red-500"
-                    >
-                      Remove Image
-                    </button>
-                    {inputValues.picture.type === 'image/webp' && (
-                      <span className="text-xs text-green-600 font-medium">✓ Optimized</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
           </div>
+          <p className="text-gray-600 text-lg">Create and manage your product catalog efficiently</p>
+        </div>
 
-              <Button
-                type="submit"
-                className="mt-6 w-full sm:w-auto"
-                disabled={loading}
-              >
-                {loading ? <OneLoader size="small" text="Adding..." showText={false} /> : 'Add Product'}
-              </Button>
-            </form>
-          </TabsContent>
-          
-          <TabsContent value="excel" className="mt-6">
-            <div className="space-y-6">
-              {/* Instructions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Excel Import Instructions</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• <strong>Excel columns:</strong> <strong>name</strong>, <strong>stock</strong>, <strong>price</strong></li>
-                  <li>• <strong>All columns are optional</strong> - you can include any combination of these three</li>
-                  <li>• Missing fields will use defaults: name="Product X", stock=0, price=0</li>
-                  <li>• All products will be assigned to "General" category automatically</li>
-                  <li>• Products will be created with default image (can be updated later)</li>
-                  <li>• Empty rows will be skipped automatically</li>
-                </ul>
-              </div>
-
-              {/* Template Download */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-5 w-5 text-green-600" />
-                  <span className="text-sm text-gray-700">Download Excel template</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={downloadTemplate}
-                  className="flex items-center gap-2"
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="pb-6">
+            <CardTitle className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+              <Plus className="h-6 w-6 text-blue-600" />
+              Create New Products
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-6 pb-8">
+            <Tabs defaultValue="single" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+                <TabsTrigger 
+                  value="single" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  <Download className="h-4 w-4" />
-                  Download Template
-                </Button>
-              </div>
+                  <Package className="h-4 w-4" />
+                  Single Product
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="excel" 
+                  className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Bulk Import
+                </TabsTrigger>
+              </TabsList>
+          
+              <TabsContent value="single" className="mt-8">
+                <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-8">
+                  {/* Basic Information Section */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-blue-600" />
+                      Basic Information
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Title */}
+                      <div className="space-y-2">
+                        <Label htmlFor="title" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          Product Title *
+                        </Label>
+                        <Input
+                          value={inputValues.title}
+                          onChange={handleChange}
+                          id="title"
+                          name="title"
+                          placeholder="Enter product title"
+                          className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
 
-              {/* File Upload */}
-              <form onSubmit={handleExcelImport}>
-                <div className="space-y-4">
-                  <div className="flex flex-col space-y-1.5">
-                    <Label htmlFor="excelFile">Select Excel File</Label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 transition-colors duration-200">
-                      <div className="space-y-1 text-center">
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600 justify-center">
-                          <label
-                            htmlFor="excelFile"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
-                          >
-                            <span>Upload Excel file</span>
-                            <input
-                              id="excelFile"
-                              name="excelFile"
-                              type="file"
-                              accept=".xlsx,.xls,.csv"
-                              className="sr-only"
-                              onChange={(e) => setExcelFile(e.target.files[0])}
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Excel files (.xlsx, .xls, .csv) up to 10MB
-                        </p>
+                      {/* Price */}
+                      <div className="space-y-2">
+                        <Label htmlFor="price" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          Price *
+                        </Label>
+                        <Input
+                          value={inputValues.price}
+                          onChange={handleChange}
+                          id="price"
+                          name="price"
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+
+                      {/* Category */}
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+                          Category *
+                        </Label>
+                        <Select
+                          onValueChange={handleCategoryChange}
+                          value={inputValues.category}
+                        >
+                          <SelectTrigger className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent position="popper" className="max-h-60">
+                            {/* Search Input */}
+                            <div className="p-3 border-b bg-gray-50">
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <Input
+                                  placeholder="Search categories..."
+                                  value={categorySearch}
+                                  onChange={handleCategorySearch}
+                                  className="pl-10 h-9"
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Category List */}
+                            <div className="max-h-48 overflow-y-auto">
+                              {filteredCategories.length > 0 ? (
+                                filteredCategories.map((category) => (
+                                  <SelectItem key={category._id} value={category._id} className="py-3">
+                                    {category.name
+                                      .split(' ')
+                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                      .join(' ')
+                                    }
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="p-4 text-sm text-gray-500 text-center">
+                                  No categories found
+                                </div>
+                              )}
+                            </div>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Stock */}
+                      <div className="space-y-2">
+                        <Label htmlFor="stock" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                          <Hash className="h-4 w-4" />
+                          Stock Quantity *
+                        </Label>
+                        <Input
+                          value={inputValues.stock}
+                          onChange={handleChange}
+                          id="stock"
+                          name="stock"
+                          type="number"
+                          placeholder="0"
+                          className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
                       </div>
                     </div>
 
-                    {/* File Preview */}
-                    {excelFile && (
-                      <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <FileSpreadsheet className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-800">
-                            {excelFile.name}
-                          </span>
-                          <span className="text-xs text-green-600">
-                            ({(excelFile.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
+                    {/* Description */}
+                    <div className="mt-6 space-y-2">
+                      <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                        Product Description
+                      </Label>
+                      <textarea
+                        value={inputValues.description}
+                        onChange={handleChange}
+                        id="description"
+                        name="description"
+                        placeholder="Describe your product..."
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-blue-500 resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Image Upload Section */}
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5 text-blue-600" />
+                      Product Image
+                    </h3>
+                    
+                    {/* Media Picker Button */}
+                    <div className="mb-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowMediaPicker(true);
+                          setMediaCurrentPage(1);
+                          setMediaSearchTerm('');
+                        }}
+                        className="w-full h-12 flex items-center gap-3 border-2 border-dashed border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
+                      >
+                        <ImageIcon className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium">Choose from Existing Images</span>
+                      </Button>
+                    </div>
+
+                    {/* Upload Area */}
+                    <div className="relative">
+                      <div className="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 group">
+                        <div className="space-y-4 text-center">
+                          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+                            <Upload className="h-8 w-8 text-gray-400 group-hover:text-blue-500" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex text-sm text-gray-600 justify-center items-center">
+                              <label
+                                htmlFor="picture"
+                                className="relative cursor-pointer font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+                              >
+                                <span className="underline">Upload a file</span>
+                                <input
+                                  id="picture"
+                                  name="picture"
+                                  type="file"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                                  className="sr-only"
+                                  onChange={handleImageChange}
+                                  disabled={isConverting}
+                                />
+                              </label>
+                              <span className="mx-2">or</span>
+                              <span className="text-gray-500">drag and drop</span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              PNG, JPG, WEBP up to 5MB • Auto-converted to WebP
+                            </p>
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExcelFile(null);
-                            const fileInput = document.getElementById('excelFile');
-                            if (fileInput) fileInput.value = '';
-                          }}
-                          className="text-xs text-red-600 hover:text-red-500 mt-1"
-                        >
-                          Remove file
-                        </button>
+                      </div>
+                    </div>
+
+                    {/* Conversion Status */}
+                    {isConverting && (
+                      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                          <span className="text-sm font-medium text-blue-800">Optimizing image...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Conversion Info */}
+                    {conversionInfo && (
+                      <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          <span className="text-sm font-semibold text-green-800">Image Optimized!</span>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 space-y-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Original:</span>
+                            <span className="font-medium">{conversionInfo.original.size}KB ({conversionInfo.original.type})</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="text-gray-600">Optimized:</span>
+                            <span className="font-medium text-green-600">{conversionInfo.converted.size}KB ({conversionInfo.converted.type})</span>
+                          </div>
+                          <div className="text-center text-sm font-semibold text-green-700 bg-green-100 rounded px-3 py-1">
+                            {conversionInfo.compression}% size reduction
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preview */}
+                    {inputValues.picture && (
+                      <div className="mt-6">
+                        <div className="bg-white border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="relative">
+                              <img
+                                src={previewUrl || URL.createObjectURL(inputValues.picture)}
+                                alt="Preview"
+                                className="w-24 h-24 object-cover rounded-lg border"
+                              />
+                              {inputValues.picture.type === 'image/webp' && (
+                                <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                  WebP
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <span className="text-sm font-medium text-gray-800">Image ready</span>
+                                {inputValues.picture.type === 'image/webp' && (
+                                  <span className="text-xs text-green-600 font-medium bg-green-100 px-2 py-1 rounded">Optimized</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInputValues((v) => ({ ...v, picture: null }));
+                                  setConversionInfo(null);
+                                  if (previewUrl) {
+                                    revokePreviewUrl(previewUrl);
+                                    setPreviewUrl(null);
+                                  }
+                                }}
+                                className="text-sm font-medium text-red-600 hover:text-red-500 transition-colors duration-200"
+                              >
+                                Remove Image
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={importLoading || !excelFile}
-                  >
-                    {importLoading ? <OneLoader size="small" text="Importing..." showText={false} /> : 'Import Products'}
-                  </Button>
+                  {/* Submit Button */}
+                  <div className="flex justify-end pt-6">
+                    <Button
+                      type="submit"
+                      className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Adding Product...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          Add Product
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </TabsContent>
+          
+              <TabsContent value="excel" className="mt-8">
+                <div className="space-y-8">
+                  {/* Instructions */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Import Instructions
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-blue-800">Required Columns</h4>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                            <strong>name</strong> - Product title
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                            <strong>stock</strong> - Quantity available
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                            <strong>price</strong> - Product price
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-blue-800">Important Notes</h4>
+                        <ul className="text-sm text-blue-700 space-y-1">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            All columns are optional
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            Auto-assigned to "General" category
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            Empty rows are skipped
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Template Download */}
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800">Excel Template</h3>
+                          <p className="text-sm text-gray-600">Download our pre-formatted template</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={downloadTemplate}
+                        className="flex items-center gap-2 h-11 px-4 border-green-200 text-green-700 hover:bg-green-50"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Template
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* File Upload */}
+                  <form onSubmit={handleExcelImport} className="bg-white border border-gray-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                      <Upload className="h-5 w-5 text-blue-600" />
+                      Upload Excel File
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      {/* Upload Area */}
+                      <div className="flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 group">
+                        <div className="space-y-4 text-center">
+                          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors duration-200">
+                            <FileSpreadsheet className="h-8 w-8 text-gray-400 group-hover:text-blue-500" />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex text-sm text-gray-600 justify-center items-center">
+                              <label
+                                htmlFor="excelFile"
+                                className="relative cursor-pointer font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
+                              >
+                                <span className="underline">Upload Excel file</span>
+                                <input
+                                  id="excelFile"
+                                  name="excelFile"
+                                  type="file"
+                                  accept=".xlsx,.xls,.csv"
+                                  className="sr-only"
+                                  onChange={(e) => setExcelFile(e.target.files[0])}
+                                />
+                              </label>
+                              <span className="mx-2">or</span>
+                              <span className="text-gray-500">drag and drop</span>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Excel files (.xlsx, .xls, .csv) up to 10MB
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* File Preview */}
+                      {excelFile && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                              <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-green-800">
+                                  {excelFile.name}
+                                </span>
+                                <span className="text-xs text-green-600 bg-green-200 px-2 py-1 rounded">
+                                  {(excelFile.size / 1024 / 1024).toFixed(2)} MB
+                                </span>
+                              </div>
+                              <p className="text-xs text-green-700 mt-1">Ready to import</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExcelFile(null);
+                                const fileInput = document.getElementById('excelFile');
+                                if (fileInput) fileInput.value = '';
+                              }}
+                              className="text-red-600 hover:text-red-500 transition-colors duration-200"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Import Button */}
+                      <Button
+                        type="submit"
+                        className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                        disabled={importLoading || !excelFile}
+                      >
+                        {importLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Importing Products...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Import Products
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
                 </div>
-              </form>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
 
       {/* Media Picker Modal */}
       {showMediaPicker && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-semibold">Choose from Existing Images</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ImageIcon className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">Choose from Existing Images</h2>
+                  <p className="text-sm text-gray-600">Select an image from your media library</p>
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowMediaPicker(false)}
+                className="h-10 w-10 rounded-full hover:bg-gray-100"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Search */}
-            <div className="p-4 border-b">
+            <div className="p-6 border-b border-gray-200">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
                   placeholder="Search images by product name or description..."
                   value={mediaSearchTerm}
                   onChange={handleMediaSearchChange}
-                  className="pl-10"
+                  className="pl-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
                 />
               </div>
             </div>
 
             {/* Media Grid */}
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
               {mediaLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span className="ml-2 text-gray-600">Loading media...</span>
+                <div className="flex items-center justify-center py-16">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+                    <span className="text-gray-600 font-medium">Loading media...</span>
+                  </div>
                 </div>
               ) : filteredMediaProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {filteredMediaProducts.map((product) => (
                     <div
                       key={product._id}
-                      className="relative group cursor-pointer rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-500 transition-all duration-200"
+                      className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-transparent hover:border-blue-500 hover:shadow-lg transition-all duration-200 bg-white"
                       onClick={() => handleMediaSelect(product)}
                     >
-                      <div className="aspect-square bg-gray-50">
+                      <div className="aspect-square bg-gray-50 relative">
                         <LazyImage
                           src={product.picture?.secure_url || product.image}
                           alt={product.title}
@@ -800,21 +976,23 @@ const CreateProducts = () => {
                         
                         {/* Uploaded Media Indicator */}
                         {product.isUploadedMedia && (
-                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                          <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 font-medium">
                             <Upload className="h-3 w-3" />
                             Uploaded
                           </div>
                         )}
                         
                         {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <Eye className="h-6 w-6 text-white" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                          <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+                            <Eye className="h-6 w-6 text-white" />
+                          </div>
                         </div>
                       </div>
                       
                       {/* Product title */}
-                      <div className="p-2 bg-white">
-                        <p className="text-xs text-gray-600 truncate" title={product.title}>
+                      <div className="p-3 bg-white">
+                        <p className="text-xs text-gray-700 truncate font-medium" title={product.title}>
                           {product.title}
                         </p>
                       </div>
@@ -822,13 +1000,15 @@ const CreateProducts = () => {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <ImageIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
-                  <p className="text-gray-500">
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ImageIcon className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No images found</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto">
                     {mediaSearchTerm 
-                      ? 'Try adjusting your search criteria'
-                      : 'No product images available'
+                      ? 'Try adjusting your search criteria or browse all available images'
+                      : 'No product images available in your media library'
                     }
                   </p>
                 </div>
@@ -837,7 +1017,7 @@ const CreateProducts = () => {
 
             {/* Pagination */}
             {mediaTotalPages > 1 && (
-              <div className="fixed bottom-11 left-14 right-0">
+              <div className="px-6 py-4 border-t border-gray-200">
                 <Pagination
                   currentPage={mediaCurrentPage}
                   totalPages={mediaTotalPages}
@@ -847,15 +1027,25 @@ const CreateProducts = () => {
             )}
 
             {/* Footer */}
-            <div className="p-4 border-t bg-gray-50">
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
               <div className="flex justify-between items-center">
                 <div className="text-sm text-gray-600">
-                  <p>
-                    {filteredMediaProducts.length} images available
-                    {mediaTotalPages > 1 && ` (Page ${mediaCurrentPage} of ${mediaTotalPages})`}
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-medium">
+                        {filteredMediaProducts.length} images available
+                      </span>
+                    </div>
+                    {mediaTotalPages > 1 && (
+                      <div className="text-xs text-gray-500">
+                        Page {mediaCurrentPage} of {mediaTotalPages}
+                      </div>
+                    )}
+                  </div>
                   {uploadedMedia.length > 0 && (
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <Upload className="h-3 w-3" />
                       Including {uploadedMedia.length} uploaded media files
                     </p>
                   )}
@@ -863,6 +1053,7 @@ const CreateProducts = () => {
                 <Button
                   variant="outline"
                   onClick={() => setShowMediaPicker(false)}
+                  className="h-10 px-6 border-gray-300 hover:bg-gray-100"
                 >
                   Cancel
                 </Button>
@@ -871,7 +1062,8 @@ const CreateProducts = () => {
           </div>
         </div>
       )}
-    </Card>
+      </div>
+    </div>
   );
 };
 

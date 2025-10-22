@@ -1,6 +1,7 @@
 // Enhanced Axios Instance with Token Refresh & Mobile Support
 import axios from 'axios';
 import { toast } from 'sonner';
+import { logout, setTokenExpired } from './authSlice';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -88,11 +89,10 @@ axiosInstance.interceptors.response.use(
         processQueue(refreshError);
         
         if (storeRef) {
-          const { logout, setTokenExpired } = require('./authSlice');
           storeRef.dispatch(logout());
           storeRef.dispatch(setTokenExpired());
         }
-
+        
         // Attempt server logout to clear cookies
         try { await axiosInstance.post('/logout', null, { withCredentials: true }); } catch {}
 

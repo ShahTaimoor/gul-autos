@@ -17,13 +17,9 @@ const TokenExpirationHandler = () => {
       
       // Get current path for redirect after login
       const currentPath = window.location.pathname;
-      const isAdminRoute = currentPath.startsWith('/admin');
       
-      // Redirect to appropriate login page using window.location
-      const redirectPath = isAdminRoute ? '/admin/login' : '/login';
-      
-      // Add expired parameter to show appropriate message
-      const redirectUrl = `${redirectPath}?expired=true&redirect=${encodeURIComponent(currentPath)}`;
+      // Always redirect to /login for both admin and regular users
+      const redirectUrl = `/login?expired=true&redirect=${encodeURIComponent(currentPath)}`;
       
       // Use window.location for redirect (works outside Router context)
       window.location.href = redirectUrl;
