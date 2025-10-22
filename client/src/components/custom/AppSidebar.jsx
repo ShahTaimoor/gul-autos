@@ -184,7 +184,6 @@ export function AppSidebar() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">Admin Panel</h2>
-            <p className="text-slate-300 text-sm">Management Dashboard</p>
           </div>
         </div>
         
