@@ -52,81 +52,129 @@ const Signup = () => {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex flex-col items-center justify-center p-4 sm:p-6'>
-      <form onSubmit={handleSubmit} className='w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-white/40 shadow-2xl'>
-        <div className='flex justify-center mb-6 sm:mb-8'>
-          <div className="relative">
-            <img src="/logo.jpeg" alt="GULTRADERS Logo" className="h-16 sm:h-20 w-auto object-contain" />
-            <div className="absolute -inset-2 bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-2xl blur-sm"></div>
+    <div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col justify-center items-center p-4 sm:p-6 relative'>
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 to-indigo-100/30"></div>
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.1) 0%, transparent 50%)`
+        }}></div>
+      </div>
+
+      {/* Main form container */}
+      <div className="relative z-10 w-full max-w-md">
+        <form onSubmit={handleSubmit} className='bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 shadow-xl hover:shadow-2xl transition-all duration-300'>
+          {/* Logo section */}
+          <div className='flex justify-center mb-8'>
+            <div className="relative">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-lg">
+                <img 
+                  src="/logo.jpeg" 
+                  alt="GULTRADERS Logo" 
+                  loading="eager" 
+                  className="h-16 sm:h-20 w-auto object-contain" 
+                />
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <h1 className='text-xl sm:text-2xl font-bold text-center mb-2 text-gray-800'>Join GULTRADERS</h1>
-        <p className='text-center mb-6 sm:mb-8 text-sm sm:text-base text-gray-600'>Create your account to get started</p>
-
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className='mb-4'>
-          <label className='block text-sm font-semibold mb-2'>Shop Name</label>
-          <Input
-            onChange={handleChange}
-            placeholder='Enter Your Shop Name'
-            type='text'
-            name='name'
-            value={inputValue.name}
-            required
-            className='h-11 sm:h-10'
-          />
-        </div>
-
-        <div className='mb-4 relative'>
-          <label className='block text-sm font-semibold mb-2'>Password</label>
-          <div className='relative'>
-            <Input
-              onChange={handleChange}
-              placeholder='Enter Your Password'
-              type={showPassword ? 'text' : 'password'} // Toggle between text and password
-              name='password'
-              value={inputValue.password}
-              required
-              className='h-11 sm:h-10 pr-10 w-full'
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1 flex items-center justify-center"
-              onClick={togglePasswordVisibility}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          
+          {/* Header text */}
+          <div className="text-center mb-8">
+            <h1 className='text-3xl sm:text-4xl font-bold mb-3 text-gray-800'>
+              Join GULTRADERS
+            </h1>
+            <p className='text-gray-600 text-sm sm:text-base'>
+              Create your account to get started
+            </p>
           </div>
-        </div>
 
-        <Button className='w-full mt-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 h-12 sm:h-auto' disabled={loading}>
-          {loading ? (
-            <OneLoader size="small" text="Signing Up..." showText={false} />
-          ) : (
-            'Create Account'
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
-        </Button>
 
-        <div className='text-center mt-6'>
-          <p className='text-sm text-gray-600'>
-            Already have an account?{' '}
-            <Link 
-              to="/login" 
-              className='text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors duration-200'
-            >
-              Sign In
-            </Link>
-          </p>
-        </div>
-      </form>
+          {/* Form fields */}
+          <div className='space-y-6'>
+            {/* Shop Name Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Shop Name
+              </label>
+              <Input
+                onChange={handleChange}
+                placeholder='Enter your shop name'
+                type='text'
+                name='name'
+                value={inputValue.name}
+                required
+                disabled={loading}
+                autoComplete="username"
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200'
+              />
+            </div>
+
+            {/* Password Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  onChange={handleChange}
+                  placeholder='Enter your password'
+                  type={showPassword ? 'text' : 'password'}
+                  name='password'
+                  value={inputValue.password}
+                  required
+                  disabled={loading}
+                  autoComplete="new-password"
+                  className='h-12 pr-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200'
+                />
+                <button
+                  type="button"
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-2 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all duration-200'
+                  onClick={togglePasswordVisibility}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button 
+            className='w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]' 
+            disabled={loading}
+            type='submit'
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <OneLoader size="small" text="Signing Up..." showText={false} />
+                <span>Creating Account...</span>
+              </div>
+            ) : (
+              'Create Account'
+            )}
+          </Button>
+
+          {/* Sign in link */}
+          <div className='mt-8 text-center'>
+            <p className='text-gray-600 text-sm'>
+              Already have an account?
+              <Link 
+                to="/login" 
+                className='text-blue-600 ml-2 hover:text-blue-700 font-semibold hover:underline transition-colors duration-200'
+              >
+                Sign In
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

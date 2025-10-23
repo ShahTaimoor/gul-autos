@@ -125,81 +125,133 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='min-h-screen  bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col justify-center items-center p-4 sm:p-6'>
-      <form onSubmit={handleSubmit} className='w-full max-w-sm sm:max-w-md bg-white/80 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-white/40 shadow-2xl'>
-        <div className='flex justify-center mb-6 sm:mb-8'>
-          <div className="relative">
-            <img src="/logo.jpeg" alt="GULTRADERS Logo" loading="eager" className="h-16 sm:h-20 w-auto object-contain" />
-            <div className="absolute -inset-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-2xl blur-sm"></div>
+    <div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col justify-center items-center p-4 sm:p-6 relative'>
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-40">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 to-indigo-100/30"></div>
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.1) 0%, transparent 50%)`
+        }}></div>
+      </div>
+
+      {/* Main form container */}
+      <div className="relative z-10 w-full max-w-md">
+        <form onSubmit={handleSubmit} className='bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-gray-200/50 shadow-xl hover:shadow-2xl transition-all duration-300'>
+          {/* Logo section */}
+          <div className='flex justify-center mb-8'>
+            <div className="relative">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-lg">
+                <img 
+                  src="/logo.jpeg" 
+                  alt="GULTRADERS Logo" 
+                  loading="eager" 
+                  className="h-16 sm:h-20 w-auto object-contain" 
+                />
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <h1 className='text-xl sm:text-2xl font-bold text-center mb-2 text-gray-800'>Welcome Back</h1>
-        <p className='text-center mb-6 sm:mb-8 text-sm sm:text-base text-gray-600'>Sign in to your GULTRADERS account</p>
-
-        <div className='mb-4'>
-          <label className='block text-sm font-semibold mb-2'>Shop Name</label>
-          <Input
-            type='text'
-            name='name'
-            placeholder='Enter your shop name'
-            value={inputValue.name}
-            onChange={handleChange}
-            required
-            disabled={loading}
-            autoComplete="username"
-            className='h-11 sm:h-10'
-          />
-          {errorMsg.name && (
-            <p className="text-red-500 text-xs mt-1">{errorMsg.name}</p>
-          )}
-        </div>
-
-        <div className='mb-4 relative'>
-          <label className='block text-sm font-semibold mb-2'>Password</label>
-          <div className='relative'>
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              name='password'
-              placeholder='Enter your password'
-              value={inputValue.password}
-              onChange={handleChange}
-              required
-              className='pr-10 h-11 sm:h-10 w-full'
-              disabled={loading}
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              onClick={togglePasswordVisibility}
-              className='absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-1 flex items-center justify-center'
-              disabled={loading}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
+          
+          {/* Header text */}
+          <div className="text-center mb-8">
+            <h1 className='text-3xl sm:text-4xl font-bold mb-3 text-gray-800'>
+              Welcome Back
+            </h1>
+            <p className='text-gray-600 text-sm sm:text-base'>
+              Sign in to your GULTRADERS account
+            </p>
           </div>
-          {errorMsg.password && (
-            <p className="text-red-500 text-xs mt-1">{errorMsg.password}</p>
-          )}
-        </div>
 
-        <Button 
-          className='w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 h-12 sm:h-auto' 
-          disabled={loading} 
-          type='submit'
-        >
-          {loading ? (
-            <OneLoader size="small" text="Logging in..." showText={false} />
-          ) : (
-            'Sign In'
-          )}
-        </Button>
+          {/* Form fields */}
+          <div className='space-y-6'>
+            {/* Shop Name Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Shop Name
+              </label>
+              <Input
+                type='text'
+                name='name'
+                placeholder='Enter your shop name'
+                value={inputValue.name}
+                onChange={handleChange}
+                required
+                disabled={loading}
+                autoComplete="username"
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200'
+              />
+              {errorMsg.name && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                  {errorMsg.name}
+                </p>
+              )}
+            </div>
 
-        <p className='mt-6 text-center text-sm text-gray-600'>
-          Don't have an account?
-          <Link to='/signup' className='text-blue-600 ml-1 hover:text-blue-800 font-semibold hover:underline transition-colors duration-200'>Sign Up</Link>
-        </p>
-      </form>
+            {/* Password Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Password
+              </label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  name='password'
+                  placeholder='Enter your password'
+                  value={inputValue.password}
+                  onChange={handleChange}
+                  required
+                  className='h-12 pr-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200'
+                  disabled={loading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className='absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500 hover:text-gray-700 p-2 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-all duration-200'
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errorMsg.password && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                  {errorMsg.password}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <Button 
+            className='w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]' 
+            disabled={loading} 
+            type='submit'
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <OneLoader size="small" text="Logging in..." showText={false} />
+                <span>Signing In...</span>
+              </div>
+            ) : (
+              'Sign In'
+            )}
+          </Button>
+
+          {/* Sign up link */}
+          <div className='mt-8 text-center'>
+            <p className='text-gray-600 text-sm'>
+              Don't have an account?
+              <Link 
+                to='/signup' 
+                className='text-blue-600 ml-2 hover:text-blue-700 font-semibold hover:underline transition-colors duration-200'
+              >
+                Sign Up
+              </Link>
+            </p>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
