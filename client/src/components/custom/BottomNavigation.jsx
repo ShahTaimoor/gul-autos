@@ -241,7 +241,6 @@ const BottomNavigation = () => {
 
   // Don't render on desktop - but ensure it shows on mobile
   // Add debugging to check mobile detection
-  console.log('BottomNavigation - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
   
   // Always render but use responsive classes for visibility
   // if (!isMobile) return null;

@@ -47,7 +47,6 @@ const TokenExpirationHandler = () => {
               dispatch(setTokenExpired());
             }
           } catch (error) {
-            console.log('Auth check failed:', error);
             // Don't automatically logout on network errors
           }
         };

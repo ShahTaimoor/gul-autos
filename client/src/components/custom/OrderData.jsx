@@ -11,7 +11,6 @@ import {
   MapPin, 
   Phone, 
   Calendar, 
-  CreditCard, 
   Download,
   User,
   ShoppingBag,
@@ -19,14 +18,9 @@ import {
   Clock,
   AlertCircle,
   Building,
-  Truck,
-  DollarSign
+  Truck
 } from "lucide-react";
 
-function capitalizeFirst(str) {
-  if (!str) return '';
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
 
 const OrderData = ({
   price,
@@ -288,15 +282,7 @@ const OrderData = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="flex items-center justify-center mb-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
-              </div>
-              <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="text-xl font-bold text-gray-900">Rs. {price?.toLocaleString()}</p>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-white rounded-lg border">
               <div className="flex items-center justify-center mb-2">
                 <Package className="h-5 w-5 text-blue-600" />
@@ -368,15 +354,6 @@ const OrderData = ({
               </div>
             </div>
 
-            {!hideCOD && (
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                <CreditCard className="h-4 w-4 text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Payment Method</p>
-                  <p className="text-gray-600">{paymentMethod}</p>
-                </div>
-              </div>
-            )}
 
             {packerName && (
               <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
@@ -417,22 +394,7 @@ const OrderData = ({
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <User className="h-4 w-4 text-gray-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Customer Name</p>
-                <p className="text-gray-600 font-medium">{user?.name ? capitalizeFirst(user.name) : 'Customer'}</p>
-              </div>
-            </div>
             
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <DollarSign className="h-4 w-4 text-gray-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Total Amount</p>
-                <p className="text-xl font-bold text-gray-900">Rs. {price?.toLocaleString()}</p>
-              </div>
-            </div>
-
             <Separator />
 
             <div className="space-y-3">
@@ -445,11 +407,6 @@ const OrderData = ({
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Quantity:</span>
                   <span className="font-medium">{totalQuantity}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Grand Total:</span>
-                  <span>Rs. {price?.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -494,13 +451,7 @@ const OrderData = ({
                   </p>
                   <div className="flex items-center gap-4 mt-2">
                     <span className="text-sm text-gray-600">
-                      Unit Price: <span className="font-medium">Rs. {product?.id?.price || 0}</span>
-                    </span>
-                    <span className="text-sm text-gray-600">
                       Quantity: <span className="font-medium">{product.quantity}</span>
-                    </span>
-                    <span className="text-sm font-bold text-gray-900">
-                      Total: Rs. {(product?.id?.price || 0) * product.quantity}
                     </span>
                   </div>
                 </div>

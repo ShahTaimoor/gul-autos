@@ -111,7 +111,6 @@ const Navbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   
   // Add debugging to check mobile detection
-  console.log('Navbar - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
 
   // Calculate total quantity

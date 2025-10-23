@@ -28,6 +28,7 @@ const MyOrders = () => {
   const dispatch = useDispatch();
 
   const { orders, status, error } = useSelector((state) => state.orders);
+  const { user } = useSelector((state) => state.auth);
 
   const [selectedDate, setSelectedDate] = useState(getPakistaniDate);
 
@@ -84,7 +85,7 @@ const MyOrders = () => {
           ) : (
             filteredOrders.map((order) => (
               <div key={order._id} className="relative">
-                <OrderData {...order} />
+                <OrderData {...order} user={user} />
                 <div className="absolute top-2 right-2">
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

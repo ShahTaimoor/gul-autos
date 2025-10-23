@@ -47,18 +47,18 @@ router.post('/login', async (req, res) => {
 
     user.password = undefined;
 
-    // Create access token (short-lived)
+    // Create access token (1 year duration)
     const accessToken = jwt.sign(
       { id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '15m' }
+      { expiresIn: '365d' }
     );
 
-    // Create refresh token (long-lived; extended when rememberMe)
+    // Create refresh token (1 year duration)
     const refreshToken = jwt.sign(
       { id: user._id, type: 'refresh' }, 
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, 
-      { expiresIn: rememberMe ? (process.env.REFRESH_TOKEN_EXPIRES || '30d') : '7d' }
+      { expiresIn: '365d' }
     );
 
     // Set secure cookies for mobile compatibility
@@ -66,7 +66,7 @@ router.post('/login', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes for access token
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year for access token
     };
 
     const refreshCookieOptions = {
@@ -137,7 +137,7 @@ router.post('/refresh-token', async (req, res) => {
     const newAccessToken = jwt.sign(
       { id: user._id, role: user.role }, 
       process.env.JWT_SECRET, 
-      { expiresIn: '15m' }
+      { expiresIn: '365d' }
     );
 
     // Set new access token cookie
@@ -145,7 +145,7 @@ router.post('/refresh-token', async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year for access token
     };
 
     return res

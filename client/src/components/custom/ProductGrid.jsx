@@ -47,10 +47,10 @@ const ProductGrid = React.memo(({
   }
 
   return (
-    <div className={`px-2 sm:px-0 gap-4 ${
+    <div className={`px-2 sm:px-0 ${
       gridType === 'grid2' 
-        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' 
-        : 'flex flex-col space-y-4'
+        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' 
+        : 'flex flex-col space-y-0.5'
     }`}>
       {products.filter(product => product && product._id).map((product) => (
         <ProductCard

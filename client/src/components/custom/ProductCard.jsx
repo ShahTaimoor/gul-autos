@@ -95,7 +95,7 @@ const ProductCard = React.memo(({
       <div
         className={`relative cursor-pointer overflow-hidden group ${
           gridType === 'grid3' 
-            ? 'w-1/4 sm:w-full aspect-square sm:aspect-square' 
+            ? 'w-1/4 sm:w-1/8 aspect-square' 
             : 'aspect-square w-full'
         }`}
       >
@@ -140,7 +140,7 @@ const ProductCard = React.memo(({
 
       <div
         className={`p-3 flex flex-col flex-grow ${
-          gridType === 'grid3' ? 'w-3/4 sm:w-full' : 'w-full'
+          gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
         <h3 className={`font-medium line-clamp-2 leading-tight ${
@@ -159,14 +159,6 @@ const ProductCard = React.memo(({
           }
         </h3>
         
-        {/* Price display for list view */}
-        {gridType === 'grid3' && product.price && (
-          <div className="mt-2 mb-3">
-            <span className="text-lg font-bold text-blue-600">
-              ${product.price}
-            </span>
-          </div>
-        )}
         
         <div className="flex-grow" />
 

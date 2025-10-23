@@ -65,13 +65,11 @@ const Media = () => {
   const fetchMedia = useCallback(async () => {
     setMediaLoading(true);
     try {
-      console.log('Fetching media from:', axiosInstance.defaults.baseURL + '/media');
       // Request up to 2000 images from backend
       const response = await axiosInstance.get('/media?limit=2000');
       
       if (response.data.success) {
         setUploadedMedia(response.data.data);
-        console.log('Fetched media from database:', response.data.data.length, 'images');
       } else {
         console.error('Media fetch failed:', response.data.message);
         toast.error('Failed to fetch media: ' + response.data.message);
@@ -102,7 +100,6 @@ const Media = () => {
 
   // Filter products to show only those with images and apply search filtering
   useEffect(() => {
-    console.log('useEffect triggered - products:', products.length, 'uploadedMedia:', uploadedMedia.length);
     
     // For Gallery tab: Show only product images (no uploaded media)
     let filtered = products.filter(product => 
@@ -111,17 +108,14 @@ const Media = () => {
       (product.picture?.secure_url || product.image)
     );
 
-    console.log('Product images filtered:', filtered.length, 'items');
 
     // Apply search filtering using the hook
     const searchFiltered = search.filterProducts(filtered, search.searchTerm, search.selectedProductId);
-    console.log('Final filtered products for Gallery:', searchFiltered.length);
     setFilteredProducts(searchFiltered);
   }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
 
   // Filter uploaded media for Upload tab with pagination and search
   useEffect(() => {
-    console.log('Filtering uploaded media for Upload tab:', uploadedMedia.length);
     
     // First apply search filter
     let searchFiltered = uploadedMedia;
@@ -138,7 +132,6 @@ const Media = () => {
       // Show all filtered images without pagination
       setFilteredUploadedMedia(searchFiltered);
       setUploadTotalPages(1);
-      console.log(`Showing all ${searchFiltered.length} filtered images`);
     } else {
       // Calculate pagination
       const totalPages = Math.ceil(searchFiltered.length / uploadPageSize);
@@ -149,7 +142,6 @@ const Media = () => {
       const endIndex = startIndex + uploadPageSize;
       const paginatedMedia = searchFiltered.slice(startIndex, endIndex);
       
-      console.log(`Upload pagination: page ${uploadCurrentPage}/${totalPages}, showing ${paginatedMedia.length} items`);
       setFilteredUploadedMedia(paginatedMedia);
     }
   }, [uploadedMedia, uploadCurrentPage, uploadPageSize, showAllImages, uploadSearchTerm]);
@@ -334,7 +326,6 @@ const Media = () => {
       });
 
       if (response.data.success) {
-        console.log('Upload successful, received data:', response.data.data);
         toast.success(`Successfully uploaded ${response.data.data.length} images to Cloudinary`);
         // Refresh media list from database
         await fetchMedia();

@@ -66,8 +66,6 @@ export const convertToWebP = async (file, options = {}) => {
               lastModified: Date.now()
             });
 
-            console.log(`🔄 Image converted: ${(file.size / 1024).toFixed(2)}KB → ${(webpFile.size / 1024).toFixed(2)}KB`);
-            console.log(`📊 Compression ratio: ${((1 - webpFile.size / file.size) * 100).toFixed(1)}%`);
 
             resolve(webpFile);
           },

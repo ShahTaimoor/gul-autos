@@ -96,12 +96,10 @@ const CreateProducts = () => {
   const fetchMedia = useCallback(async () => {
     setMediaLoading(true);
     try {
-      console.log('Fetching media from:', axiosInstance.defaults.baseURL + '/media');
       const response = await axiosInstance.get('/media');
       
       if (response.data.success) {
         setUploadedMedia(response.data.data);
-        console.log('Fetched media from database:', response.data.data);
       } else {
         console.error('Media fetch failed:', response.data.message);
         toast.error('Failed to fetch media: ' + response.data.message);

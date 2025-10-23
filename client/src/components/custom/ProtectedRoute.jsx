@@ -24,7 +24,6 @@ const ProtectedRoute = ({ children }) => {
           dispatch(setTokenExpired());
         }
       } catch (error) {
-        console.log('Auth verification failed:', error);
         // Don't logout on network errors, just log
       }
     }
