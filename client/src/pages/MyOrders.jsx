@@ -1,20 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import OneLoader from '@/components/ui/OneLoader';
-import { Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import OrderData from '@/components/custom/OrderData';
 import { fetchOrders, deleteOrder } from '@/redux/slices/order/orderSlice';
 import { toast } from 'sonner';
@@ -61,17 +48,19 @@ const MyOrders = () => {
   }
 
   return (
-    <div className="w-[90vw] lg:w-[50vw] mx-auto my-10 sm:my-32 grid gap-3">
-      <h1 className="text-2xl font-bold mb-4">My Orders</h1>
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 lg:py-16">
+      <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6">My Orders</h1>
 
       {/* Date picker */}
-      <input
-        type="date"
-        value={selectedDate}
-        onChange={(e) => setSelectedDate(e.target.value)}
-        className="mb-6 p-2 border rounded"
-        max={getPakistaniDate()} // restrict max date to today in Pakistan timezone
-      />
+      <div className="mb-4 sm:mb-6">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="w-full sm:w-auto p-2 sm:p-3 border border-gray-300 rounded-md text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          max={getPakistaniDate()} // restrict max date to today in Pakistan timezone
+        />
+      </div>
 
       {status === 'failed' ? (
         <Alert variant="destructive">
@@ -79,42 +68,13 @@ const MyOrders = () => {
           <AlertDescription>{error || 'Something went wrong fetching your orders.'}</AlertDescription>
         </Alert>
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-3 sm:space-y-4">
           {filteredOrders.length === 0 ? (
-            <p className="text-gray-500">No orders found for {selectedDate}.</p>
+            <p className="text-gray-500 text-sm sm:text-base text-center py-8">No orders found for {selectedDate}.</p>
           ) : (
             filteredOrders.map((order) => (
-              <div key={order._id} className="relative">
-                <OrderData {...order} user={user} />
-                <div className="absolute top-2 right-2">
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                     
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Order</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this order? This action will:
-                          <ul className="list-disc list-inside mt-2 space-y-1">
-                            <li>Permanently remove the order from your account</li>
-                            <li>Restore the product stock that was deducted</li>
-                            <li>This action cannot be undone</li>
-                          </ul>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeleteOrder(order._id)}
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          Delete Order
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+              <div key={order._id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                <OrderData {...order} user={user} onDelete={handleDeleteOrder} />
               </div>
             ))
           )}

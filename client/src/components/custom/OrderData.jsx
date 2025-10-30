@@ -6,6 +6,17 @@ import { Separator } from "../ui/separator";
 import LazyImage from "../ui/LazyImage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
 import { 
   Package, 
   MapPin, 
@@ -18,7 +29,8 @@ import {
   Clock,
   AlertCircle,
   Building,
-  Truck
+  Truck,
+  Trash2
 } from "lucide-react";
 
 
@@ -35,6 +47,8 @@ const OrderData = ({
   user,
   hideStatus = false,
   hideCOD = false,
+  onDelete,
+  _id,
 }) => {
 
   const statusColors = {
@@ -247,73 +261,117 @@ const OrderData = ({
   const StatusIcon = statusIcons[status] || AlertCircle;
 
   return (
-    <div className="space-y-6">
-      {/* Order Summary Header */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-blue-100 p-3">
-                <ShoppingBag className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Order Summary</h2>
-                <p className="text-gray-600">Complete order details and information</p>
-              </div>
+    <div className="space-y-4">
+      {/* Order Header - Mobile Responsive */}
+      <div className="p-4 bg-gray-50 rounded-lg">
+        {/* Mobile Layout */}
+        <div className="block sm:hidden">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="rounded-full bg-blue-100 p-2">
+              <ShoppingBag className="h-5 w-5 text-blue-600" />
             </div>
-            
-            <div className="flex items-center gap-3">
-              {!hideStatus && (
-                <Badge className={`${statusColors[status]} border flex items-center gap-1`}>
-                  <StatusIcon className="h-3 w-3" />
-                  {status}
-                </Badge>
-              )}
-              
-              <Button 
-                onClick={handleDownloadInvoice} 
-                variant="outline" 
-                size="sm"
-                className="gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download Invoice
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="flex items-center justify-center mb-2">
-                <Package className="h-5 w-5 text-blue-600" />
-              </div>
-              <p className="text-sm text-gray-600">Total Items</p>
-              <p className="text-xl font-bold text-gray-900">{totalQuantity}</p>
-            </div>
-            
-            <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="flex items-center justify-center mb-2">
-                <ShoppingBag className="h-5 w-5 text-purple-600" />
-              </div>
-              <p className="text-sm text-gray-600">Products</p>
-              <p className="text-xl font-bold text-gray-900">{products.length}</p>
-            </div>
-            
-            <div className="text-center p-4 bg-white rounded-lg border">
-              <div className="flex items-center justify-center mb-2">
-                <Calendar className="h-5 w-5 text-orange-600" />
-              </div>
-              <p className="text-sm text-gray-600">Order Date</p>
-              <p className="text-lg font-bold text-gray-900">
-                {new Date(createdAt).toLocaleDateString()}
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Order Summary</h2>
+              <p className="text-sm text-gray-600">
+                {new Date(createdAt).toLocaleDateString()} • {products.length} products
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          <div className="flex items-center gap-3">
+            {!hideStatus && (
+              <Badge className={`${statusColors[status]} border flex items-center gap-1`}>
+                <StatusIcon className="h-3 w-3" />
+                {status}
+              </Badge>
+            )}
+            
+            <Button 
+              onClick={handleDownloadInvoice} 
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Customer Information */}
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-blue-100 p-2">
+              <ShoppingBag className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
+              <p className="text-sm text-gray-600">
+                {new Date(createdAt).toLocaleDateString()} • {products.length} products
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {!hideStatus && (
+              <Badge className={`${statusColors[status]} border flex items-center gap-1`}>
+                <StatusIcon className="h-3 w-3" />
+                {status}
+              </Badge>
+            )}
+            
+            {onDelete && (Number(user?.role) === 1 || Number(user?.role) === 2) && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="mx-4 sm:mx-0">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-lg sm:text-xl">Delete Order</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm sm:text-base">
+                      Are you sure you want to delete this order? This action will:
+                      <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                        <li>Permanently remove the order from your account</li>
+                        <li>Restore the product stock that was deducted</li>
+                        <li>This action cannot be undone</li>
+                      </ul>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                    <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(_id)}
+                      className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                    >
+                      Delete Order
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            
+            <Button 
+              onClick={handleDownloadInvoice} 
+              variant="outline" 
+              size="sm"
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Left Side - Customer Information */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
@@ -354,7 +412,6 @@ const OrderData = ({
               </div>
             </div>
 
-
             {packerName && (
               <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                 <CheckCircle className="h-4 w-4 text-emerald-600" />
@@ -367,99 +424,50 @@ const OrderData = ({
           </CardContent>
         </Card>
 
-        {/* Order Details */}
+        {/* Right Side - Products List */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-blue-600" />
-              Order Details
+              Products ({products.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Order Date</p>
-                <p className="text-gray-600">
-                  {new Date(createdAt).toLocaleString('en-US', {
-                    timeZone: 'Asia/Karachi',
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            </div>
-            
-            
-            <Separator />
-
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Order Summary</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Products:</span>
-                  <span className="font-medium">{products.length}</span>
+          <CardContent>
+            <div className="space-y-4">
+              {products.map((product, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="relative">
+                    <LazyImage
+                      src={product?.id?.picture?.secure_url}
+                      alt={product?.id?.title || "Product image"}
+                      className="h-16 w-16 rounded-lg object-cover border"
+                      fallback="fallback.jpg"
+                      quality={80}
+                    />
+                    <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium">
+                      {product.quantity}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900 text-base leading-relaxed">
+                      {product?.id?.title || "Unnamed Product"}
+                    </h3>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="text-sm text-gray-600">
+                        Quantity: <span className="font-medium">{product.quantity}</span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total Quantity:</span>
-                  <span className="font-medium">{totalQuantity}</span>
-                </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Products List */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-blue-600" />
-            Products ({products.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {products.map((product, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="relative">
-                  <LazyImage
-                    src={product?.id?.picture?.secure_url}
-                    alt={product?.id?.title || "Product image"}
-                    className="h-16 w-16 rounded-lg object-cover border"
-                    fallback="fallback.jpg"
-                    quality={80}
-                  />
-                  <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium">
-                    {product.quantity}
-                  </div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 truncate">
-                    {product?.id?.title || "Unnamed Product"}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Category: {product?.id?.category || "N/A"}
-                  </p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-sm text-gray-600">
-                      Quantity: <span className="font-medium">{product.quantity}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
