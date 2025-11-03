@@ -55,7 +55,8 @@ export const useSearchProducts = ({
     // If we have explicit suggestion/product IDs, fetch strictly by those IDs
     // Priority: If productIds are set, use them (even if search term is empty)
     const hasSuggestionIds = enterSuggestionIdsRef.current.length > 0;
-    const searchCategory = hasSuggestionIds ? 'all' : category;
+    // Always use 'all' for search to make it category-independent
+    const searchCategory = hasSuggestionIds ? 'all' : (searchTerm ? 'all' : category);
     // If we have product IDs, don't use search term - let backend filter by IDs
     const searchParam = hasSuggestionIds ? '' : (searchTerm || '');
     

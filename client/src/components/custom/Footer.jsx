@@ -5,7 +5,7 @@ const Footer = () => {
   const [hoveredIcon, setHoveredIcon] = useState(null)
 
   return (
-    <footer className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+    <footer className="relative overflow-hidden bg-black text-white">
       {/* Modern background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Animated gradient orbs */}
@@ -23,7 +23,7 @@ const Footer = () => {
             {/* Company Brand Section */}
             <div className="lg:col-span-1 space-y-6">
               <div className="space-y-4">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold text-red-500">
                   GULTRADERS
                 </h2>
                 <p className="text-slate-300 text-sm font-medium tracking-wide uppercase">
@@ -155,7 +155,7 @@ const Footer = () => {
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
               <p className="text-slate-400 text-sm">
-                © {new Date().getFullYear()} <span className="text-blue-400 font-semibold">GULTRADERS</span>. All rights reserved.
+                © {new Date().getFullYear()} <span className="text-red-500 font-semibold">GULTRADERS</span>. All rights reserved.
               </p>
               <div className="flex space-x-6 text-sm">
                 <a href="#" className="text-slate-400 hover:text-white transition-colors duration-200">Privacy Policy</a>

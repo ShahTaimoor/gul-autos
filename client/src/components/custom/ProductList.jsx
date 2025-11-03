@@ -150,10 +150,20 @@ const ProductList = () => {
   });
 
   // Memoized combined categories
-  const combinedCategories = useMemo(() => [
-    { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
-    ...(categories || [])
-  ], [categories]);
+  const combinedCategories = useMemo(() => {
+    const allCategories = [
+      { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
+      ...(categories || [])
+    ];
+    // Sort by position if position exists, otherwise keep original order
+    return allCategories.sort((a, b) => {
+      if (a._id === 'all') return -1; // Keep 'All' at the beginning
+      if (b._id === 'all') return 1;
+      const posA = a.position ?? 999;
+      const posB = b.position ?? 999;
+      return posA - posB;
+    });
+  }, [categories]);
 
   // Products are now sorted on the backend, so we use them directly
   const sortedProducts = useMemo(() => {
@@ -294,8 +304,14 @@ const ProductList = () => {
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
+    // Clear selected product first
+    search.setSelectedProductId(null);
+    // Clear suggestion IDs
+    search.setEnterSuggestionIds([]);
+    // Update category (this will trigger useEffect to fetch products)
     search.setCategory(categoryId);
-    search.clearSearch(); // Clear search when selecting category
+    // Clear search term and active search term
+    search.handleSearchChange('');
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -321,13 +321,14 @@ const BottomNavigation = () => {
                 }}
                 className="flex flex-col items-center justify-center relative transition-all duration-300 flex-1"
               >
-                <div className="py-1">
+                <div className="flex flex-col items-center justify-center gap-0.5">
                   <Icon 
                     size={22} 
                     className="text-gray-400 transition-all duration-300"
                     strokeWidth={1.5}
                     fill="none"
                   />
+                  <span className="text-[10px] text-gray-400 font-medium">{item.label}</span>
                 </div>
               </button>
             );
@@ -347,7 +348,7 @@ const BottomNavigation = () => {
             >
               {item.isCenter ? (
                 // Center Home button with floating orange circle
-                <div className="relative -mt-8 mb-2">
+                <div className="relative -mt-2 mb-1">
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${
                     active 
                       ? "bg-primary scale-100" 
@@ -366,7 +367,7 @@ const BottomNavigation = () => {
                 </div>
               ) : (
                 // Inactive items - just icons, no background, light gray/silver color
-                <div className="py-1">
+                <div className="flex flex-col items-center justify-center gap-0.5">
                   <Icon 
                     size={22} 
                     className={`transition-all duration-300 ${
@@ -375,6 +376,9 @@ const BottomNavigation = () => {
                     strokeWidth={1.5}
                     fill="none"
                   />
+                  <span className={`text-[10px] font-medium transition-all duration-300 ${
+                    active ? "text-primary" : "text-gray-400"
+                  }`}>{item.label}</span>
                 </div>
               )}
             </Link>
@@ -388,20 +392,25 @@ const BottomNavigation = () => {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="flex flex-col items-center justify-center flex-1 py-1 relative"
             >
-              <div className="relative">
-                <ShoppingCart 
-                  size={22} 
-                  className={`transition-all duration-300 ${
-                    location.pathname.includes('/checkout') ? "text-primary" : "text-gray-400"
-                  }`}
-                  strokeWidth={1.5}
-                  fill="none"
-                />
-                {totalQuantity > 0 && (
-                  <Badge className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
-                    {totalQuantity > 9 ? '9+' : totalQuantity}
-                  </Badge>
-                )}
+              <div className="flex flex-col items-center justify-center gap-0.5">
+                <div className="relative">
+                  <ShoppingCart 
+                    size={22} 
+                    className={`transition-all duration-300 ${
+                      location.pathname.includes('/checkout') ? "text-primary" : "text-gray-400"
+                    }`}
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  {totalQuantity > 0 && (
+                    <Badge className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                      {totalQuantity > 9 ? '9+' : totalQuantity}
+                    </Badge>
+                  )}
+                </div>
+                <span className={`text-[10px] font-medium transition-all duration-300 ${
+                  location.pathname.includes('/checkout') ? "text-primary" : "text-gray-400"
+                }`}>Cart</span>
               </div>
             </button>
           </SheetTrigger>

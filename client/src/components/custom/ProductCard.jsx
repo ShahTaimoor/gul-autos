@@ -230,7 +230,7 @@ const ProductCard = React.memo(({
             disabled={isDisabled}
             className={`text-xs cursor-pointer px-2 md:px-3 h-9 sm:h-8 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[45%] md:w-1/2 ${
               isInCart
-                ? 'bg-green-600 hover:bg-green-700'
+                ? 'bg-black hover:bg-gray-800'
                 : isDisabled
                   ? 'bg-gray-500 cursor-not-allowed'
                   : 'bg-primary hover:bg-primary/90 hover:shadow-2xl'
