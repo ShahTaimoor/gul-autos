@@ -818,7 +818,144 @@ router.get('/get-products', async (req, res) => {
   }
 });
 
+// @route GET /api/products/search-suggestions
+// @desc Get search suggestions/autocomplete for products
+// @access Public
+router.get('/search-suggestions', async (req, res) => {
+  try {
+    const { q = '', limit = 10 } = req.query;
+    
+    if (!q || q.trim().length < 1) {
+      return res.status(200).json({
+        success: true,
+        message: 'Search suggestions fetched successfully',
+        data: []
+      });
+    }
 
+    const searchTerm = q.trim();
+    const searchLimit = Math.min(parseInt(limit) || 10, 20); // Max 20 suggestions
+    
+    // Build search query with relevance scoring
+    const searchWords = searchTerm.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+    
+    // Create search patterns for better matching
+    const keywordPatterns = searchWords.map(keyword => {
+      const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return {
+        $or: [
+          { title: { $regex: `\\b${escapedKeyword}`, $options: 'i' } },
+          { description: { $regex: `\\b${escapedKeyword}`, $options: 'i' } }
+        ]
+      };
+    });
+
+    // Query for products that match all keywords
+    const query = {
+      stock: { $gt: 0 }, // Only show in-stock products in suggestions
+      $and: keywordPatterns.length > 0 ? keywordPatterns : []
+    };
+
+    // Use aggregation pipeline for relevance-based sorting
+    const suggestions = await Product.aggregate([
+      { $match: query },
+      {
+        $addFields: {
+          relevanceScore: {
+            $add: [
+              // Title starts with exact search phrase (highest priority)
+              {
+                $cond: [
+                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchTerm.toLowerCase()}` } },
+                  300, 0
+                ]
+              },
+              // Exact phrase match in title
+              {
+                $cond: [
+                  { $regexMatch: { input: { $toLower: "$title" }, regex: searchTerm.toLowerCase() } },
+                  200, 0
+                ]
+              },
+              // First word of title matches first search word
+              {
+                $cond: [
+                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchWords[0]}\\b` } },
+                  150, 0
+                ]
+              },
+              // All keywords in title
+              {
+                $cond: [
+                  { 
+                    $and: searchWords.map(word => ({ 
+                      $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
+                    }))
+                  },
+                  100, 0
+                ]
+              },
+              // Individual keyword matches in title
+              {
+                $sum: searchWords.map(word => ({
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } },
+                    30, 0
+                  ]
+                }))
+              },
+              // Individual keyword matches in description
+              {
+                $sum: searchWords.map(word => ({
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } },
+                    10, 0
+                  ]
+                }))
+              }
+            ]
+          }
+        }
+      },
+      { $sort: { relevanceScore: -1, createdAt: -1 } },
+      { $limit: searchLimit },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          picture: 1,
+          price: 1,
+          stock: 1,
+          description: { $substr: ["$description", 0, 100] } // Truncate description
+        }
+      }
+    ]);
+
+    // Format suggestions for frontend
+    const formattedSuggestions = suggestions.map(product => ({
+      _id: product._id,
+      title: product.title,
+      image: product.picture?.secure_url || null,
+      price: product.price,
+      stock: product.stock,
+      description: product.description || ''
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Search suggestions fetched successfully',
+      data: formattedSuggestions,
+      count: formattedSuggestions.length
+    });
+  } catch (error) {
+    console.error('Error fetching search suggestions:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching search suggestions',
+      error: error.message
+    });
+  }
+});
 
 router.get('/single-product/:id', async (req, res) => {
     const { id } = req.params;

@@ -383,34 +383,32 @@ const OrderData = ({
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Building className="h-4 w-4 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Shop Name</p>
-                <p className="text-gray-600">{user?.name || "Shop Name"}</p>
+               
+                <p className="text-gray-600"><span>Shop Name: </span>{user?.name || "Shop Name"}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Phone className="h-4 w-4 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Phone Number</p>
-                <p className="text-gray-600">{phone}</p>
+              
+                <p className="text-gray-600"><span>Contact No: </span>{phone}</p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <MapPin className="h-4 w-4 text-gray-500" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">Delivery Address</p>
-                <p className="text-gray-600">{address}</p>
-              </div>
-            </div>
-            
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
               <Building className="h-4 w-4 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">City</p>
-                <p className="text-gray-600">{city}</p>
+                <p className="text-gray-600"><span>City: </span>{city}</p>
               </div>
             </div>
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <MapPin className="h-4 w-4 text-gray-500" />
+              <div>
+                <p className="text-gray-600"><span>Address: </span>{address}</p>
+              </div>
+            </div>
+            
+            
 
             {packerName && (
               <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">

@@ -13,14 +13,16 @@
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
+  /* TCS Primary Red Color - Vibrant red for main branding and CTAs */
+  --primary: oklch(0.5 0.22 25);
+  --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
   --muted-foreground: oklch(0.552 0.016 285.938);
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
+  /* TCS Destructive/Error Red - Slightly different shade */
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
@@ -32,8 +34,8 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.5 0.22 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.967 0.001 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
@@ -200,23 +202,23 @@ button, [role="button"] {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Gradient text effect */
+/* Gradient text effect - TCS Red Theme */
 .gradient-text {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Custom button hover effects */
+/* Custom button hover effects - TCS Red Theme */
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
   transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
 }
 
 /* Card hover effects */
@@ -306,4 +308,181 @@ button, [role="button"] {
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+/* Custom Scrollbar Design */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #B91C1C 0%, #7F1D1D 100%);
+  border: 1px solid #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(135deg, #991B1B 0%, #7F1D1D 100%);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #DC2626 #f1f1f1;
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-track {
+    background: #1f1f1f;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    border: 2px solid #1f1f1f;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    border: 1px solid #1f1f1f;
+  }
+
+  * {
+    scrollbar-color: #EF4444 #1f1f1f;
+  }
+}
+
+/* Navbar scroll animations - Desktop only */
+@media (min-width: 1024px) {
+  .navbar-scroll {
+    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  }
+
+  .navbar-hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .navbar-visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Floating cart animation - Desktop only */
+  .cart-floating {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  @keyframes slideInRight {
+    0% {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  /* Search and Categories container transition */
+  .search-categories-container {
+    transition: all 0.3s ease-in-out;
+  }
+}
+
+/* Custom Toast Styles */
+@media (min-width: 1024px) {
+  [data-sonner-toaster] {
+    inset: auto 16px 0 auto;
+    top: 24px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  [data-sonner-toaster] {
+    inset: 80px 16px auto auto;
+  }
+}
+
+[data-sonner-toast] {
+  border-radius: 0.5rem;
+  font-weight: 500;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  font-family: "Roboto", sans-serif;
+  animation: slideInRight 0.3s ease-out;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  border: none;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  border: none;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background: white;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  border: none;
+}
+
+/* Custom Swiper Pagination Dots */
+.swiper-pagination {
+  position: absolute !important;
+  bottom: 8px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  display: flex !important;
+  gap: 8px !important;
+  z-index: 10 !important;
+}
+
+.swiper-pagination-bullet {
+  width: 8px !important;
+  height: 8px !important;
+  background: #d1d5db !important;
+  opacity: 1 !important;
+  transition: all 0.3s ease !important;
+  border-radius: 50% !important;
+}
+
+.swiper-pagination-bullet-active {
+  width: 24px !important;
+  height: 8px !important;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+  border-radius: 4px !important;
+}
+
+/* Hover effect on pagination dots */
+.swiper-pagination-bullet:hover {
+  background: #9ca3af !important;
+}
+
+.swiper-pagination-bullet-active:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%) !important;
 }

@@ -128,23 +128,18 @@ const Checkout = ({ closeModal }) => {
               <div className="space-y-6">
                 {!showForm ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-gray-700">Contact</h3>
-                        <Check className="w-4 h-4 text-green-500" />
-                      </div>
-                      <p className="text-sm text-gray-600">{user?.email}</p>
-                      <p className="text-sm text-gray-600">{user?.phone}</p>
-                    </div>
+                   
 
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-medium text-gray-700">Shipping Address</h3>
                         <Check className="w-4 h-4 text-green-500" />
                       </div>
-                      <p className="text-sm text-gray-600">{user?.name}</p>
-                      <p className="text-sm text-gray-600">{user?.address}</p>
-                      <p className="text-sm text-gray-600">{user?.city}</p>
+                      <p className="text-sm text-gray-600"><span>Shop Name: </span>{user?.name}</p>
+                      <p className="text-sm text-gray-600"><span>Contact No: </span>{user?.phone}</p>
+                      <p className="text-sm text-gray-600"><span>Address: </span>{user?.address}</p>
+                      <p className="text-sm text-gray-600"><span>City: </span>{user?.city}</p>
+                  
                     </div>
                   </div>
                 ) : (

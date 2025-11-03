@@ -597,9 +597,7 @@ Phone: ${order.phone}
                           <Package className="h-4 w-4 text-blue-600" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {order.userId?.name ? capitalizeFirst(order.userId.name) : 'Customer'}
-                          </p>
+                         
                           <p className="text-xs text-gray-500">
                             {new Date(order.createdAt).toLocaleString('en-US', {
                               timeZone: 'Asia/Karachi',
@@ -666,17 +664,22 @@ Phone: ${order.phone}
                     <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">Customer</span>
+                        <span className="text-sm text-gray-600"><span>Shop Name: </span>{order.userId?.name ? capitalizeFirst(order.userId.name) : 'Customer'}</span>
                       </div>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3 w-3 text-gray-400" />
-                          <p className="text-sm text-gray-700 truncate">{order.address}</p>
+                      <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3 text-gray-400" />
+                          <p className="text-sm text-gray-700"><span>Contact No: </span>{order.phone}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Phone className="h-3 w-3 text-gray-400" />
-                          <p className="text-sm text-gray-700">{order.phone}</p>
+                          <p className="text-sm text-gray-700"><span>City: </span>{order.city}</p>
                         </div>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3 text-gray-400" />
+                          <p className="text-sm text-gray-700 truncate"><span>Address: </span>{order.address}</p>
+                        </div>
+                       
                       </div>
                     </div>
 

@@ -7,16 +7,10 @@ import { getPopularSearches } from '@/utils/searchAnalytics';
  */
 export const useSearchState = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeSearchTerm, setActiveSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // Term used for actual search (only set on submit)
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [searchHistory, setSearchHistory] = useState([]);
-  const [popularSearches, setPopularSearches] = useState([
-    'toyota corolla grill',
-    'honda civic bumper',
-    'nissan altima headlight',
-    'mazda 3 taillight',
-    'hyundai elantra mirror'
-  ]);
+  const [popularSearches, setPopularSearches] = useState([]);
 
   // Load search history and popular searches from localStorage on mount
   useEffect(() => {
@@ -37,24 +31,35 @@ export const useSearchState = () => {
     }
   }, []);
 
-  // Update active search term when user types
-  useEffect(() => {
-    setActiveSearchTerm(searchTerm);
-  }, [searchTerm]);
+  // Don't update activeSearchTerm automatically - only update when search is submitted
+  // activeSearchTerm is the term used for actual product fetching
 
   // Handle search change
   const handleSearchChange = useCallback((value) => {
+    const previousSearchTerm = searchTerm;
     setSearchTerm(value);
-    // Clear selected product when search changes
+    
+    // Clear selected product when user manually types/changes search
+    // This allows new searches to show all matching products
     if (selectedProductId) {
       setSelectedProductId(null);
     }
-  }, [selectedProductId]);
+    
+    // If search becomes empty (user cleared it), automatically show all products
+    // This handles the case where user deletes all text without pressing Enter
+    if (previousSearchTerm && previousSearchTerm.trim() !== '' && (!value || value.trim() === '')) {
+      // Search was cleared - show all products automatically
+      setActiveSearchTerm('');
+    }
+  }, [selectedProductId, searchTerm]);
 
   // Handle search submit
   const handleSearchSubmit = useCallback((term, productId = null, suggestionIds = []) => {
     if (term && term.trim()) {
       const trimmedTerm = term.trim();
+      
+      // Update active search term (this triggers the actual product search)
+      setActiveSearchTerm(trimmedTerm);
       
       // Add to search history
       if (!searchHistory.includes(trimmedTerm)) {
@@ -69,14 +74,15 @@ export const useSearchState = () => {
       }
     } else {
       // Clear search
+      setActiveSearchTerm('');
       setSelectedProductId(null);
     }
   }, [searchHistory]);
 
-  // Clear search
+  // Clear search - reset everything and show all products
   const clearSearch = useCallback(() => {
     setSearchTerm('');
-    setActiveSearchTerm('');
+    setActiveSearchTerm(''); // Clear active search term to reset products and show all
     setSelectedProductId(null);
   }, []);
 

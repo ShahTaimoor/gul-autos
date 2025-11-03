@@ -24,6 +24,8 @@ export const useSearchProducts = ({
   const [allProducts, setAllProducts] = useState([]);
   const [enterSuggestionIds, setEnterSuggestionIds] = useState([]);
   const enterSuggestionIdsRef = useRef([]);
+  const pendingRequestsRef = useRef(new Map());
+  const lastRequestParamsRef = useRef(null);
 
   // Fetch products for suggestions (only once on mount)
   useEffect(() => {
@@ -42,22 +44,41 @@ export const useSearchProducts = ({
     fetchSuggestions();
   }, []);
 
-  // Handle search with debounced term
+  // Handle search with debounced term and request deduplication
   const handleSearch = useCallback((searchTerm, debounceDelay = 150) => {
-    // Clear suggestion IDs when search is cleared
-    if (!searchTerm || searchTerm.trim() === '') {
-      setEnterSuggestionIds([]);
-      enterSuggestionIdsRef.current = [];
+    // Don't clear suggestion IDs here - they are managed by the caller
+    // Only clear if explicitly clearing search AND no suggestion IDs are set
+    if ((!searchTerm || searchTerm.trim() === '') && enterSuggestionIdsRef.current.length === 0) {
+      // Only clear if there are no suggestion IDs to preserve
     }
     
     // If we have explicit suggestion/product IDs, fetch strictly by those IDs
-    const hasSuggestionIds = enterSuggestionIdsRef.current.length > 0 && (searchTerm && searchTerm.trim());
+    // Priority: If productIds are set, use them (even if search term is empty)
+    const hasSuggestionIds = enterSuggestionIdsRef.current.length > 0;
     const searchCategory = hasSuggestionIds ? 'all' : category;
+    // If we have product IDs, don't use search term - let backend filter by IDs
     const searchParam = hasSuggestionIds ? '' : (searchTerm || '');
     
     const productIdsParam = hasSuggestionIds ? enterSuggestionIdsRef.current.join(',') : undefined;
 
-    dispatch(fetchProducts({ 
+    // Create request key for deduplication
+    const requestKey = `${searchCategory}-${searchParam}-${page}-${limit}-${stockFilter}-${sortBy}-${productIdsParam || ''}`;
+    
+    // Check if this exact request is already pending
+    if (pendingRequestsRef.current.has(requestKey)) {
+      return pendingRequestsRef.current.get(requestKey);
+    }
+    
+    // Check if this is the same as the last request (no new data needed)
+    if (lastRequestParamsRef.current === requestKey) {
+      return Promise.resolve();
+    }
+    
+    // Store request params for comparison
+    lastRequestParamsRef.current = requestKey;
+
+    // Make the API call
+    const requestPromise = dispatch(fetchProducts({ 
       category: searchCategory, 
       searchTerm: searchParam, 
       page, 
@@ -70,9 +91,18 @@ export const useSearchProducts = ({
       if (res.payload?.data?.length === 0 && page > 1) {
         setPage((prev) => prev - 1);
       }
+      // Remove from pending requests
+      pendingRequestsRef.current.delete(requestKey);
     }).catch((error) => {
       console.error('Error fetching products:', error);
+      // Remove from pending requests on error
+      pendingRequestsRef.current.delete(requestKey);
     });
+    
+    // Store pending request
+    pendingRequestsRef.current.set(requestKey, requestPromise);
+    
+    return requestPromise;
   }, [dispatch, category, page, limit, sortBy, stockFilter]);
 
   // Filter products based on search term (for additional client-side filtering)
@@ -152,6 +182,10 @@ export const useSearchProducts = ({
     setEnterSuggestionIds: (ids) => {
       setEnterSuggestionIds(ids);
       enterSuggestionIdsRef.current = ids;
+      // If clearing suggestion IDs (empty array), reset last request params to force new fetch
+      if (ids.length === 0) {
+        lastRequestParamsRef.current = null;
+      }
     },
     handleSearch,
     handlePageChange,

@@ -125,12 +125,12 @@ const Login = () => {
   }, []);
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col justify-center items-center p-4 sm:p-6 relative'>
+    <div className='min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 flex flex-col justify-center items-center p-4 sm:p-6 relative'>
       {/* Subtle background pattern */}
       <div className="absolute inset-0 opacity-40">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100/30 to-indigo-100/30"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100/30 to-slate-100/30"></div>
         <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(99, 102, 241, 0.1) 0%, transparent 50%)`
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(0, 0, 0, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(0, 0, 0, 0.05) 0%, transparent 50%)`
         }}></div>
       </div>
 
@@ -140,7 +140,7 @@ const Login = () => {
           {/* Logo section */}
           <div className='flex justify-center mb-8'>
             <div className="relative">
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-4 shadow-lg">
+              <div className="bg-gradient-to-br from-primary to-primary/80 rounded-2xl p-4 shadow-lg">
                 <img 
                   src="/logo.jpeg" 
                   alt="GULTRADERS Logo" 
@@ -177,7 +177,7 @@ const Login = () => {
                 required
                 disabled={loading}
                 autoComplete="username"
-                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200'
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200'
               />
               {errorMsg.name && (
                 <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
@@ -224,7 +224,7 @@ const Login = () => {
 
           {/* Submit Button */}
           <Button 
-            className='w-full mt-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]' 
+            className='w-full mt-8 bg-gradient-to-r from-primary to-primary/90 hover:from-primary hover:to-primary/80 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]' 
             disabled={loading} 
             type='submit'
           >
@@ -244,7 +244,7 @@ const Login = () => {
               Don't have an account?
               <Link 
                 to='/signup' 
-                className='text-blue-600 ml-2 hover:text-blue-700 font-semibold hover:underline transition-colors duration-200'
+                className='text-primary ml-2 hover:text-primary/80 font-semibold hover:underline transition-colors duration-200'
               >
                 Sign Up
               </Link>

@@ -51,20 +51,17 @@ const Pagination = React.memo(({
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-blue-100 rounded-full filter blur-3xl opacity-20"></div>
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-yellow-100 rounded-full filter blur-3xl opacity-20"></div>
-      </div>
+      
 
       <div className="relative flex items-center justify-center gap-1 mt-10 overflow-x-auto scrollbar-hide max-w-full">
         {/* Previous Button */}
         <button
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-8 px-2 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Previous page"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Previous
@@ -76,12 +73,12 @@ const Pagination = React.memo(({
             key={page === '...' ? `ellipsis-${index}` : page}
             onClick={() => typeof page === 'number' && onPageChange(page)}
             disabled={page === '...'}
-            className={`w-10 h-10 flex items-center justify-center rounded-lg font-medium transition-all hover:scale-110 ${
+            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-medium transition-all hover:scale-[1.01] ${
               page === currentPage
-                ? 'bg-[#FED700] text-white border-[#FED700] shadow-lg'
+                ? 'bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white border-[#DC2626] shadow-lg shadow-red-500/30'
                 : page === '...'
                   ? 'bg-transparent text-gray-400 cursor-default'
-                  : 'bg-white/90 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-yellow-50'
+                  : 'bg-white/90 backdrop-blur-sm text-gray-700 border-gray-200 hover:bg-red-50 hover:text-primary hover:border-primary'
             } border`}
             aria-label={page === '...' ? 'More pages' : `Page ${page}`}
           >
@@ -93,11 +90,11 @@ const Pagination = React.memo(({
         <button
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="relative flex items-center justify-center h-10 px-2 rounded-lg bg-white/90 backdrop-blur-sm text-gray-700 hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-8 px-2 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
           aria-label="Next page"
         >
           Next
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>

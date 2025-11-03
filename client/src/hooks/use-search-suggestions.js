@@ -1,14 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import productService from '@/redux/slices/products/productService';
 
 /**
  * Custom hook for managing search suggestions and product filtering
  * Eliminates duplication across components
+ * Now supports both API-based and client-side suggestions (like gulautos.pk)
  */
-export const useSearchSuggestions = (allProducts = []) => {
+export const useSearchSuggestions = (allProducts = [], useApi = true) => {
   const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const abortControllerRef = useRef(null);
 
-  // Generate product suggestions based on search term
-  const generateSuggestions = useCallback((term, products = allProducts) => {
+  // Generate product suggestions based on search term (client-side fallback)
+  const generateSuggestionsClientSide = useCallback((term, products = allProducts) => {
     if (!term || term.length < 2 || !products || products.length === 0) return [];
     
     const searchTerm = term.toLowerCase().trim();
@@ -69,16 +73,94 @@ export const useSearchSuggestions = (allProducts = []) => {
     return finalSuggestions;
   }, [allProducts]);
 
+  // Generate product suggestions using API (faster and more accurate)
+  const generateSuggestionsFromAPI = useCallback(async (term) => {
+    if (!term || term.length < 1) {
+      setSuggestions([]);
+      return [];
+    }
+
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+
+    setLoadingSuggestions(true);
+    try {
+      const response = await productService.getSearchSuggestions(term, 10);
+      
+      if (response.success && response.data) {
+        const formattedSuggestions = response.data.map(product => ({
+          text: product.title,
+          image: product.image || product.picture?.secure_url || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100&h=100&fit=crop&crop=center',
+          product: product // Keep reference to full product
+        }));
+        setSuggestions(formattedSuggestions);
+        return formattedSuggestions;
+      }
+      
+      setSuggestions([]);
+      return [];
+    } catch (error) {
+      // If API fails, fall back to client-side search
+      if (error.name !== 'AbortError') {
+        console.warn('API search suggestions failed, falling back to client-side:', error);
+        return generateSuggestionsClientSide(term);
+      }
+      return [];
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  }, [generateSuggestionsClientSide]);
+
+  // Unified generate suggestions function that chooses API or client-side
+  const generateSuggestions = useCallback(async (term, products = allProducts) => {
+    if (!term || term.length < 1) {
+      setSuggestions([]);
+      return [];
+    }
+
+    // Use API if enabled and term is at least 1 character
+    if (useApi && term.length >= 1) {
+      return await generateSuggestionsFromAPI(term);
+    }
+    
+    // Fall back to client-side for terms with 2+ characters
+    if (term.length >= 2) {
+      const suggestions = generateSuggestionsClientSide(term, products);
+      setSuggestions(suggestions);
+      return suggestions;
+    }
+    
+    setSuggestions([]);
+    return [];
+  }, [useApi, generateSuggestionsFromAPI, generateSuggestionsClientSide, allProducts]);
+
   // Update suggestions when allProducts change
   useEffect(() => {
-    if (allProducts.length > 0) {
+    if (allProducts.length > 0 && !useApi) {
       setSuggestions([]);
     }
-  }, [allProducts]);
+  }, [allProducts, useApi]);
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return {
     suggestions,
+    loadingSuggestions,
     generateSuggestions,
-    setSuggestions
+    setSuggestions,
+    generateSuggestionsFromAPI,
+    generateSuggestionsClientSide
   };
 };

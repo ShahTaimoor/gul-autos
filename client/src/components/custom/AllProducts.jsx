@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
 import { Input } from '../ui/input';
@@ -41,13 +41,19 @@ import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { products, status, totalItems } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
+
+  // Get page number from URL params if available
+  const searchParams = new URLSearchParams(location.search);
+  const urlPage = searchParams.get('page');
+  const initialPage = urlPage ? parseInt(urlPage, 10) : 1;
 
   // Use the search hook to eliminate duplication
   const search = useSearch({
     initialCategory: 'all',
-    initialPage: 1,
+    initialPage: initialPage,
     initialLimit: 24,
     initialStockFilter: 'all',
     initialSortBy: 'az'
@@ -55,7 +61,7 @@ const AllProducts = () => {
 
   // Use pagination hook to eliminate pagination duplication
   const pagination = usePagination({
-    initialPage: 1,
+    initialPage: initialPage,
     initialLimit: 24,
     totalItems,
     onPageChange: (page) => {
@@ -103,10 +109,56 @@ const AllProducts = () => {
     dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 24, stockFilter: 'all' }));
   }, [dispatch]);
 
+  // Store handleSearch in a ref to avoid dependency issues
+  const handleSearchRef = useRef(search.handleSearch);
+  handleSearchRef.current = search.handleSearch;
+  
+  // Track last search params to prevent unnecessary calls
+  const lastSearchParamsRef = useRef('');
+  const isSearchingRef = useRef(false);
+  
   // Fetch products with debounced search using the hook
+  // NOTE: page is NOT in dependencies to prevent loops when handleSearch auto-adjusts page
   useEffect(() => {
-    search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.category, search.page, search.stockFilter, search.sortBy]);
+    // Prevent concurrent searches
+    if (isSearchingRef.current) return;
+    
+    // Create a key from search params (excluding page to prevent loops)
+    const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.stockFilter}-${search.sortBy}`;
+    
+    // Only call if search params actually changed
+    if (lastSearchParamsRef.current !== searchKey) {
+      lastSearchParamsRef.current = searchKey;
+      isSearchingRef.current = true;
+      
+      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
+      // Ensure we always have a promise to call finally on
+      Promise.resolve(result).finally(() => {
+        isSearchingRef.current = false;
+      });
+    }
+  }, [search.debouncedSearchTerm, search.category, search.stockFilter, search.sortBy]);
+  
+  // Handle page changes separately (only user-initiated via pagination)
+  const prevPageRef = useRef(search.page);
+  useEffect(() => {
+    const pageChanged = prevPageRef.current !== search.page;
+    prevPageRef.current = search.page;
+    
+    // Only trigger search if page changed (user clicked pagination)
+    // Skip if we're already searching to prevent loops
+    if (pageChanged && !isSearchingRef.current) {
+      isSearchingRef.current = true;
+      const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.stockFilter}-${search.sortBy}`;
+      lastSearchParamsRef.current = searchKey;
+      
+      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
+      // Ensure we always have a promise to call finally on
+      Promise.resolve(result).finally(() => {
+        isSearchingRef.current = false;
+      });
+    }
+  }, [search.page]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -156,10 +208,11 @@ const AllProducts = () => {
     }
   }, [dispatch]);
 
-  // Handle edit product
+  // Handle edit product - preserve current page number
   const handleEdit = useCallback((product) => {
-    navigate(`/admin/dashboard/update/${product._id}`);
-  }, [navigate]);
+    const currentPage = pagination.currentPage;
+    navigate(`/admin/dashboard/update/${product._id}?page=${currentPage}`);
+  }, [navigate, pagination.currentPage]);
 
   // Handle stock toggle
   const handleStockToggle = useCallback(async (product) => {

@@ -127,6 +127,24 @@ const updateProductStock = async ({ id, stock }) => {
     }
 };
 
-const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock };
+// search suggestions/autocomplete
+const getSearchSuggestions = async (query, limit = 10) => {
+    try {
+        const response = await axiosInstance.get(
+            '/search-suggestions',
+            {
+                params: { q: query, limit },
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock, getSearchSuggestions };
 
 export default productService;

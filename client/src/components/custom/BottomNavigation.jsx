@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -245,25 +245,38 @@ const BottomNavigation = () => {
   // Always render but use responsive classes for visibility
   // if (!isMobile) return null;
 
+  // Navigation items matching the design: Install, My Orders, Home (center/active), Cart, Profile
   const navItems = [
     {
       path: "/",
-      icon: null, // No icon, we'll use logo
-      label: "Home",
+      icon: Download,
+      label: "Install",
       show: true,
-      isLogo: true
+      isCenter: false,
+      onClick: handleInstall,
+      isAction: true
     },
     {
       path: "/orders",
       icon: Package,
-      label: "Orders",
-      show: user !== null
+      label: "My Orders",
+      show: user !== null,
+      isCenter: false
+    },
+    {
+      path: "/",
+      icon: Home,
+      label: "Home",
+      show: true,
+      isCenter: true, // This is the center/active item
+      isHome: true
     },
     {
       path: "/profile",
       icon: User,
       label: "Profile",
-      show: user !== null
+      show: true,
+      isCenter: false
     }
   ];
 
@@ -287,90 +300,109 @@ const BottomNavigation = () => {
     <>
      
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 shadow-lg lg:hidden">
-        <div className="flex items-center justify-around px-2 py-2">
-        {navItems.map((item) => {
+      {/* Bottom Navigation - Matching the design */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-lg lg:hidden">
+        <div className="flex items-end justify-around px-2 pb-3 pt-3 relative">
+        {navItems.map((item, index) => {
           if (!item.show) return null;
           
           const Icon = item.icon;
-          const active = isActive(item.path);
+          const active = isActive(item.path) || (item.isHome && location.pathname === "/");
+          
+          // Handle action items (like Install) with onClick
+          if (item.isAction && item.onClick) {
+            return (
+              <button
+                key={`${item.label}-${index}`}
+                onClick={(e) => {
+                  item.onClick(e);
+                  // Scroll to top when clicking navigation
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="flex flex-col items-center justify-center relative transition-all duration-300 flex-1"
+              >
+                <div className="py-1">
+                  <Icon 
+                    size={22} 
+                    className="text-gray-400 transition-all duration-300"
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                </div>
+              </button>
+            );
+          }
+          
+          const handleNavClick = () => {
+            // Scroll to top when clicking navigation
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
           
           return (
             <Link
-              key={item.path}
+              key={`${item.path}-${index}`}
               to={item.path}
-              className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 ${
-                active
-                  ? "text-blue-600 bg-blue-50"
-                  : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+              onClick={handleNavClick}
+              className={`flex flex-col items-center justify-center relative transition-all duration-300 flex-1`}
             >
-              {item.isLogo ? (
-                <div className={`w-6 h-6 rounded-full overflow-hidden transition-transform duration-200 ${
-                  active ? "scale-110" : ""
-                }`}>
-                  <img 
-                    src="/logo.jpeg" 
-                    alt="Gul Autos" 
-                    className="w-full h-full object-cover"
-                  />
+              {item.isCenter ? (
+                // Center Home button with floating orange circle
+                <div className="relative -mt-8 mb-2">
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${
+                    active 
+                      ? "bg-primary scale-100" 
+                      : "bg-gray-300 scale-90"
+                  }`}>
+                    <Icon 
+                      size={24} 
+                      className="text-white transition-all duration-300"
+                      strokeWidth={2.5}
+                    />
+                    {/* Small horizontal line at bottom (door/base effect) */}
+                    <div className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-0.5 rounded-full transition-opacity duration-300 ${
+                      active ? "bg-white/40 opacity-100" : "opacity-0"
+                    }`}></div>
+                  </div>
                 </div>
               ) : (
-                <Icon 
-                  size={20} 
-                  className={`transition-transform duration-200 ${
-                    active ? "scale-110" : ""
-                  }`}
-                />
+                // Inactive items - just icons, no background, light gray/silver color
+                <div className="py-1">
+                  <Icon 
+                    size={22} 
+                    className={`transition-all duration-300 ${
+                      active ? "text-primary" : "text-gray-400"
+                    }`}
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                </div>
               )}
-              <span className={`text-xs font-medium mt-1 ${
-                active ? "text-blue-600" : "text-gray-500"
-              }`}>
-                {item.label}
-              </span>
             </Link>
           );
         })}
 
-        {/* Action items (like logout) */}
-        {actionItems.map((item) => {
-          if (!item.show) return null;
-          
-          const Icon = item.icon;
-          
-          return (
-            <button
-              key={item.label}
-              onClick={item.onClick}
-              className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 ${item.className || "text-gray-600 hover:text-blue-600 hover:bg-gray-50"}`}
-            >
-              <Icon 
-                size={20} 
-                className="transition-transform duration-200"
-              />
-              <span className="text-xs font-medium mt-1">
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-        
-        {/* Cart button - always visible */}
+        {/* Cart button - always visible, no background */}
         <Sheet>
           <SheetTrigger asChild>
-            <button className="flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 text-gray-600 hover:text-blue-600 hover:bg-gray-50">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex flex-col items-center justify-center flex-1 py-1 relative"
+            >
               <div className="relative">
-                <ShoppingCart size={20} />
+                <ShoppingCart 
+                  size={22} 
+                  className={`transition-all duration-300 ${
+                    location.pathname.includes('/checkout') ? "text-primary" : "text-gray-400"
+                  }`}
+                  strokeWidth={1.5}
+                  fill="none"
+                />
                 {totalQuantity > 0 && (
-                  <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-red-500 text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center">
-                    {totalQuantity}
+                  <Badge className="absolute -top-2 -right-2 text-[10px] px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                    {totalQuantity > 9 ? '9+' : totalQuantity}
                   </Badge>
                 )}
               </div>
-              <span className="text-xs font-medium mt-1 text-gray-500">
-                Cart
-              </span>
             </button>
           </SheetTrigger>
           <SheetContent className="w-full sm:w-[400px]">
@@ -405,18 +437,6 @@ const BottomNavigation = () => {
           </SheetContent>
         </Sheet>
 
-        {/* Install button - only show when needed */}
-        {showInstallPrompt && (
-          <button
-            onClick={handleInstall}
-            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-all duration-200 text-gray-600 hover:text-green-600 hover:bg-green-50"
-          >
-            <Download size={20} />
-            <span className="text-xs font-medium mt-1 text-gray-500">
-              Install
-            </span>
-          </button>
-        )}
       </div>
       
       {/* Checkout Dialog */}

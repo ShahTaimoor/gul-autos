@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { cn } from '../../lib/utils';
 
@@ -11,6 +11,20 @@ import { cn } from '../../lib/utils';
  * - Error handling with fallback image
  * - Responsive image support
  */
+
+// Cache WebP support detection globally
+let webPSupportCache = null;
+
+const checkWebPSupport = () => {
+  if (webPSupportCache === null) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    webPSupportCache = canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+  }
+  return webPSupportCache;
+};
+
 const LazyImage = ({
   src,
   alt,
@@ -29,23 +43,19 @@ const LazyImage = ({
   const [currentSrc, setCurrentSrc] = useState(null);
   const imgRef = useRef(null);
 
-  // Intersection Observer for lazy loading
+  // Intersection Observer for lazy loading with improved performance
   const { ref, inView } = useInView({
-    threshold: 0.1,
+    threshold: 0,
     triggerOnce: true,
-    rootMargin: '50px'
+    rootMargin: '100px', // Increased for earlier loading
+    skip: false
   });
 
-  // Check WebP support
-  const supportsWebP = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
-  };
+  // Check WebP support (cached globally)
+  const supportsWebP = useMemo(() => checkWebPSupport(), []);
 
-  // Generate WebP URL
-  const getWebPUrl = (originalUrl) => {
+  // Generate WebP URL - memoized to avoid recreation
+  const getWebPUrl = useMemo(() => (originalUrl) => {
     if (!originalUrl) return null;
     
     // If it's already a WebP URL, return as is
@@ -63,15 +73,15 @@ const LazyImage = ({
     
     // For other URLs, replace extension with .webp
     return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
-  };
+  }, [quality]);
 
   // Load image when in view
   useEffect(() => {
     if (inView && src && !currentSrc) {
-      const webpUrl = supportsWebP() ? getWebPUrl(src) : src;
+      const webpUrl = supportsWebP ? getWebPUrl(src) : src;
       setCurrentSrc(webpUrl);
     }
-  }, [inView, src, currentSrc]);
+  }, [inView, src, currentSrc, supportsWebP, getWebPUrl]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -111,7 +121,7 @@ const LazyImage = ({
     const sizes = [150, 300, 600, 1200];
     return sizes
       .map(size => {
-        const webpUrl = supportsWebP() ? getWebPUrl(baseUrl) : baseUrl;
+        const webpUrl = supportsWebP ? getWebPUrl(baseUrl) : baseUrl;
         if (webpUrl.includes('cloudinary.com')) {
           const parts = webpUrl.split('/');
           const uploadIndex = parts.findIndex(part => part === 'upload');

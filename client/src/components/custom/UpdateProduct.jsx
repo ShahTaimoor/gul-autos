@@ -2,7 +2,7 @@ import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
@@ -35,7 +35,12 @@ const UpdateProduct = () => {
   const { singleProducts } = useSelector((s) => s.products);
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
+  
+  // Get page number from URL params to return to the same page after update
+  const searchParams = new URLSearchParams(location.search);
+  const returnPage = searchParams.get('page') || '1';
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -69,7 +74,7 @@ const UpdateProduct = () => {
   };
 
   const handleCancel = () => {
-    navigate('/admin/dashboard/all-products');
+    navigate(`/admin/dashboard/all-products?page=${returnPage}`);
   };
 
   useEffect(() => {
@@ -110,7 +115,7 @@ const UpdateProduct = () => {
             stock: '',
           });
           setPreviewImage('');
-          navigate('/admin/dashboard/all-products');
+          navigate(`/admin/dashboard/all-products?page=${returnPage}`);
         } else {
           toast.error(response?.message || 'Failed to update product');
         }

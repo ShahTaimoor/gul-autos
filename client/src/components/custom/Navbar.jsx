@@ -109,6 +109,7 @@ const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   
   // Add debugging to check mobile detection
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
@@ -156,6 +157,19 @@ const Navbar = () => {
     };
   }, []);
 
+  // Desktop-only scroll detection
+  useEffect(() => {
+    // Only enable scroll detection on desktop
+    if (window.innerWidth >= 1024) {
+      const handleScroll = () => {
+        setIsScrolled(window.scrollY > 100);
+      };
+
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
@@ -179,7 +193,7 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block navbar-scroll ${isScrolled ? 'navbar-hidden' : 'navbar-visible'}`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Left side: Logo + Brand */}
@@ -207,7 +221,7 @@ const Navbar = () => {
             </div>
             <div className="text-sm text-gray-600">
               <span className="font-medium">Contact:</span>
-              <span className="ml-1 text-blue-600 font-semibold">+92 311 4000096</span>
+              <span className="ml-1 text-primary font-semibold">+92 311 4000096</span>
             </div>
           </div>
 
@@ -217,7 +231,7 @@ const Navbar = () => {
             {!isMobile && showInstallButton && (
               <button
                 onClick={handleInstallClick}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
                 title="Install App"
               >
                 <Download size={16} className="mr-2" />
@@ -228,10 +242,10 @@ const Navbar = () => {
             {/* Cart */}
             <Sheet>
               <SheetTrigger asChild>
-                <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors">
-                  <ShoppingCart size={20} />
+                <button className="relative p-2 bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 hover:scale-110">
+                  <ShoppingCart size={20} className="text-gray-700" />
                   {totalQuantity > 0 && (
-                    <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-blue-600 text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full">
+                    <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full animate-pulse">
                       {totalQuantity}
                     </Badge>
                   )}
@@ -265,7 +279,7 @@ const Navbar = () => {
                     <Button
                       onClick={handleBuyNow}
                       disabled={cartItems.length === 0}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5"
                     >
                       Proceed to Checkout
                     </Button>
@@ -278,7 +292,7 @@ const Navbar = () => {
             {user == null ? (
               <Link
                 to="/login"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
               >
                 Sign In
               </Link>

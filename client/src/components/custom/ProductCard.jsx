@@ -49,6 +49,7 @@ const ProductCard = React.memo(({
 
   const handleTouchEnd = useCallback((e) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent click event from firing after touch
     handleAddClick(e);
   }, [handleAddClick]);
 
@@ -88,7 +89,7 @@ const ProductCard = React.memo(({
 
   return (
     <div
-      className={`border rounded-lg lg:mt-6 overflow-hidden hover:shadow-md transition-shadow flex h-full ${
+      className={`border rounded-lg lg:mt-2 overflow-hidden hover:shadow-md transition-shadow flex h-full ${
         gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
       }`}
     >
@@ -165,17 +166,18 @@ const ProductCard = React.memo(({
         <div className={`flex flex-row gap-2 ${
           gridType === 'grid3' ? 'mt-3' : 'mt-2'
         }`}>
-          {/* Quantity Controls - 50% width on desktop */}
-          <div className="flex items-center justify-center w-1/2">
-            <div className="flex w-full justify-between bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+          {/* Quantity Controls - 55% mobile, 50% desktop */}
+          <div className="flex items-center justify-center w-[55%] md:w-1/2">
+            <div className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
                 onClick={handleDecrease}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
+                  e.preventDefault(); // Prevent click event from firing after touch
                   handleDecrease(e);
                 }}
-                className="w-5 h-5 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -194,11 +196,7 @@ const ProductCard = React.memo(({
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                className="w-6 text-center bg-transparent focus:outline-none text-xs py-1 text-black
-                appearance-none 
-                [&::-webkit-outer-spin-button]:appearance-none 
-                [&::-webkit-inner-spin-button]:appearance-none 
-                [&::-moz-appearance]:textfield"
+                className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full"
               />
 
               <button
@@ -206,9 +204,10 @@ const ProductCard = React.memo(({
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
+                  e.preventDefault(); // Prevent click event from firing after touch
                   handleIncrease(e);
                 }}
-                className="w-5 h-5 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-9 h-9 sm:w-8 sm:h-8 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -223,18 +222,18 @@ const ProductCard = React.memo(({
             </div>
           </div>
 
-          {/* Add to Cart Button - 50% width on desktop */}
+          {/* Add to Cart Button - 45% mobile, 50% desktop, icon + "Add" text on mobile */}
           <button
             onClick={handleAddClick}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
-            className={`text-xs w-1/2 cursor-pointer px-2 py-1.5 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 ${
+            className={`text-xs cursor-pointer px-2 md:px-3 h-9 sm:h-8 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[45%] md:w-1/2 ${
               isInCart
                 ? 'bg-green-600 hover:bg-green-700'
                 : isDisabled
-                  ? 'bg-red-700 cursor-not-allowed'
-                  : 'bg-black/80 hover:bg-black/90 hover:shadow-2xl'
+                  ? 'bg-gray-500 cursor-not-allowed'
+                  : 'bg-primary hover:bg-primary/90 hover:shadow-2xl'
             } text-white`}
             style={{
               touchAction: 'manipulation',
@@ -246,21 +245,20 @@ const ProductCard = React.memo(({
           >
             {isInCart ? (
               <>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-3 md:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="hidden sm:inline">Added to Cart</span>
-                <span className="sm:hidden">Added</span>
+                <span className="hidden md:inline">Added to Cart</span>
               </>
             ) : isAddingToCart ? (
               <OneLoader size="small" text="Adding..." showText={false} />
             ) : (
               <>
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 md:w-3 md:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
                 </svg>
-                <span className="hidden sm:inline">Add to Cart</span>
-                <span className="sm:hidden">Add</span>
+                <span className="inline md:hidden">Add</span>
+                <span className="hidden md:inline">Add to Cart</span>
               </>
             )}
           </button>

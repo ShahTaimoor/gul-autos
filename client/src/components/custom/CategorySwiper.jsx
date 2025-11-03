@@ -47,7 +47,7 @@ const CategorySwiper = React.memo(({
       >
         {categoryChunks.map((chunk, idx) => (
           <SwiperSlide key={idx}>
-            <div className="grid grid-cols-4 lg:grid-cols-8 mt-4 pb-6 gap-2">
+            <div className="grid grid-cols-4 lg:grid-cols-8 mt-4  pb-6 gap-2">
               {chunk.filter(cat => cat && cat._id).map((cat, index) => (
                 <CategoryItem
                   key={cat._id}
@@ -71,7 +71,7 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
   <div
     className={`flex flex-col items-center rounded-xl  ${
       isSelected
-        ? 'border border-[#FED700] shadow-md'
+        ? 'border border-primary shadow-md'
         : 'hover:shadow-sm'
     } cursor-pointer text-center bg-white/80 backdrop-blur-sm transition-all hover:scale-105 active:scale-95`}
     onClick={() => onSelect(category?._id)}
@@ -104,13 +104,14 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
 const NavigationButtons = React.memo(() => (
   <div className="hidden lg:block">
     {/* Previous Button */}
-    <div className="custom-swiper-button-prev absolute top-1/2 left-0 z-20 -translate-y-1/2 cursor-pointer">
-      <div className="p-3 rounded-l-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
+    <div className="custom-swiper-button-prev absolute top-1/2 left-2 z-20 -translate-y-1/2 cursor-pointer group">
+      <div className="relative p-3 rounded-full bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-xl hover:shadow-2xl hover:shadow-red-500/50 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 border border-red-400/50 backdrop-blur-sm">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <svg
-          className="w-4 h-4 text-black drop-shadow"
+          className="w-4 h-4 text-white relative z-10 drop-shadow-lg"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -119,13 +120,14 @@ const NavigationButtons = React.memo(() => (
     </div>
 
     {/* Next Button */}
-    <div className="custom-swiper-button-next absolute top-1/2 right-0 z-20 -translate-y-1/2 cursor-pointer">
-      <div className="p-3 rounded-r-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg hover:shadow-yellow-300/40 hover:scale-110 active:scale-90 transition-all duration-300 ease-in-out">
+    <div className="custom-swiper-button-next absolute top-1/2 right-2 z-20 -translate-y-1/2 cursor-pointer group">
+      <div className="relative p-3 rounded-full bg-gradient-to-br from-red-500 via-red-600 to-red-700 shadow-xl hover:shadow-2xl hover:shadow-red-500/50 transition-all duration-300 ease-in-out hover:scale-110 active:scale-95 border border-red-400/50 backdrop-blur-sm">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <svg
-          className="w-4 h-4 text-black drop-shadow"
+          className="w-4 h-4 text-white relative z-10 drop-shadow-lg"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.5"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
