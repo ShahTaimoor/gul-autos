@@ -27,25 +27,13 @@ export const useSearchProducts = ({
   const pendingRequestsRef = useRef(new Map());
   const lastRequestParamsRef = useRef(null);
 
-  // Fetch products for suggestions (only once on mount)
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${API_URL}/get-products?limit=2000&stockFilter=active&sortBy=az`);
-        const data = await response.json();
-        if (data?.data) {
-          setAllProducts(data.data);
-        }
-      } catch (error) {
-        console.error('Error fetching products for suggestions:', error);
-      }
-    };
-    fetchSuggestions();
-  }, []);
+  // Note: allProducts is kept for backward compatibility with client-side suggestions fallback
+  // The backend /search-suggestions endpoint is preferred and used by default via useSearchSuggestions hook
+  // This avoids fetching 2000+ products upfront, improving performance
+  // If client-side suggestions are needed, fetch products on-demand instead of on mount
 
   // Handle search with debounced term and request deduplication
-  const handleSearch = useCallback((searchTerm, debounceDelay = 150) => {
+  const handleSearch = useCallback((searchTerm, debounceDelay = 150, overrideCategory = null, overridePage = null) => {
     // Don't clear suggestion IDs here - they are managed by the caller
     // Only clear if explicitly clearing search AND no suggestion IDs are set
     if ((!searchTerm || searchTerm.trim() === '') && enterSuggestionIdsRef.current.length === 0) {
@@ -55,15 +43,24 @@ export const useSearchProducts = ({
     // If we have explicit suggestion/product IDs, fetch strictly by those IDs
     // Priority: If productIds are set, use them (even if search term is empty)
     const hasSuggestionIds = enterSuggestionIdsRef.current.length > 0;
-    // Always use 'all' for search to make it category-independent
-    const searchCategory = hasSuggestionIds ? 'all' : (searchTerm ? 'all' : category);
+    // Use override category if provided, otherwise use state category
+    // Always use 'all' for search to make it category-independent when searching
+    const currentCategory = overrideCategory !== null ? overrideCategory : category;
+    // Normalize 'all' to lowercase string for consistency
+    let searchCategory = hasSuggestionIds ? 'all' : (searchTerm ? 'all' : currentCategory);
+    // Ensure 'all' is properly normalized
+    if (searchCategory === 'all' || searchCategory === 'All' || searchCategory === 'ALL') {
+      searchCategory = 'all';
+    }
+    // Use override page if provided, otherwise use state page
+    const currentPage = overridePage !== null ? overridePage : page;
     // If we have product IDs, don't use search term - let backend filter by IDs
     const searchParam = hasSuggestionIds ? '' : (searchTerm || '');
     
     const productIdsParam = hasSuggestionIds ? enterSuggestionIdsRef.current.join(',') : undefined;
 
     // Create request key for deduplication
-    const requestKey = `${searchCategory}-${searchParam}-${page}-${limit}-${stockFilter}-${sortBy}-${productIdsParam || ''}`;
+    const requestKey = `${searchCategory}-${searchParam}-${currentPage}-${limit}-${stockFilter}-${sortBy}-${productIdsParam || ''}`;
     
     // Check if this exact request is already pending
     if (pendingRequestsRef.current.has(requestKey)) {
@@ -82,14 +79,14 @@ export const useSearchProducts = ({
     const requestPromise = dispatch(fetchProducts({ 
       category: searchCategory, 
       searchTerm: searchParam, 
-      page, 
+      page: currentPage, 
       limit, 
       stockFilter,
       sortBy,
       productIds: productIdsParam
     })).then((res) => {
       // Go back one page if current page has no results
-      if (res.payload?.data?.length === 0 && page > 1) {
+      if (res.payload?.data?.length === 0 && currentPage > 1) {
         setPage((prev) => prev - 1);
       }
       // Remove from pending requests
@@ -106,34 +103,18 @@ export const useSearchProducts = ({
     return requestPromise;
   }, [dispatch, category, page, limit, sortBy, stockFilter]);
 
-  // Filter products based on search term (for additional client-side filtering)
+  // Filter products - only basic validation, no search filtering (backend handles all search)
   const filterProducts = useCallback((products, searchTerm, selectedProductId) => {
+    // Only filter out invalid products (no _id)
+    // Backend already handles all search, category, and filtering logic
     let filtered = products.filter((product) => product && product._id);
     
     // If a specific product was selected from suggestions, show only that product
     if (selectedProductId) {
       filtered = filtered.filter(product => product._id === selectedProductId);
-      return filtered;
     }
     
-    // Additional filtering for search precision
-    if (searchTerm && searchTerm.trim()) {
-      const searchWords = searchTerm.toLowerCase().split(/\s+/);
-      
-      // Apply comprehensive search filtering for all search terms
-      filtered = filtered.filter(product => {
-        const title = (product.title || '').toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        
-        // Check if all search words are present in either title or description
-        return searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          return regex.test(title) || regex.test(description);
-        });
-      });
-    }
-    
+    // No client-side search filtering - backend handles it all
     return filtered;
   }, []);
 
@@ -149,9 +130,21 @@ export const useSearchProducts = ({
 
   // Update category and reset pagination
   const updateCategory = useCallback((newCategory) => {
+    // Ensure category is valid before updating
+    if (!newCategory || newCategory === '') {
+      newCategory = 'all';
+    }
     setCategory(newCategory);
     resetPagination();
-  }, [resetPagination]);
+    // Clear suggestion IDs to ensure fresh category-based search
+    setEnterSuggestionIds([]);
+    enterSuggestionIdsRef.current = [];
+    // Reset last request params to force new fetch
+    lastRequestParamsRef.current = null;
+    // Immediately trigger search with new category and page 1 to avoid stale closure issue
+    // This ensures we fetch products for the new category immediately, not waiting for state updates
+    handleSearch('', 0, newCategory, 1);
+  }, [resetPagination, handleSearch]);
 
   // Update stock filter and reset pagination
   const updateStockFilter = useCallback((newStockFilter) => {

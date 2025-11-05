@@ -39,9 +39,9 @@ export const deleteCategory = createAsyncThunk(
 
 export const AllCategory = createAsyncThunk(
     'categories/allCategory',
-    async (_, thunkAPI) => {
+    async (search = '', thunkAPI) => {
         try {
-            const res = await categoryService.getAllCat();
+            const res = await categoryService.getAllCat(search);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);

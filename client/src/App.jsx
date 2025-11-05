@@ -13,6 +13,7 @@ const AdminLayout = lazy(() => import('./components/layouts/AdminLayout'));
 const ProtectedRoute = lazy(() => import('./components/custom/ProtectedRoute'));
 
 const Home = lazy(() => import('./pages/Home'));
+const Products = lazy(() => import('./pages/Products'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -39,6 +40,30 @@ const App = () => {
           <ProtectedRoute>
             <ErrorBoundary>
               <Home />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        </RootLayout>
+      ),
+    },
+    {
+      path: '/products',
+      element: (
+        <RootLayout>
+          <ProtectedRoute>
+            <ErrorBoundary>
+              <Products />
+            </ErrorBoundary>
+          </ProtectedRoute>
+        </RootLayout>
+      ),
+    },
+    {
+      path: '/all-products',
+      element: (
+        <RootLayout>
+          <ProtectedRoute>
+            <ErrorBoundary>
+              <Products />
             </ErrorBoundary>
           </ProtectedRoute>
         </RootLayout>

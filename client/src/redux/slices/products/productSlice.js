@@ -86,6 +86,22 @@ export const updateProductStock = createAsyncThunk(
     }
 );
 
+export const fetchSearchSuggestions = createAsyncThunk(
+    'products/fetchSearchSuggestions',
+    async ({ query, limit = 10 }, thunkAPI) => {
+        try {
+            // Only fetch if query is at least 2 characters
+            if (!query || query.trim().length < 2) {
+                return { data: [], query };
+            }
+            const res = await productService.getSearchSuggestions(query.trim(), limit);
+            return { data: res.data || [], query: query.trim() };
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
+
 const initialState = {
     products: [],
     singleProducts: null,
@@ -94,12 +110,20 @@ const initialState = {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
+    searchSuggestions: [],
+    suggestionsStatus: 'idle',
+    suggestionsCache: {}, // Cache for search suggestions
 };
 
 export const productsSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {},
+    reducers: {
+        clearSearchSuggestions: (state) => {
+            state.searchSuggestions = [];
+            state.suggestionsStatus = 'idle';
+        },
+    },
     extraReducers: (builder) => {
         builder
             .addCase(AddProduct.pending, (state) => {
@@ -221,8 +245,27 @@ export const productsSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
+            .addCase(fetchSearchSuggestions.pending, (state) => {
+                state.suggestionsStatus = 'loading';
+            })
+            .addCase(fetchSearchSuggestions.fulfilled, (state, action) => {
+                state.suggestionsStatus = 'succeeded';
+                state.searchSuggestions = action.payload.data || [];
+                // Cache the suggestions
+                if (action.payload.query) {
+                    state.suggestionsCache[action.payload.query.toLowerCase()] = {
+                        data: action.payload.data || [],
+                        timestamp: Date.now()
+                    };
+                }
+            })
+            .addCase(fetchSearchSuggestions.rejected, (state, action) => {
+                state.suggestionsStatus = 'failed';
+                state.searchSuggestions = [];
+            })
 
     }
 });
 
+export const { clearSearchSuggestions } = productsSlice.actions;
 export default productsSlice.reducer;

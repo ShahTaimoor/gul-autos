@@ -5,7 +5,7 @@ const Category = require('../models/Category');
 const connectDB = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce');
-        console.log('Connected to MongoDB');
+       
     } catch (error) {
         console.error('MongoDB connection error:', error);
         process.exit(1);
@@ -18,7 +18,7 @@ const updateCategoryPositions = async () => {
         // Get all categories sorted by creation date
         const categories = await Category.find().sort({ createdAt: 1 });
         
-        console.log(`Found ${categories.length} categories to update`);
+        
         
         // Update each category with a position number
         for (let i = 0; i < categories.length; i++) {
@@ -31,16 +31,16 @@ const updateCategoryPositions = async () => {
                 { new: true }
             );
             
-            console.log(`Updated ${category.name} to position ${newPosition}`);
+           
         }
         
-        console.log('All categories updated with position numbers');
+
         
         // Verify the update
         const updatedCategories = await Category.find().sort({ position: 1 });
-        console.log('\nCategories after update (sorted by position):');
+       
         updatedCategories.forEach(cat => {
-            console.log(`Position ${cat.position}: ${cat.name}`);
+           
         });
         
     } catch (error) {
@@ -53,7 +53,7 @@ const runUpdate = async () => {
     await connectDB();
     await updateCategoryPositions();
     await mongoose.connection.close();
-    console.log('Database connection closed');
+  
 };
 
 // Run if this file is executed directly

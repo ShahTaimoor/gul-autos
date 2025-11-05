@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
+import { useDebounce } from '@/hooks/use-debounce';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -77,19 +78,17 @@ const AllProducts = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
 
-  // Memoized combined categories
+  // Debounce category search to avoid too many API calls
+  const debouncedCategorySearch = useDebounce(categorySearch, 300);
+
+  // Memoized combined categories - backend handles filtering, so we just combine with "All"
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
     ...(categories || [])
   ], [categories]);
 
-  // Filtered categories based on search
-  const filteredCategories = useMemo(() => {
-    if (!categorySearch) return combinedCategories;
-    return combinedCategories.filter(cat => 
-      cat.name.toLowerCase().includes(categorySearch.toLowerCase())
-    );
-  }, [combinedCategories, categorySearch]);
+  // Categories are now filtered by backend - no client-side filtering needed
+  const filteredCategories = combinedCategories;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -99,10 +98,15 @@ const AllProducts = () => {
     stock: ''
   });
 
-  // Fetch categories
+  // Fetch categories - initial load
   useEffect(() => {
-    dispatch(AllCategory());
+    dispatch(AllCategory(''));
   }, [dispatch]);
+
+  // Fetch categories from backend when search term changes (debounced)
+  useEffect(() => {
+    dispatch(AllCategory(debouncedCategorySearch));
+  }, [dispatch, debouncedCategorySearch]);
 
   // Fetch products on component mount
   useEffect(() => {
@@ -165,10 +169,11 @@ const AllProducts = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [search.page]);
 
-  // Products are now sorted on the backend, so we use them directly
+  // Products are fully filtered and sorted on the backend, so we use them directly
+  // Only apply basic validation filtering (no search filtering - backend handles it)
   const sortedProducts = useMemo(() => {
-    return search.filterProducts(products, search.searchTerm, search.selectedProductId);
-  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
+    return search.filterProducts(products, '', search.selectedProductId);
+  }, [products, search.selectedProductId, search.filterProducts]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -237,9 +242,13 @@ const AllProducts = () => {
 
   // Handle category selection
   const handleCategorySelect = useCallback((categoryId) => {
+    // Clear category search
+    setCategorySearch('');
+    // Clear search state before updating category
+    search.handleSearchChange('');
+    // Update category (this will trigger search with new category immediately)
+    // Don't call clearSearch as setCategory already triggers the search
     search.setCategory(categoryId);
-    setCategorySearch(''); // Clear category search
-    search.clearSearch(); // Clear search when selecting category
   }, [search]);
 
   // Enhanced handlers for search and interactions

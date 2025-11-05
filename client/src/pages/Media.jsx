@@ -98,21 +98,20 @@ const Media = () => {
     search.handleSearch(search.debouncedSearchTerm);
   }, [search.debouncedSearchTerm, search.page, search.category, search.handleSearch]);
 
-  // Filter products to show only those with images and apply search filtering
+  // Filter products to show only those with images (backend handles all search filtering)
   useEffect(() => {
-    
     // For Gallery tab: Show only product images (no uploaded media)
+    // Backend already handles all search, so we just filter for products with images
     let filtered = products.filter(product => 
       product && 
       product._id && 
       (product.picture?.secure_url || product.image)
     );
 
-
-    // Apply search filtering using the hook
-    const searchFiltered = search.filterProducts(filtered, search.searchTerm, search.selectedProductId);
+    // Only apply basic validation and selected product filtering (no search - backend handles it)
+    const searchFiltered = search.filterProducts(filtered, '', search.selectedProductId);
     setFilteredProducts(searchFiltered);
-  }, [products, search.searchTerm, search.selectedProductId, search.filterProducts]);
+  }, [products, search.selectedProductId, search.filterProducts]);
 
   // Filter uploaded media for Upload tab with pagination and search
   useEffect(() => {

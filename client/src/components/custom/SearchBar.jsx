@@ -1,8 +1,12 @@
 import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '../ui/input';
-import { LayoutPanelLeft, Grid2x2, ChevronDown, X, Search } from 'lucide-react';
+import { LayoutPanelLeft, Grid2x2, ChevronDown, X, Search, Loader2, Package, Tag } from 'lucide-react';
 import { trackSearch } from '@/utils/searchAnalytics';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fetchSearchSuggestions, clearSearchSuggestions } from '@/redux/slices/products/productSlice';
+import { highlightKeywords } from '@/utils/highlightKeywords';
+import { useDebounce } from '@/hooks/use-debounce';
 
 const SearchBar = React.memo(({ 
   searchTerm,
@@ -12,112 +16,78 @@ const SearchBar = React.memo(({
   onGridTypeChange,
   searchHistory = [],
   popularSearches = [],
-  products = [],
+  products = [], // Keep for backward compatibility, but we'll use backend API
   isRedBackground = false
 }) => {
+  const dispatch = useDispatch();
+  const { searchSuggestions, suggestionsStatus } = useSelector((state) => state.products);
+  
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showGridDropdown, setShowGridDropdown] = useState(false);
-  const [suggestions, setSuggestions] = useState([]);
   const searchInputRef = useRef(null);
   const suggestionsRef = useRef(null);
   const gridDropdownRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
-  // Generate product suggestions based on search term
-  const generateSuggestions = useCallback((term) => {
-    if (!term || term.length < 2 || !products || products.length === 0) return [];
-    
-    const searchTerm = term.toLowerCase().trim();
-    const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
-    
-    // Filter products that match the search term with precision
-    const matchingProducts = products
-      .filter(product => {
-        // Check if product exists, has title, and is active (stock > 0)
-        if (!product || !product.title || product.stock <= 0) return false;
-        const title = product.title.toLowerCase();
-        const description = (product.description || '').toLowerCase();
-        
-        // Check if each search word exists in EITHER title OR description
-        const allWordsMatch = searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
-          // Each word can be in title OR description (not necessarily all in one)
-          return regex.test(title) || regex.test(description);
-        });
-        
-        return allWordsMatch;
-      });
-    
-    const sortedProducts = matchingProducts.sort((a, b) => {
-        const aTitle = a.title.toLowerCase();
-        const bTitle = b.title.toLowerCase();
-        
-        // Priority 1: Exact phrase match at start
-        const aStartsWithExact = aTitle.startsWith(searchTerm);
-        const bStartsWithExact = bTitle.startsWith(searchTerm);
-        if (aStartsWithExact && !bStartsWithExact) return -1;
-        if (!aStartsWithExact && bStartsWithExact) return 1;
-        
-        // Priority 2: First word of search matches first word of title
-        const aFirstWordMatch = aTitle.split(/\s+/)[0] === searchWords[0];
-        const bFirstWordMatch = bTitle.split(/\s+/)[0] === searchWords[0];
-        if (aFirstWordMatch && !bFirstWordMatch) return -1;
-        if (!aFirstWordMatch && bFirstWordMatch) return 1;
-        
-        // Priority 3: Exact phrase anywhere in title
-        const aContainsExact = aTitle.includes(searchTerm);
-        const bContainsExact = bTitle.includes(searchTerm);
-        if (aContainsExact && !bContainsExact) return -1;
-        if (!aContainsExact && bContainsExact) return 1;
-        
-        // Priority 4: Shorter titles (more specific)
-        return aTitle.length - bTitle.length;
-      });
-    
-    const finalSuggestions = sortedProducts.slice(0, 10) // Limit to 10 suggestions
-      .map(product => ({
-        text: product.title,
-        image: product.image || product.picture?.secure_url || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100&h=100&fit=crop&crop=center',
-        product: product // Keep reference to full product
+  // Debounce search term for API calls (300ms delay)
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Fetch suggestions from backend API when debounced search term changes
+  useEffect(() => {
+    // Clear previous abort controller
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Only fetch if search term is 2+ characters
+    if (debouncedSearchTerm && debouncedSearchTerm.trim().length >= 2) {
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController();
+      
+      // Fetch suggestions from backend
+      dispatch(fetchSearchSuggestions({ 
+        query: debouncedSearchTerm, 
+        limit: 10 
       }));
-    
-    return finalSuggestions;
-  }, [products]);
+      
+      setShowSuggestions(true);
+    } else {
+      // Clear suggestions if search term is too short
+      dispatch(clearSearchSuggestions());
+      setShowSuggestions(false);
+    }
 
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [debouncedSearchTerm, dispatch]);
+
+  // Handle search input change
   const handleSearchChange = useCallback((e) => {
     const value = e.target.value;
     onSearchChange(value);
     
-    // Show suggestions only when actively searching (2+ characters)
+    // Show suggestions dropdown when user types (even before debounce)
     if (value.trim().length >= 2) {
-      const newSuggestions = generateSuggestions(value);
-      setSuggestions(newSuggestions);
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
-      setSuggestions([]);
+      dispatch(clearSearchSuggestions());
     }
-  }, [onSearchChange, generateSuggestions]);
+  }, [onSearchChange, dispatch]);
 
+  // Handle search submit (Enter key or button click)
   const handleSearchSubmitAction = useCallback(() => {
     setShowSuggestions(false);
+    dispatch(clearSearchSuggestions());
     
     if (searchTerm.trim()) {
-      // Always generate fresh suggestions based on current search term
-      // This ensures we get the latest matching products even if suggestions state is stale
-      const currentSuggestions = generateSuggestions(searchTerm.trim());
-      const suggestionIds = currentSuggestions.map(s => s.product?._id).filter(Boolean);
-      
-      // Submit the search with suggestion IDs
-      // If we have suggestion IDs, use them to show only those products; otherwise do normal search
+      // Submit the search - this will trigger navigation in ProductList
       if (onSearchSubmit) {
-        if (suggestionIds.length > 0) {
-          // Use the exact products from suggestions - this will show only those products on main page
-          onSearchSubmit(searchTerm.trim(), null, suggestionIds);
-        } else {
-          // No suggestions found, do normal search
-          onSearchSubmit(searchTerm.trim(), null, []);
-        }
+        onSearchSubmit(searchTerm.trim(), null, []);
       }
       
       // Track search for analytics
@@ -137,49 +107,55 @@ const SearchBar = React.memo(({
     
     // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [searchTerm, searchHistory, onSearchSubmit, generateSuggestions]);
+  }, [searchTerm, searchHistory, onSearchSubmit, dispatch]);
 
+  // Handle suggestion click
   const handleSuggestionClick = useCallback((suggestion) => {
-    const suggestionText = typeof suggestion === 'string' ? suggestion : suggestion.text;
+    const suggestionText = suggestion.title || suggestion.text || suggestion;
     
     // Update the search term to match the clicked suggestion
     onSearchChange(suggestionText);
     setShowSuggestions(false);
+    dispatch(clearSearchSuggestions());
     
     // Submit the search when clicking a suggestion
     if (onSearchSubmit) {
       // Pass the search term and product ID to show only that specific product
-      onSearchSubmit(suggestionText, suggestion.product?._id);
+      onSearchSubmit(suggestionText, suggestion._id || suggestion.product?._id);
     }
     
     // Scroll to top to see results
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     searchInputRef.current?.blur(); // Remove focus to hide keyboard on mobile
-  }, [onSearchChange, onSearchSubmit]);
+  }, [onSearchChange, onSearchSubmit, dispatch]);
 
+  // Handle clear search
   const handleClearSearch = useCallback(() => {
     onSearchChange('');
     setShowSuggestions(false);
-    setSuggestions([]);
+    dispatch(clearSearchSuggestions());
     if (onSearchSubmit) {
-      onSearchSubmit('', null, []); // Clear search with empty suggestion IDs
+      onSearchSubmit('', null, []);
     }
     searchInputRef.current?.focus();
-  }, [onSearchChange, onSearchSubmit]);
+  }, [onSearchChange, onSearchSubmit, dispatch]);
 
+  // Handle keyboard events
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       setShowSuggestions(false);
-      searchInputRef.current?.blur(); // Close keyboard
+      dispatch(clearSearchSuggestions());
+      searchInputRef.current?.blur();
     } else if (e.key === 'Enter') {
-      setShowSuggestions(false); // Hide suggestions when Enter is pressed
+      setShowSuggestions(false);
+      dispatch(clearSearchSuggestions());
       handleSearchSubmitAction();
-      searchInputRef.current?.blur(); // Close keyboard
+      searchInputRef.current?.blur();
     }
-  }, [handleSearchSubmitAction]);
+  }, [handleSearchSubmitAction, dispatch]);
 
-  // Close suggestions and dropdown when clicking outside
+  // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(event.target)) {
@@ -194,6 +170,20 @@ const SearchBar = React.memo(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Format suggestions for display
+  const formattedSuggestions = useMemo(() => {
+    return searchSuggestions.map((product) => ({
+      _id: product._id,
+      title: product.title,
+      image: product.image || product.picture?.secure_url || null,
+      price: product.price,
+      stock: product.stock,
+      description: product.description || '',
+      category: product.category?.name || product.category || 'Uncategorized'
+    }));
+  }, [searchSuggestions]);
+
+  // Grid buttons configuration
   const gridButtons = useMemo(() => [
     { id: 'grid2', icon: Grid2x2, label: 'Grid 2x2' },
     { id: 'grid3', icon: LayoutPanelLeft, label: 'List View' }
@@ -235,124 +225,161 @@ const SearchBar = React.memo(({
             )}
           </div>
 
-          {/* Product Suggestions Dropdown - Only show when actively searching */}
+          {/* Enhanced Product Suggestions Dropdown */}
           <AnimatePresence mode="wait">
             {showSuggestions && searchTerm.trim().length >= 2 && (
               <motion.div
                 initial={{ 
                   opacity: 0, 
                   y: -20, 
-                  scale: 0.9,
-                  filter: "blur(4px)"
+                  scale: 0.95,
                 }}
                 animate={{ 
                   opacity: 1, 
                   y: 0, 
                   scale: 1,
-                  filter: "blur(0px)"
                 }}
                 exit={{ 
                   opacity: 0, 
                   y: -10, 
                   scale: 0.95,
-                  filter: "blur(2px)"
                 }}
                 transition={{ 
-                  duration: 0.3,
+                  duration: 0.2,
                   ease: [0.16, 1, 0.3, 1],
-                  opacity: { duration: 0.2 }
                 }}
-                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden"
+                className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden overflow-x-hidden"
               >
-                {/* Product Suggestions */}
-                {suggestions.length > 0 && (
-                  <div className="p-2 overflow-y-auto max-h-96">
-                    <motion.div 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                      className="text-xs font-medium text-gray-500 px-2 py-1"
-                    >
-                      Products
-                    </motion.div>
-                    {suggestions.map((suggestion, index) => (
+                {/* Loading State */}
+                {suggestionsStatus === 'loading' && (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="ml-2 text-sm text-gray-600">Searching...</span>
+                  </div>
+                )}
+
+                {/* Suggestions List */}
+                {suggestionsStatus === 'succeeded' && formattedSuggestions.length > 0 && (
+                  <div className="p-2 overflow-y-auto overflow-x-hidden max-h-96">
+                    <div className="text-xs font-semibold text-gray-500 px-3 py-2 uppercase tracking-wide">
+                      Products ({formattedSuggestions.length})
+                    </div>
+                    {formattedSuggestions.map((suggestion, index) => (
                       <motion.button
-                        key={`${suggestion.product?._id || index}-${suggestion.text}`}
+                        key={`${suggestion._id || index}-${suggestion.title}`}
                         initial={{ 
                           opacity: 0, 
-                          x: -30,
-                          y: -10
+                          x: -20,
                         }}
                         animate={{ 
                           opacity: 1, 
                           x: 0,
-                          y: 0
                         }}
                         exit={{ 
                           opacity: 0, 
-                          x: -20,
-                          transition: { duration: 0.15 }
+                          x: -10,
                         }}
                         transition={{ 
-                          delay: index * 0.04,
-                          duration: 0.25,
+                          delay: index * 0.03,
+                          duration: 0.2,
                           ease: [0.16, 1, 0.3, 1]
                         }}
                         whileHover={{ 
-                          scale: 1.02,
-                          x: 6,
-                          transition: { duration: 0.2, ease: "easeOut" }
+                          scale: 1.01,
+                          x: 4,
                         }}
-                        whileTap={{ scale: 0.97 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => handleSuggestionClick(suggestion)}
-                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-gray-50 rounded-md transition-colors duration-150 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                        className="w-full text-left px-3 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 rounded-lg transition-all duration-200 flex items-start gap-3 border-b border-gray-100 last:border-b-0 group overflow-hidden"
                       >
+                        {/* Product Image */}
                         <motion.div 
-                          className="w-14 h-14 rounded-md overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200"
-                          initial={{ scale: 0.8, opacity: 0 }}
+                          className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200 group-hover:border-primary/30 transition-colors"
+                          initial={{ scale: 0.9, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={{ 
-                            delay: index * 0.04 + 0.1,
+                            delay: index * 0.03 + 0.1,
                             duration: 0.3,
-                            ease: "backOut"
                           }}
                           whileHover={{ 
-                            scale: 1.15, 
+                            scale: 1.1, 
                             rotate: 2,
-                            transition: { duration: 0.2 }
                           }}
                         >
-                          <img 
-                            src={suggestion.image || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100&h=100&fit=crop&crop=center'} 
-                            alt={suggestion.text || suggestion}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100&h=100&fit=crop&crop=center';
-                            }}
-                          />
+                          {suggestion.image ? (
+                            <img 
+                              src={suggestion.image} 
+                              alt={suggestion.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.src = 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100&h=100&fit=crop&crop=center';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                              <Package className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
                         </motion.div>
-                        <div className="flex-1 min-w-0">
-                          <motion.div 
-                            className="font-medium text-gray-900 text-sm line-clamp-2 leading-snug"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: index * 0.03 + 0.1 }}
-                          >
-                            {suggestion.text || suggestion}
-                          </motion.div>
-                          {suggestion.product && suggestion.product.description && (
-                            <motion.div 
-                              className="text-xs text-gray-500 truncate mt-1 leading-relaxed"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: index * 0.03 + 0.15 }}
-                            >
-                              {suggestion.product.description.substring(0, 65)}...
-                            </motion.div>
+
+                        {/* Product Info */}
+                        <div className="flex-1 min-w-0 space-y-1 overflow-hidden">
+                          {/* Title with highlighted keywords */}
+                          <div className="font-semibold text-gray-900 text-sm line-clamp-2 leading-snug">
+                            {highlightKeywords(suggestion.title, searchTerm)}
+                          </div>
+                          
+                          {/* Category Badge */}
+                          <div className="flex items-center gap-2">
+                            <Tag className="h-3 w-3 text-gray-400" />
+                            <span className="text-xs text-gray-500 truncate">
+                              {suggestion.category}
+                            </span>
+                          </div>
+
+                          {/* Stock Status */}
+                          <div className="flex items-center gap-3 mt-1">
+                            {suggestion.stock > 0 ? (
+                              <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full">
+                                In Stock
+                              </span>
+                            ) : (
+                              <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full">
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Description with highlighted keywords */}
+                          {suggestion.description && (
+                            <div className="text-xs text-gray-500 line-clamp-1 mt-1">
+                              {highlightKeywords(
+                                suggestion.description.substring(0, 60) + '...',
+                                searchTerm
+                              )}
+                            </div>
                           )}
                         </div>
                       </motion.button>
                     ))}
+                  </div>
+                )}
+
+                {/* No Results State */}
+                {suggestionsStatus === 'succeeded' && formattedSuggestions.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    <Package className="h-12 w-12 text-gray-300 mb-3" />
+                    <p className="text-sm font-medium text-gray-600">No products found</p>
+                    <p className="text-xs text-gray-500 mt-1">Try a different search term</p>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {suggestionsStatus === 'failed' && (
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    <X className="h-12 w-12 text-red-300 mb-3" />
+                    <p className="text-sm font-medium text-red-600">Error loading suggestions</p>
+                    <p className="text-xs text-red-500 mt-1">Please try again</p>
                   </div>
                 )}
               </motion.div>
@@ -394,11 +421,11 @@ const SearchBar = React.memo(({
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
 });
 
-export default SearchBar;
+SearchBar.displayName = 'SearchBar';
 
+export default SearchBar;

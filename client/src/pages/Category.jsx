@@ -1,5 +1,6 @@
 // pages/Category.jsx
 import React, { useEffect, useState } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Card,
   CardContent,
@@ -90,6 +91,9 @@ const Category = () => {
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
   const { categories, status, error } = useSelector((state) => state.categories);
   
+  // Debounce search term to avoid too many API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -136,7 +140,7 @@ const Category = () => {
           toast.success(response?.message);
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
-          dispatch(AllCategory());
+          dispatch(AllCategory(''));
         } else {
           toast.error(response?.message || 'Failed to add category');
         }
@@ -176,7 +180,7 @@ const Category = () => {
           setEditingCategory(null);
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
-          dispatch(AllCategory());
+          dispatch(AllCategory(''));
         } else {
           toast.error(response?.message || 'Failed to update category');
         }
@@ -202,7 +206,7 @@ const Category = () => {
       .then((response) => {
         if (response?.success) {
           toast.success(response?.message || 'Category deleted successfully');
-          dispatch(AllCategory());
+          dispatch(AllCategory(''));
         } else {
           toast.error(response?.message || 'Failed to delete category');
         }
@@ -233,34 +237,36 @@ const Category = () => {
     setIsDialogOpen(false);
   };
 
-  // Filter and sort categories
-  const filteredCategories = categories
-    .filter(category =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'position':
-          comparison = (a.position || 999) - (b.position || 999);
-          break;
-        case 'created':
-          comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-          break;
-        default:
-          comparison = 0;
-      }
-      
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+  // Categories are now filtered by backend - only client-side sorting needed
+  const filteredCategories = [...(categories || [])].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortBy) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'position':
+        comparison = (a.position || 999) - (b.position || 999);
+        break;
+      case 'created':
+        comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+        break;
+      default:
+        comparison = 0;
+    }
+    
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
 
+  // Fetch categories - initial load
   useEffect(() => {
-    dispatch(AllCategory());
+    dispatch(AllCategory(''));
   }, [dispatch]);
+
+  // Fetch categories from backend when search term changes (debounced)
+  useEffect(() => {
+    dispatch(AllCategory(debouncedSearchTerm));
+  }, [dispatch, debouncedSearchTerm]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">

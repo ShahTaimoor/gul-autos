@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import {
   Card,
   CardContent,
@@ -77,6 +78,9 @@ const CreateProducts = () => {
 
   const [inputValues, setInputValues] = useState(initialValues);
   const [categorySearch, setCategorySearch] = useState('');
+  
+  // Debounce category search to avoid too many API calls
+  const debouncedCategorySearch = useDebounce(categorySearch, 300);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -186,11 +190,8 @@ const CreateProducts = () => {
     }
   };
 
-  // Filter categories based on search - show only if search is empty or category starts with search
-  const filteredCategories = categories?.filter(category => {
-    if (!categorySearch) return true; // Show all when no search
-    return category.name.toLowerCase().startsWith(categorySearch.toLowerCase());
-  }) || [];
+  // Categories are now filtered by backend - no client-side filtering needed
+  const filteredCategories = categories || [];
 
   const handleExcelImport = async (e) => {
     e.preventDefault();
@@ -264,9 +265,15 @@ const CreateProducts = () => {
       });
   };
 
+  // Fetch categories - initial load
   useEffect(() => {
-    dispatch(AllCategory());
+    dispatch(AllCategory(''));
   }, [dispatch]);
+
+  // Fetch categories from backend when search term changes (debounced)
+  useEffect(() => {
+    dispatch(AllCategory(debouncedCategorySearch));
+  }, [dispatch, debouncedCategorySearch]);
 
   // Cleanup preview URL on unmount
   useEffect(() => {

@@ -114,9 +114,7 @@ router.post('/media/upload', isAuthorized, isAdminOrSuperAdmin, upload.array('im
     }
 
     // Return response
-    console.log('Upload completed - uploadedImages:', uploadedImages.length, 'errors:', errors.length);
-    console.log('Uploaded images data:', uploadedImages);
-    
+
     if (uploadedImages.length > 0) {
       const response = {
         success: true,
@@ -124,7 +122,7 @@ router.post('/media/upload', isAuthorized, isAdminOrSuperAdmin, upload.array('im
         data: uploadedImages,
         errors: errors.length > 0 ? errors : undefined
       };
-      console.log('Sending response:', response);
+     
       res.status(200).json(response);
     } else {
       res.status(500).json({

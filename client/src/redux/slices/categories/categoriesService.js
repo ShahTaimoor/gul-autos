@@ -52,11 +52,18 @@ const deleteCat = async (slug) => {
 };
 
 // Get All Categories
-const getAllCat = async () => {
+const getAllCat = async (search = '') => {
     try {
+        const params = {};
+        if (search && search.trim()) {
+            params.search = search.trim();
+        }
         const axiosResponse = await axiosInstance.get(
             '/all-category',
-            { headers: { 'Content-Type': 'application/json' } }
+            { 
+                params,
+                headers: { 'Content-Type': 'application/json' } 
+            }
         );
         return axiosResponse.data;
     } catch (error) {

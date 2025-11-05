@@ -1,6 +1,7 @@
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
 import React, { useEffect, useState } from 'react';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
@@ -41,6 +42,9 @@ const UpdateProduct = () => {
   // Get page number from URL params to return to the same page after update
   const searchParams = new URLSearchParams(location.search);
   const returnPage = searchParams.get('page') || '1';
+  
+  // Debounce category search to avoid too many API calls
+  const debouncedCategorySearch = useDebounce(categorySearch, 300);
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -62,11 +66,8 @@ const UpdateProduct = () => {
     setCategorySearch(e.target.value);
   };
 
-  // Filter categories based on search - show only if search is empty or category starts with search
-  const filteredCategories = categories?.filter(category => {
-    if (!categorySearch) return true; // Show all when no search
-    return category.name.toLowerCase().startsWith(categorySearch.toLowerCase());
-  }) || [];
+  // Categories are now filtered by backend - no client-side filtering needed
+  const filteredCategories = categories || [];
 
   const handleRemoveImage = () => {
     setInputValue((prev) => ({ ...prev, picture: '' }));
@@ -77,10 +78,20 @@ const UpdateProduct = () => {
     navigate(`/admin/dashboard/all-products?page=${returnPage}`);
   };
 
+  // Fetch single product
   useEffect(() => {
     dispatch(getSingleProduct(id));
-    dispatch(AllCategory());
   }, [id, dispatch]);
+
+  // Fetch categories - initial load
+  useEffect(() => {
+    dispatch(AllCategory(''));
+  }, [dispatch]);
+
+  // Fetch categories from backend when search term changes (debounced)
+  useEffect(() => {
+    dispatch(AllCategory(debouncedCategorySearch));
+  }, [dispatch, debouncedCategorySearch]);
 
   useEffect(() => {
     if (singleProducts) {

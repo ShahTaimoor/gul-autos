@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/cart/cartSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import CategorySwiper from './CategorySwiper';
 import SearchBar from './SearchBar';
@@ -107,14 +107,43 @@ const CartProduct = ({ product, quantity }) => {
 };
 
 const ProductList = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Read initial values from URL params
+  const urlSearch = searchParams.get('q') || '';
+  const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
+  const urlPage = parseInt(searchParams.get('page') || '1', 10);
+  
+  // Redux selectors - get categories first
+  const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
+  
+  // Convert category slug to ID for the search hook (if needed)
+  // Find category by slug from Redux state
+  const categoryBySlug = useMemo(() => {
+    if (urlCategorySlug === 'all') return 'all';
+    if (!categories || categories.length === 0) return 'all'; // Wait for categories to load
+    const found = categories.find(cat => cat.slug === urlCategorySlug);
+    return found?._id || 'all';
+  }, [urlCategorySlug, categories]);
+
   // Use the search hook to eliminate duplication
   const search = useSearch({
-    initialCategory: 'all',
-    initialPage: 1,
+    initialCategory: categoryBySlug,
+    initialPage: urlPage,
     initialLimit: 24,
     initialStockFilter: 'active',
     initialSortBy: 'az'
   });
+
+  // Initialize search term from URL if present (only on mount or when URL changes)
+  useEffect(() => {
+    if (urlSearch && urlSearch !== search.activeSearchTerm) {
+      search.handleSearchChange(urlSearch);
+      search.handleSearchSubmit(urlSearch);
+    }
+  }, [location.search]); // Only run when URL search params change
 
   // Local state for UI-specific functionality
   const [quantities, setQuantities] = useState({});
@@ -125,10 +154,70 @@ const ProductList = () => {
   const [isMobile, setIsMobile] = useState(false);
   
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  
+  // Update URL params when search or category changes
+  const updateURLParams = useCallback((updates) => {
+    const newParams = new URLSearchParams(searchParams);
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value === null || value === '' || value === 'all' || value === undefined) {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value.toString());
+      }
+    });
+    
+    // Reset page to 1 when search or category changes (unless explicitly set)
+    if (updates.q !== undefined || updates.category !== undefined) {
+      if (updates.page === undefined) {
+        newParams.set('page', '1');
+      }
+    }
+    
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+  
+  // Find category slug from ID (outside useEffect)
+  const categorySlug = useMemo(() => {
+    if (search.category === 'all') return 'all';
+    const found = categories?.find(cat => cat._id === search.category);
+    return found?.slug || 'all';
+  }, [search.category, categories]);
 
-  // Redux selectors
-  const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
+  // Sync URL params with search state (but avoid loops)
+  useEffect(() => {
+    const currentSearch = searchParams.get('q') || '';
+    const currentCategorySlug = searchParams.get('category') || 'all';
+    const currentPage = searchParams.get('page') || '1';
+    
+    const updates = {};
+    let hasUpdates = false;
+    
+    if (search.activeSearchTerm !== currentSearch) {
+      updates.q = search.activeSearchTerm || null;
+      hasUpdates = true;
+    }
+    
+    // Compare slug instead of ID
+    if (categorySlug !== currentCategorySlug) {
+      updates.category = categorySlug === 'all' ? null : categorySlug;
+      hasUpdates = true;
+    }
+    
+    if (search.page.toString() !== currentPage && search.page > 1) {
+      updates.page = search.page.toString();
+      hasUpdates = true;
+    } else if (search.page === 1 && currentPage !== '1') {
+      updates.page = null;
+      hasUpdates = true;
+    }
+    
+    if (hasUpdates) {
+      updateURLParams(updates);
+    }
+  }, [search.activeSearchTerm, search.category, search.page, categorySlug, updateURLParams, searchParams]);
+
+  // Categories already fetched above
   const { products: productList = [], status, totalItems } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
@@ -229,13 +318,13 @@ const ProductList = () => {
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
-    dispatch(AllCategory());
+    dispatch(AllCategory(''));
   }, [dispatch]);
 
   // Ensure categories are always available (refetch if empty)
   useEffect(() => {
     if ((!categories || categories.length === 0) && categoriesStatus !== 'loading') {
-      dispatch(AllCategory());
+      dispatch(AllCategory(''));
     }
   }, [dispatch, categories, categoriesStatus]);
 
@@ -304,19 +393,30 @@ const ProductList = () => {
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
+    // Find category slug from ID
+    const categorySlug = categoryId === 'all' ? 'all' : 
+      (categories?.find(cat => cat._id === categoryId)?.slug || 'all');
+    
     // Clear selected product first
     search.setSelectedProductId(null);
     // Clear suggestion IDs
     search.setEnterSuggestionIds([]);
-    // Update category (this will trigger useEffect to fetch products)
-    search.setCategory(categoryId);
-    // Clear search term and active search term
+    // Clear search term and active search term BEFORE updating category
     search.handleSearchChange('');
+    // Update category (this will trigger search with new category immediately)
+    // Don't call handleSearchSubmit as setCategory already triggers the search
+    search.setCategory(categoryId);
+    // Update URL params with slug instead of ID
+    updateURLParams({
+      category: categorySlug === 'all' ? null : categorySlug,
+      q: null,
+      page: null
+    });
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [search]);
+  }, [search, updateURLParams, categories]);
 
   // Add function to clear selected product and return to normal view
   const handleClearSelectedProduct = useCallback(() => {
@@ -334,7 +434,9 @@ const ProductList = () => {
 
   const handlePageChange = useCallback((newPage) => {
     pagination.setCurrentPage(newPage);
-  }, [pagination]);
+    // Update URL params for page
+    updateURLParams({ page: newPage === 1 ? null : newPage.toString() });
+  }, [pagination, updateURLParams]);
   
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
@@ -371,7 +473,15 @@ const ProductList = () => {
           <SearchBar
             searchTerm={search.searchTerm}
             onSearchChange={search.handleSearchChange}
-            onSearchSubmit={search.handleSearchWithTracking}
+            onSearchSubmit={(term, productId, suggestionIds) => {
+              search.handleSearchWithTracking(term, productId, suggestionIds);
+              // Navigate to search page with params when search is submitted
+              if (term && term.trim()) {
+                navigate(`/?q=${encodeURIComponent(term.trim())}&page=1`, { replace: false });
+              } else {
+                navigate('/', { replace: false });
+              }
+            }}
             gridType={gridType}
             onGridTypeChange={handleGridTypeChange}
             searchHistory={search.searchHistory}

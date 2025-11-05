@@ -465,17 +465,26 @@ router.get('/get-products', async (req, res) => {
       }
     }
 
-    // Handle category filter
+    // Handle category filter - support both slug and ID for backward compatibility
     if (category && category.trim().toLowerCase() !== 'all') {
-      const trimmedCategory = category.trim();
+      const trimmedCategory = category.trim().toLowerCase();
       const isValidObjectId = mongoose.Types.ObjectId.isValid(trimmedCategory);
 
       if (isValidObjectId) {
+        // If it's a valid ObjectId, use it directly (backward compatibility)
         query.category = trimmedCategory;
       } else {
-        const matchedCategory = await Category.findOne({
-          name: new RegExp(`^${trimmedCategory}$`, 'i'),
+        // Try to find by slug first (preferred method)
+        let matchedCategory = await Category.findOne({
+          slug: trimmedCategory,
         });
+
+        // If not found by slug, try by name (for backward compatibility)
+        if (!matchedCategory) {
+          matchedCategory = await Category.findOne({
+            name: new RegExp(`^${trimmedCategory}$`, 'i'),
+          });
+        }
 
         if (matchedCategory) {
           query.category = matchedCategory._id;
@@ -527,76 +536,96 @@ router.get('/get-products', async (req, res) => {
         });
       }
       
-      // If we have both keywords and years, require both to match
+      // If we have both keywords and years, require ALL to match
       if (keywords.length > 0 && years.length > 0) {
-        const keywordPatterns = [];
-        const yearPatterns = [];
+        // Define product-specific keywords that must be present
+        const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
         
-        // Create keyword patterns (must match in title or description)
-        keywords.forEach(keyword => {
-          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          keywordPatterns.push(
-            { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-            { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
-          );
-        });
-        
-        // Create year patterns (must match in title or description)
-        years.forEach(year => {
-          yearPatterns.push(
-            { title: { $regex: year, $options: 'i' } },
-            { description: { $regex: year, $options: 'i' } }
-          );
-        });
-        
-        // Both keyword AND year must be found
-        query.$and = [
-          { $or: keywordPatterns }, // At least one keyword must match
-          { $or: yearPatterns }     // At least one year must match
-        ];
-      }
-      // If only keywords (no years), use precise keyword matching
-      else if (keywords.length > 0) {
-        const searchPatterns = [];
-        
-        // Exact phrase search (highest priority)
-        const escapedExact = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        searchPatterns.push(
-          { title: { $regex: `^${escapedExact}$`, $options: 'i' } },
-          { description: { $regex: `^${escapedExact}$`, $options: 'i' } }
+        // Check if search contains product-specific keywords
+        const hasProductTypeKeyword = keywords.some(kw => 
+          productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
         );
         
-        // All keywords must be present (AND logic for better precision)
-        if (keywords.length > 1) {
-          const allKeywordsPattern = keywords.map(keyword => {
-            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            return {
-              $or: [
-                { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-                { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
-              ]
-            };
-          });
-          searchPatterns.push({ $and: allKeywordsPattern });
+        // Build AND conditions - ALL keywords must be present
+        const allKeywordConditions = keywords.map(keyword => {
+          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return {
+            $or: [
+              { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+              { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+            ]
+          };
+        });
+        
+        // Build AND conditions - ALL years must be present
+        const allYearConditions = years.map(year => {
+          return {
+            $or: [
+              { title: { $regex: year, $options: 'i' } },
+              { description: { $regex: year, $options: 'i' } }
+            ]
+          };
+        });
+        
+        // If searching for a specific product type, require it to be in title (not just description)
+        if (hasProductTypeKeyword) {
+          const productTypeKeyword = keywords.find(kw => 
+            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
+          );
+          if (productTypeKeyword) {
+            const escapedPTKeyword = productTypeKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Require product type keyword to be in title (more strict)
+            allKeywordConditions.push({
+              title: { $regex: `\\b${escapedPTKeyword}\\b`, $options: 'i' }
+            });
+          }
         }
         
-        // Word boundary search for individual keywords
-        keywords.forEach(keyword => {
-          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          searchPatterns.push(
-            { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-            { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
-          );
-        });
+        // Combine all conditions - ALL must match
+        query.$and = [
+          ...allKeywordConditions,
+          ...allYearConditions
+        ];
+      }
+      // If only keywords (no years), use precise keyword matching with AND logic
+      else if (keywords.length > 0) {
+        // Define product-specific keywords that must be present
+        const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
         
-        // Partial match search (lowest priority)
-        const escapedPartial = keywords.join(' ').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        searchPatterns.push(
-          { title: { $regex: escapedPartial, $options: 'i' } },
-          { description: { $regex: escapedPartial, $options: 'i' } }
+        // Check if search contains product-specific keywords
+        const hasProductTypeKeyword = keywords.some(kw => 
+          productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
         );
         
-        query.$or = searchPatterns;
+        // Build AND conditions - ALL keywords must be present
+        const allKeywordConditions = keywords.map(keyword => {
+          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          return {
+            $or: [
+              { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+              { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+            ]
+          };
+        });
+        
+        // If searching for a specific product type, require it to be in title (more strict)
+        if (hasProductTypeKeyword && keywords.length > 1) {
+          const productTypeKeyword = keywords.find(kw => 
+            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
+          );
+          if (productTypeKeyword) {
+            const escapedPTKeyword = productTypeKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Require product type keyword to be in title (more strict)
+            allKeywordConditions.push({
+              title: { $regex: `\\b${escapedPTKeyword}\\b`, $options: 'i' }
+            });
+          }
+        }
+        
+        // Use AND logic - ALL keywords must match
+        if (allKeywordConditions.length > 0) {
+          query.$and = allKeywordConditions;
+        }
       }
       // If only years, search for any of the years
       else if (years.length > 0) {
@@ -670,6 +699,12 @@ router.get('/get-products', async (req, res) => {
     if (search && search.trim()) {
       const searchWords = search.trim().toLowerCase().split(/\s+/);
       
+      // Define product-specific keywords for bonus scoring
+      const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
+      const hasProductTypeKeyword = searchWords.some(word => 
+        productTypeKeywords.some(pt => word.includes(pt) || pt.includes(word))
+      );
+      
       products = await Product.aggregate([
         { $match: query },
         {
@@ -680,6 +715,43 @@ router.get('/get-products', async (req, res) => {
                 {
                   $cond: [
                     { $regexMatch: { input: { $toLower: "$title" }, regex: `^${search.trim().toLowerCase()}` } },
+                    500, 0
+                  ]
+                },
+                // Exact phrase match anywhere in title
+                {
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: search.trim().toLowerCase() } },
+                    400, 0
+                  ]
+                },
+                // ALL keywords in title (very high score - ensures products matching all keywords appear first)
+                {
+                  $cond: [
+                    { 
+                      $and: searchWords.map(word => ({ 
+                        $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
+                      }))
+                    },
+                    300, 0
+                  ]
+                },
+                // Bonus for product-type keyword in title (when searching for specific product types)
+                {
+                  $cond: [
+                    {
+                      $and: [
+                        { $literal: hasProductTypeKeyword },
+                        {
+                          $or: productTypeKeywords.map(pt => ({
+                            $regexMatch: { 
+                              input: { $toLower: "$title" }, 
+                              regex: `\\b${pt}\\b` 
+                            }
+                          }))
+                        }
+                      ]
+                    },
                     200, 0
                   ]
                 },
@@ -690,25 +762,7 @@ router.get('/get-products', async (req, res) => {
                     150, 0
                   ]
                 },
-                // Exact phrase match anywhere in title
-                {
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: search.trim().toLowerCase() } },
-                    100, 0
-                  ]
-                },
-                // All keywords in title (high score)
-                {
-                  $cond: [
-                    { 
-                      $and: searchWords.map(word => ({ 
-                        $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
-                      }))
-                    },
-                    80, 0
-                  ]
-                },
-                // All keywords in description (medium score)
+                // ALL keywords in description (medium score)
                 {
                   $cond: [
                     { 
@@ -716,24 +770,24 @@ router.get('/get-products', async (req, res) => {
                         $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } 
                       }))
                     },
-                    60, 0
+                    100, 0
                   ]
                 },
-                // Individual keyword matches in title (word boundaries)
+                // Individual keyword matches in title (word boundaries) - lower weight
                 {
                   $sum: searchWords.map(word => ({
                     $cond: [
                       { $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } },
-                      20, 0
+                      10, 0
                     ]
                   }))
                 },
-                // Individual keyword matches in description (word boundaries)
+                // Individual keyword matches in description (word boundaries) - lowest weight
                 {
                   $sum: searchWords.map(word => ({
                     $cond: [
                       { $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } },
-                      10, 0
+                      5, 0
                     ]
                   }))
                 }
@@ -920,13 +974,22 @@ router.get('/search-suggestions', async (req, res) => {
       { $sort: { relevanceScore: -1, createdAt: -1 } },
       { $limit: searchLimit },
       {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
         $project: {
           _id: 1,
           title: 1,
           picture: 1,
           price: 1,
           stock: 1,
-          description: { $substr: ["$description", 0, 100] } // Truncate description
+          description: { $substr: ["$description", 0, 100] }, // Truncate description
+          category: { $arrayElemAt: ['$category', 0] } // Get first category from array
         }
       }
     ]);
@@ -938,7 +1001,11 @@ router.get('/search-suggestions', async (req, res) => {
       image: product.picture?.secure_url || null,
       price: product.price,
       stock: product.stock,
-      description: product.description || ''
+      description: product.description || '',
+      category: product.category ? {
+        _id: product.category._id,
+        name: product.category.name
+      } : null
     }));
 
     return res.status(200).json({

@@ -179,11 +179,22 @@ router.delete('/delete-category/:slug', isAuthorized, isAdminOrSuperAdmin, async
 // Get all categori
 router.get('/all-category', async (req, res) => {
     try {
-        const categories = await Category.find().sort({ position: 1, createdAt: -1 });
-        if (!categories.length) {
-            return res.status(404).json({ success: false, message: 'No categories found' });
+        const { search } = req.query;
+        
+        // Build query with optional search filter
+        const query = {};
+        if (search && search.trim()) {
+            const searchTerm = search.trim();
+            query.$or = [
+                { name: { $regex: searchTerm, $options: 'i' } },
+                { slug: { $regex: searchTerm, $options: 'i' } }
+            ];
         }
-
+        
+        const categories = await Category.find(query).sort({ position: 1, createdAt: -1 });
+        
+        // Return empty array if no categories found (instead of 404)
+        // This is better for search functionality
         const newCategoryArray = categories.map((category) => {
             const categoryObj = category.toObject();
             categoryObj.image = categoryObj.picture?.secure_url || null;
@@ -193,7 +204,7 @@ router.get('/all-category', async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: 'Categories fetched successfully',
+            message: categories.length > 0 ? 'Categories fetched successfully' : 'No categories found',
             data: newCategoryArray
         });
     } catch (error) {
