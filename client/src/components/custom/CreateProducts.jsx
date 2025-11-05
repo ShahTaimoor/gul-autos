@@ -647,10 +647,10 @@ const CreateProducts = () => {
 
                     {/* Conversion Status */}
                     {isConverting && (
-                      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
-                          <span className="text-sm font-medium text-blue-800">Optimizing image...</span>
+                          <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                          <span className="text-sm font-medium text-primary">Optimizing image...</span>
                         </div>
                       </div>
                     )}
@@ -733,7 +733,7 @@ const CreateProducts = () => {
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
                           Adding Product...
                         </>
                       ) : (
@@ -898,7 +898,7 @@ const CreateProducts = () => {
                       >
                         {importLoading ? (
                           <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             Importing Products...
                           </>
                         ) : (
@@ -960,7 +960,7 @@ const CreateProducts = () => {
               {mediaLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <div className="flex items-center gap-3">
-                    <Loader2 className="h-6 w-6 text-blue-600 animate-spin" />
+                    <Loader2 className="h-6 w-6 text-primary animate-spin" />
                     <span className="text-gray-600 font-medium">Loading media...</span>
                   </div>
                 </div>

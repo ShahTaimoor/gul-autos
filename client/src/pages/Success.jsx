@@ -165,12 +165,12 @@ const Success = () => {
   }, [user, cartItems.length, navigate])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-b from-primary/10 to-white flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         {/* Success Icon */}
         <div className="mb-8 flex justify-center">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle className="w-12 h-12 text-green-600" />
+          <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center border-2 border-primary/20">
+            <CheckCircle className="w-12 h-12 text-primary" />
           </div>
         </div>
 
@@ -188,7 +188,7 @@ const Success = () => {
           <div className="text-sm text-gray-500 mb-2">
             Redirecting to homepage in:
           </div>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-primary">
             {countdown} seconds
           </div>
         </div>
@@ -196,7 +196,7 @@ const Success = () => {
         {/* Manual Link */}
         <Link 
           to="/" 
-          className="inline-flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors duration-200"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors duration-200 shadow-lg hover:shadow-xl"
         >
           <Home className="w-4 h-4" />
           Go to Homepage Now
@@ -206,7 +206,7 @@ const Success = () => {
         <div className="mt-6">
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
-              className="bg-green-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+              className="bg-primary h-2 rounded-full transition-all duration-1000 ease-linear"
               style={{ width: `${((5 - countdown) / 5) * 100}%` }}
             ></div>
           </div>

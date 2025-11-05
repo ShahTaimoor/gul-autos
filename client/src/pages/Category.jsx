@@ -449,7 +449,7 @@ const Category = () => {
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />
                         {editingCategory ? 'Updating...' : 'Adding...'}
                       </>
                     ) : (
@@ -576,7 +576,7 @@ const Category = () => {
             {status === 'loading' && (
               <div className="flex justify-center py-12">
                 <div className="text-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
                   <p className="text-slate-600">Loading categories...</p>
                 </div>
               </div>

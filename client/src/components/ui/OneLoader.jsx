@@ -2,8 +2,8 @@ import React from 'react';
 
 const OneLoader = ({ 
   size = 'medium', 
-  color = 'blue', 
-  text = 'Loading...', 
+  color = 'primary', 
+  text = 'Gultraders...', 
   showText = true,
   className = '' 
 }) => {
@@ -15,6 +15,7 @@ const OneLoader = ({
   };
 
   const colorClasses = {
+    primary: 'border-primary',
     blue: 'border-blue-600',
     gray: 'border-gray-600',
     white: 'border-white',

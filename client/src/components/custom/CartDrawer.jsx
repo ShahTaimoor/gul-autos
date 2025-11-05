@@ -223,7 +223,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
             title="Remove from cart"
           >
             {isRemoving ? (
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin text-primary" />
             ) : (
               <Trash2 size={16} />
             )}
