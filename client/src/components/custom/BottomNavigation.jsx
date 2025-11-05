@@ -249,13 +249,13 @@ const BottomNavigation = () => {
   const navItems = [
     {
       path: "/",
-      icon: Download,
-      label: "Install",
+      icon: Home,
+      label: "Home",
       show: true,
-      isCenter: false,
-      onClick: handleInstall,
-      isAction: true
+      isCenter: true, // This is the center/active item
+      isHome: true
     },
+   
     {
       path: "/orders",
       icon: Package,
@@ -263,21 +263,23 @@ const BottomNavigation = () => {
       show: user !== null,
       isCenter: false
     },
-    {
-      path: "/",
-      icon: Home,
-      label: "Home",
-      show: true,
-      isCenter: true, // This is the center/active item
-      isHome: true
-    },
+   
     {
       path: "/profile",
       icon: User,
       label: "Profile",
       show: true,
       isCenter: false
-    }
+    },
+    {
+      path: "/",
+      icon: Download,
+      label: "Install",
+      show: true,
+      isCenter: false,
+      onClick: handleInstall,
+      isAction: true
+    },
   ];
 
   const actionItems = [
@@ -347,23 +349,19 @@ const BottomNavigation = () => {
               className={`flex flex-col items-center justify-center relative transition-all duration-300 flex-1`}
             >
               {item.isCenter ? (
-                // Center Home button with floating orange circle
-                <div className="relative -mt-2 mb-1">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${
-                    active 
-                      ? "bg-primary scale-100" 
-                      : "bg-gray-300 scale-90"
-                  }`}>
-                    <Icon 
-                      size={24} 
-                      className="text-white transition-all duration-300"
-                      strokeWidth={2.5}
-                    />
-                    {/* Small horizontal line at bottom (door/base effect) */}
-                    <div className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 w-6 h-0.5 rounded-full transition-opacity duration-300 ${
-                      active ? "bg-white/40 opacity-100" : "opacity-0"
-                    }`}></div>
-                  </div>
+                // Home button - no background, same as other items
+                <div className="flex flex-col items-center justify-center gap-0.5">
+                  <Icon 
+                    size={22} 
+                    className={`transition-all duration-300 ${
+                      active ? "text-primary" : "text-gray-400"
+                    }`}
+                    strokeWidth={1.5}
+                    fill="none"
+                  />
+                  <span className={`text-[10px] font-medium transition-all duration-300 ${
+                    active ? "text-primary" : "text-gray-400"
+                  }`}>{item.label}</span>
                 </div>
               ) : (
                 // Inactive items - just icons, no background, light gray/silver color
@@ -445,6 +443,36 @@ const BottomNavigation = () => {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Logout button */}
+        {actionItems.map((item, index) => {
+          if (!item.show) return null;
+          
+          const Icon = item.icon;
+          return (
+            <button
+              key={`${item.label}-${index}`}
+              onClick={(e) => {
+                e.preventDefault();
+                item.onClick();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex flex-col items-center justify-center relative transition-all duration-300 flex-1 min-w-0"
+            >
+              <div className="flex flex-col items-center justify-center gap-0.5">
+                <Icon 
+                  size={22} 
+                  className={`transition-all duration-300 ${item.className || 'text-gray-400'}`}
+                  strokeWidth={1.5}
+                  fill="none"
+                />
+                <span className={`text-[10px] font-medium transition-all duration-300 ${item.className || 'text-gray-400'}`}>
+                  {item.label}
+                </span>
+              </div>
+            </button>
+          );
+        })}
 
       </div>
       
