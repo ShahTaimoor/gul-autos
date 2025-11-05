@@ -1,10 +1,117 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { CheckCircle, Home } from 'lucide-react'
+import { CheckCircle, Home, ShoppingCart } from 'lucide-react'
+import { useSelector, useDispatch } from 'react-redux'
+import { Badge } from '../components/ui/badge'
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '../components/ui/sheet'
+import { Button } from '../components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog'
+import { removeFromCart, updateCartQuantity } from '../redux/slices/cart/cartSlice'
+import CartImage from '../components/ui/CartImage'
+import Checkout from './Checkout'
+import { toast } from 'sonner'
+
+// Cart Product Component
+const CartProduct = ({ product, quantity }) => {
+  const dispatch = useDispatch()
+  const [inputQty, setInputQty] = useState(quantity)
+  const { _id, title, price, stock } = product
+  const image = product.image || product.picture?.secure_url
+
+  const updateQuantity = (newQty) => {
+    if (newQty !== quantity && newQty > 0 && newQty <= stock) {
+      setInputQty(newQty)
+      dispatch(updateCartQuantity({ productId: _id, quantity: newQty }))
+    }
+  }
+
+  const handleRemove = (e) => {
+    e.stopPropagation()
+    dispatch(removeFromCart(_id))
+    toast.success('Product removed from cart')
+  }
+
+  const handleDecrease = (e) => {
+    e.stopPropagation()
+    if (inputQty > 1) {
+      updateQuantity(inputQty - 1)
+    }
+  }
+
+  const handleIncrease = (e) => {
+    e.stopPropagation()
+    if (inputQty < stock) {
+      updateQuantity(inputQty + 1)
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center space-x-3">
+        <CartImage
+          src={image}
+          alt={title}
+          className="w-12 h-12 rounded-md border border-gray-200 object-cover"
+          fallback="/fallback.jpg"
+          quality={80}
+        />
+        <div className="min-w-0 flex-1">
+          <h4 className="font-medium text-sm text-gray-900 line-clamp-2">{title}</h4>
+        </div>
+      </div>
+      <div className="flex items-center space-x-3">
+        <div className="flex items-center border border-gray-200 rounded-md">
+          <button
+            onClick={handleDecrease}
+            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={inputQty <= 1}
+          >
+            −
+          </button>
+          <span className="w-8 text-center text-sm font-medium text-gray-900">{inputQty}</span>
+          <button
+            onClick={handleIncrease}
+            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={inputQty >= stock}
+          >
+            +
+          </button>
+        </div>
+        <button
+          onClick={handleRemove}
+          className="text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+  )
+}
 
 const Success = () => {
   const [countdown, setCountdown] = useState(5)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false)
   const navigate = useNavigate()
+  
+  const { items: cartItems = [] } = useSelector((state) => state.cart)
+  const { user } = useSelector((state) => state.auth)
+
+  // Calculate total quantity
+  const totalQuantity = useMemo(() => 
+    cartItems.reduce((sum, item) => sum + item.quantity, 0), 
+    [cartItems]
+  )
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,6 +131,38 @@ const Success = () => {
       navigate('/')
     }
   }, [countdown, navigate])
+
+  // Scroll and mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024)
+    }
+
+    checkMobile()
+    
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 100)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', checkMobile)
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', checkMobile)
+    }
+  }, [])
+
+  const handleBuyNow = useCallback(() => {
+    if (!user) {
+      return navigate('/login')
+    }
+    if (cartItems.length === 0) {
+      toast.error('Your cart is empty.')
+      return
+    }
+    setOpenCheckoutDialog(true)
+  }, [user, cartItems.length, navigate])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
@@ -73,6 +212,70 @@ const Success = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Cart Icon - Desktop Only */}
+      {!isMobile && isScrolled && (
+        <div className="fixed top-20 right-4 z-50 cart-floating">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="relative p-3 bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 hover:scale-110">
+                <ShoppingCart size={24} className="text-gray-700" />
+                {totalQuantity > 0 && (
+                  <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full animate-pulse">
+                    {totalQuantity}
+                  </Badge>
+                )}
+              </button>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:w-[400px]">
+              <SheetHeader>
+                <SheetTitle className="text-lg font-semibold text-gray-900">Shopping Cart</SheetTitle>
+                <SheetDescription className="text-gray-600">
+                  {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in your cart
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 max-h-[60vh] overflow-y-auto">
+                {cartItems.length > 0 ? (
+                  cartItems.map((item) => (
+                    <CartProduct
+                      key={item.product._id}
+                      product={item.product}
+                      quantity={item.quantity}
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500">Your cart is empty</p>
+                  </div>
+                )}
+              </div>
+              <SheetFooter className="mt-6">
+                <SheetClose asChild>
+                  <Button
+                    onClick={handleBuyNow}
+                    disabled={cartItems.length === 0}
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5"
+                  >
+                    Proceed to Checkout
+                  </Button>
+                </SheetClose>
+              </SheetFooter>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
+
+      {/* Checkout Dialog */}
+      <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
+        <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Checkout</DialogTitle>
+            <DialogDescription>Complete your order</DialogDescription>
+          </DialogHeader>
+          <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

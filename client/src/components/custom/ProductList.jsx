@@ -24,7 +24,9 @@ import {
   SheetClose,
 } from '../ui/sheet';
 import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import CartImage from '../ui/CartImage';
+import Checkout from '../../pages/Checkout';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -152,6 +154,7 @@ const ProductList = () => {
   const [previewImage, setPreviewImage] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   
   const dispatch = useDispatch();
   
@@ -441,6 +444,17 @@ const ProductList = () => {
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
   }, []);
+
+  const handleBuyNow = useCallback(() => {
+    if (!user) {
+      return navigate('/login');
+    }
+    if (cartItems.length === 0) {
+      toast.error('Your cart is empty.');
+      return;
+    }
+    setOpenCheckoutDialog(true);
+  }, [user, cartItems.length, navigate]);
   
   const loadingProducts = status === 'loading';
   
@@ -611,15 +625,7 @@ const ProductList = () => {
               <SheetFooter className="mt-6">
                 <SheetClose asChild>
                   <Button
-                    onClick={() => {
-                      if (!user) {
-                        navigate('/login');
-                      } else if (cartItems.length === 0) {
-                        toast.error('Your cart is empty.');
-                      } else {
-                        navigate('/checkout');
-                      }
-                    }}
+                    onClick={handleBuyNow}
                     disabled={cartItems.length === 0}
                     className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5"
                   >
@@ -650,6 +656,17 @@ const ProductList = () => {
           />
         </Link>
       </div>
+
+      {/* Checkout Dialog */}
+      <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
+        <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Checkout</DialogTitle>
+            <DialogDescription>Complete your order</DialogDescription>
+          </DialogHeader>
+          <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
