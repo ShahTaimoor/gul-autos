@@ -3,7 +3,7 @@ const Cart = require('../models/Cart');
 const { isAuthorized } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Get current user's cart
+// Get current user's 
 router.get('/', isAuthorized, async (req, res) => {
   const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
   res.json({ items: cart ? cart.items : [] });

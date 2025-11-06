@@ -86,7 +86,7 @@ const Category = () => {
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 
   const [sortBy, setSortBy] = useState('name'); // 'name', 'position', 'created'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
   const { categories, status, error } = useSelector((state) => state.categories);
