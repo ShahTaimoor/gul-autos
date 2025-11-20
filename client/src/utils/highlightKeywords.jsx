@@ -9,19 +9,52 @@ export const highlightKeywords = (text, searchTerm) => {
     return text;
   }
 
-  const searchWords = searchTerm
-    .trim()
-    .toLowerCase()
+  const cleanSearchTerm = searchTerm.trim().toLowerCase();
+  
+  // Extract words from brackets: (word), {word}, [word]
+  const bracketWords = [];
+  const bracketPatterns = [
+    /\(([^)]+)\)/g,  // (word)
+    /\{([^}]+)\}/g,  // {word}
+    /\[([^\]]+)\]/g  // [word]
+  ];
+  
+  bracketPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(cleanSearchTerm)) !== null) {
+      bracketWords.push(match[1].trim());
+    }
+  });
+  
+  // Remove bracket content from search string for normal processing
+  let searchWithoutBrackets = cleanSearchTerm
+    .replace(/\([^)]+\)/g, '')  // Remove (word)
+    .replace(/\{[^}]+\}/g, '')   // Remove {word}
+    .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+  
+  // Split search term into individual words
+  const searchWords = searchWithoutBrackets
     .split(/\s+/)
-    .filter(word => word.length > 0)
-    .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // Escape special regex characters
+    .filter(word => word.length > 0);
+  
+  // Add bracket words to search words
+  searchWords.push(...bracketWords);
+  
+  // Escape special regex characters (but preserve bracket words)
+  const escapedWords = searchWords.map(word => {
+    // If word contains brackets, handle it specially
+    if (word.includes('(') || word.includes('{') || word.includes('[')) {
+      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
+    }
+    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  });
 
-  if (searchWords.length === 0) {
+  if (escapedWords.length === 0) {
     return text;
   }
 
   // Create a regex pattern that matches any of the search words
-  const pattern = new RegExp(`(${searchWords.join('|')})`, 'gi');
+  const pattern = new RegExp(`(${escapedWords.join('|')})`, 'gi');
   
   // Split text by the pattern while keeping the matches
   const parts = text.split(pattern);
@@ -61,18 +94,51 @@ export const highlightKeywordsHTML = (text, searchTerm) => {
     return text;
   }
 
-  const searchWords = searchTerm
-    .trim()
-    .toLowerCase()
+  const cleanSearchTerm = searchTerm.trim().toLowerCase();
+  
+  // Extract words from brackets: (word), {word}, [word]
+  const bracketWords = [];
+  const bracketPatterns = [
+    /\(([^)]+)\)/g,  // (word)
+    /\{([^}]+)\}/g,  // {word}
+    /\[([^\]]+)\]/g  // [word]
+  ];
+  
+  bracketPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(cleanSearchTerm)) !== null) {
+      bracketWords.push(match[1].trim());
+    }
+  });
+  
+  // Remove bracket content from search string for normal processing
+  let searchWithoutBrackets = cleanSearchTerm
+    .replace(/\([^)]+\)/g, '')  // Remove (word)
+    .replace(/\{[^}]+\}/g, '')   // Remove {word}
+    .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+  
+  // Split search term into individual words
+  const searchWords = searchWithoutBrackets
     .split(/\s+/)
-    .filter(word => word.length > 0)
-    .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    .filter(word => word.length > 0);
+  
+  // Add bracket words to search words
+  searchWords.push(...bracketWords);
+  
+  // Escape special regex characters (but preserve bracket words)
+  const escapedWords = searchWords.map(word => {
+    // If word contains brackets, handle it specially
+    if (word.includes('(') || word.includes('{') || word.includes('[')) {
+      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
+    }
+    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  });
 
-  if (searchWords.length === 0) {
+  if (escapedWords.length === 0) {
     return text;
   }
 
-  const pattern = new RegExp(`(${searchWords.join('|')})`, 'gi');
+  const pattern = new RegExp(`(${escapedWords.join('|')})`, 'gi');
   
   return text.replace(pattern, (match) => {
     return `<mark class="bg-yellow-200 text-gray-900 px-0.5 rounded font-semibold">${match}</mark>`;

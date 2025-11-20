@@ -19,6 +19,7 @@ import { removeFromCart, updateCartQuantity } from '../redux/slices/cart/cartSli
 import CartImage from '../components/ui/CartImage'
 import Checkout from './Checkout'
 import { toast } from 'sonner'
+import { useAuthDrawer } from '../contexts/AuthDrawerContext'
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -106,6 +107,7 @@ const Success = () => {
   
   const { items: cartItems = [] } = useSelector((state) => state.cart)
   const { user } = useSelector((state) => state.auth)
+  const { openDrawer } = useAuthDrawer()
 
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -155,14 +157,15 @@ const Success = () => {
 
   const handleBuyNow = useCallback(() => {
     if (!user) {
-      return navigate('/login')
+      openDrawer('login')
+      return
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.')
       return
     }
     setOpenCheckoutDialog(true)
-  }, [user, cartItems.length, navigate])
+  }, [user, cartItems.length, navigate, openDrawer])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/10 to-white flex items-center justify-center px-4">

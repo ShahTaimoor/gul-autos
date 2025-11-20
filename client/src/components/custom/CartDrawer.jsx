@@ -23,6 +23,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import CartImage from '../ui/CartImage';
 import Checkout from '@/pages/Checkout';
+import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 
 // Optimized CartProduct component with memoization
 const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
@@ -241,6 +242,7 @@ const CartDrawer = () => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { openDrawer } = useAuthDrawer();
   
   // Memoized total quantity calculation
   const totalQuantity = useMemo(() => 
@@ -267,7 +269,8 @@ const CartDrawer = () => {
 
   const handleBuyNow = useCallback(() => {
     if (!user) {
-      return navigate('/login');
+      openDrawer('login');
+      return;
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.');

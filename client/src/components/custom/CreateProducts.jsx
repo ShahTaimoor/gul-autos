@@ -74,6 +74,7 @@ const CreateProducts = () => {
     stock: '',
     description: '',
     picture: null,
+    isFeatured: false,
   };
 
   const [inputValues, setInputValues] = useState(initialValues);
@@ -83,8 +84,11 @@ const CreateProducts = () => {
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setInputValues((values) => ({ ...values, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setInputValues((values) => ({ 
+      ...values, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleCategoryChange = (value) => {
@@ -243,6 +247,7 @@ const CreateProducts = () => {
     formData.append('price', inputValues.price);
     formData.append('category', inputValues.category);
     formData.append('stock', inputValues.stock);
+    formData.append('isFeatured', inputValues.isFeatured);
     if (inputValues.picture) {
       formData.append('picture', inputValues.picture);
     }
@@ -566,6 +571,25 @@ const CreateProducts = () => {
                           className="h-11 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           required
                         />
+                      </div>
+                    </div>
+
+                    {/* Featured Checkbox */}
+                    <div className="mt-6">
+                      <div className="flex items-center space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="isFeatured"
+                          name="isFeatured"
+                          checked={inputValues.isFeatured}
+                          onChange={handleChange}
+                          className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
+                        />
+                        <Label htmlFor="isFeatured" className="text-sm font-medium text-gray-700 flex items-center gap-2 cursor-pointer">
+                          <Zap className="h-4 w-4 text-yellow-500" />
+                          <span>Mark as Featured Product</span>
+                          <span className="text-xs text-gray-500 ml-2">(Featured products appear at the top)</span>
+                        </Label>
                       </div>
                     </div>
 

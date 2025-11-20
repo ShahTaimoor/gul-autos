@@ -105,7 +105,12 @@ const uploadLimiter = rateLimit({
 const mongoSanitizeConfig = mongoSanitize({
   replaceWith: '_',
   onSanitize: ({ req, key }) => {
-    console.warn(`MongoDB injection attempt detected: ${key}`, req.ip);
+    const logger = require('../utils/logger');
+    logger.warn(`MongoDB injection attempt detected: ${key}`, {
+      ip: req.ip,
+      url: req.originalUrl,
+      method: req.method,
+    });
   }
 });
 

@@ -146,12 +146,12 @@ export function AppSidebar() {
       });
       // Clear cookies again after server response
       clearCookies();
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       // Clear cookies again even if API fails
       clearCookies();
       // Even if API fails, user is already logged out locally
-      navigate("/login");
+      navigate("/");
     } finally {
       setLoading(false);
     }

@@ -43,7 +43,10 @@ const productSchema = new mongoose.Schema({
         
     },
 
-
+    isFeatured: {
+        type: Boolean,
+        default: false,
+    },
 
 }, { timestamps: true })
 
@@ -63,5 +66,6 @@ productSchema.index({
 productSchema.index({ category: 1, stock: 1 });
 productSchema.index({ category: 1, price: 1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ isFeatured: -1, createdAt: -1 }); // For sorting featured products first
 
 module.exports = mongoose.model('Product', productSchema)

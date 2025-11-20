@@ -10,15 +10,44 @@ export const highlightSearchTerm = (text, searchTerm) => {
   const cleanText = text.toString();
   const cleanSearchTerm = searchTerm.trim().toLowerCase();
   
+  // Extract words from brackets: (word), {word}, [word]
+  const bracketWords = [];
+  const bracketPatterns = [
+    /\(([^)]+)\)/g,  // (word)
+    /\{([^}]+)\}/g,  // {word}
+    /\[([^\]]+)\]/g  // [word]
+  ];
+  
+  bracketPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(cleanSearchTerm)) !== null) {
+      bracketWords.push(match[1].trim());
+    }
+  });
+  
+  // Remove bracket content from search string for normal processing
+  let searchWithoutBrackets = cleanSearchTerm
+    .replace(/\([^)]+\)/g, '')  // Remove (word)
+    .replace(/\{[^}]+\}/g, '')   // Remove {word}
+    .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+  
   // Split search term into individual words
-  const searchWords = cleanSearchTerm.split(/\s+/).filter(word => word.length > 0);
+  const searchWords = searchWithoutBrackets.split(/\s+/).filter(word => word.length > 0);
+  
+  // Add bracket words to search words
+  searchWords.push(...bracketWords);
   
   if (searchWords.length === 0) return cleanText;
   
   // Create a regex pattern that matches any of the search words
-  const pattern = new RegExp(`(${searchWords.map(word => 
-    word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  ).join('|')})`, 'gi');
+  // Don't escape brackets for bracket words, but escape other special chars
+  const pattern = new RegExp(`(${searchWords.map(word => {
+    // If word contains brackets, handle it specially
+    if (word.includes('(') || word.includes('{') || word.includes('[')) {
+      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
+    }
+    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('|')})`, 'gi');
 
   // Split text by the pattern while keeping the matches
   const parts = cleanText.split(pattern);
@@ -53,10 +82,44 @@ export const highlightSearchTerm = (text, searchTerm) => {
 export const highlightSearchTermCustom = (text, searchTerm, HighlightComponent) => {
   if (!searchTerm || !text) return text;
 
-  const searchWords = searchTerm.trim().toLowerCase().split(/\s+/);
-  const pattern = new RegExp(`(${searchWords.map(word => 
-    word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  ).join('|')})`, 'gi');
+  const cleanSearchTerm = searchTerm.trim().toLowerCase();
+  
+  // Extract words from brackets: (word), {word}, [word]
+  const bracketWords = [];
+  const bracketPatterns = [
+    /\(([^)]+)\)/g,  // (word)
+    /\{([^}]+)\}/g,  // {word}
+    /\[([^\]]+)\]/g  // [word]
+  ];
+  
+  bracketPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(cleanSearchTerm)) !== null) {
+      bracketWords.push(match[1].trim());
+    }
+  });
+  
+  // Remove bracket content from search string for normal processing
+  let searchWithoutBrackets = cleanSearchTerm
+    .replace(/\([^)]+\)/g, '')  // Remove (word)
+    .replace(/\{[^}]+\}/g, '')   // Remove {word}
+    .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+  
+  // Split search term into individual words
+  const searchWords = searchWithoutBrackets.split(/\s+/).filter(word => word.length > 0);
+  
+  // Add bracket words to search words
+  searchWords.push(...bracketWords);
+  
+  // Create a regex pattern that matches any of the search words
+  // Don't escape brackets for bracket words, but escape other special chars
+  const pattern = new RegExp(`(${searchWords.map(word => {
+    // If word contains brackets, handle it specially
+    if (word.includes('(') || word.includes('{') || word.includes('[')) {
+      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
+    }
+    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }).join('|')})`, 'gi');
 
   const parts = text.split(pattern);
   

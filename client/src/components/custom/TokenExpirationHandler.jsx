@@ -1,10 +1,12 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useCallback } from 'react';
 import { clearTokenExpired, logout, setTokenExpired } from '@/redux/slices/auth/authSlice';
+import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 
 const TokenExpirationHandler = () => {
   const dispatch = useDispatch();
   const { tokenExpired, user } = useSelector((state) => state.auth);
+  const { openDrawer } = useAuthDrawer();
 
   // Enhanced redirect logic with mobile support
   const handleTokenExpiration = useCallback(() => {
@@ -15,16 +17,10 @@ const TokenExpirationHandler = () => {
       // Clear user data
       dispatch(logout());
       
-      // Get current path for redirect after login
-      const currentPath = window.location.pathname;
-      
-      // Always redirect to /login for both admin and regular users
-      const redirectUrl = `/login?expired=true&redirect=${encodeURIComponent(currentPath)}`;
-      
-      // Use window.location for redirect (works outside Router context)
-      window.location.href = redirectUrl;
+      // Open auth drawer instead of redirecting
+      openDrawer('login');
     }
-  }, [tokenExpired, dispatch]);
+  }, [tokenExpired, dispatch, openDrawer]);
 
   useEffect(() => {
     handleTokenExpiration();

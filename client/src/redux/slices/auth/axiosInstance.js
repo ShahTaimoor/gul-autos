@@ -96,10 +96,10 @@ axiosInstance.interceptors.response.use(
         // Attempt server logout to clear cookies
         try { await axiosInstance.post('/logout', null, { withCredentials: true }); } catch {}
 
-        // Redirect to login with return path
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          const next = encodeURIComponent(window.location.pathname + window.location.search);
-          window.location.assign(`/login?next=${next}`);
+        // Open auth drawer instead of redirecting to login
+        if (typeof window !== 'undefined') {
+          // Dispatch custom event to open auth drawer
+          window.dispatchEvent(new CustomEvent('openAuthDrawer', { detail: { mode: 'login' } }));
         }
         return Promise.reject(refreshError);
       } finally {

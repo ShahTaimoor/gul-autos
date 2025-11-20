@@ -52,15 +52,15 @@ const ToggleLogout = ({ user }) => {
             .then((response) => {
                 // Clear cookies again after server response
                 clearCookies();
-                // Redirect to the login page
-                navigate('/login');
+                // Stay on home page
+                navigate('/');
             })
             .catch((error) => {
                 // Clear cookies again even if API fails
                 clearCookies();
                 // Even if API fails, user is already logged out locally
-                // Redirect to login page anyway
-                navigate('/login');
+                // Stay on home page
+                navigate('/');
             });
     };
 

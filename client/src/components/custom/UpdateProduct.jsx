@@ -26,6 +26,7 @@ const UpdateProduct = () => {
     picture: '',
     description: '',
     stock: '',
+    isFeatured: false,
   });
 
   const [previewImage, setPreviewImage] = useState('');
@@ -47,11 +48,13 @@ const UpdateProduct = () => {
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
 
   const handleChange = (e) => {
-    const { name, value, type, files } = e.target;
+    const { name, value, type, files, checked } = e.target;
     if (type === 'file') {
       const file = files[0];
       setInputValue((values) => ({ ...values, [name]: file }));
       setPreviewImage(URL.createObjectURL(file));
+    } else if (type === 'checkbox') {
+      setInputValue((values) => ({ ...values, [name]: checked }));
     } else {
       setInputValue((values) => ({ ...values, [name]: value }));
     }
@@ -95,7 +98,7 @@ const UpdateProduct = () => {
 
   useEffect(() => {
     if (singleProducts) {
-      const { title, price, category, picture, description, stock } = singleProducts;
+      const { title, price, category, picture, description, stock, isFeatured } = singleProducts;
       setInputValue({
         title,
         price,
@@ -103,6 +106,7 @@ const UpdateProduct = () => {
         picture: '',
         description,
         stock,
+        isFeatured: isFeatured || false,
       });
       setPreviewImage(picture?.secure_url || '');
     }
@@ -124,6 +128,7 @@ const UpdateProduct = () => {
             picture: '',
             description: '',
             stock: '',
+            isFeatured: false,
           });
           setPreviewImage('');
           navigate(`/admin/dashboard/all-products?page=${returnPage}`);
@@ -274,6 +279,25 @@ const UpdateProduct = () => {
                   placeholder="Enter Product Stock"
                 />
               </div>
+            </div>
+
+            {/* Featured Checkbox */}
+            <div className="flex items-center space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <input
+                type="checkbox"
+                id="isFeatured"
+                name="isFeatured"
+                checked={inputValue.isFeatured || false}
+                onChange={handleChange}
+                className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer"
+              />
+              <Label htmlFor="isFeatured" className="text-sm font-medium text-gray-700 flex items-center gap-2 cursor-pointer">
+                <svg className="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span>Mark as Featured Product</span>
+                <span className="text-xs text-gray-500 ml-2">(Featured products appear at the top)</span>
+              </Label>
             </div>
 
             <div className="flex gap-4">

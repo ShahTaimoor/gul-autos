@@ -24,6 +24,7 @@ import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cart
 import { logout } from "../../redux/slices/auth/authSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
+import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
 
 // Cart Product Component (simplified version for mobile)
 const CartProduct = ({ product, quantity, onValidationChange }) => {
@@ -113,6 +114,7 @@ const BottomNavigation = () => {
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const { openDrawer } = useAuthDrawer();
 
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -122,7 +124,8 @@ const BottomNavigation = () => {
 
   const handleBuyNow = () => {
     if (!user) {
-      return navigate('/login');
+      openDrawer('login');
+      return;
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.');
@@ -275,7 +278,7 @@ const BottomNavigation = () => {
       path: "/",
       icon: Download,
       label: "Install",
-      show: true,
+      show: showInstallPrompt || deferredPrompt !== null,
       isCenter: false,
       onClick: handleInstall,
       isAction: true
@@ -336,7 +339,13 @@ const BottomNavigation = () => {
             );
           }
           
-          const handleNavClick = () => {
+          const handleNavClick = (e) => {
+            // If profile and user not logged in, open auth drawer
+            if (item.path === '/profile' && !user) {
+              e.preventDefault();
+              openDrawer('login');
+              return;
+            }
             // Scroll to top when clicking navigation
             window.scrollTo({ top: 0, behavior: 'smooth' });
           };

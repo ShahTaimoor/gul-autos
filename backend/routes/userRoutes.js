@@ -1,8 +1,9 @@
 const express = require('express');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { isAuthorized, isAdmin, isSuperAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const { authLimiter } = require('../middleware/security');
 const mongoose = require('mongoose');
 
 // Simple refresh-token blacklist model (TTL via expiresAt)
@@ -15,8 +16,8 @@ const BlacklistedToken = mongoose.models.BlacklistedToken || mongoose.model('Bla
 
 const router = express.Router();
 
-// Signup
-router.post('/signup', async (req, res) => {
+// Signup - with rate limiting
+router.post('/signup', authLimiter, async (req, res) => {
   const { name, password } = req.body;
 
   try {
@@ -35,7 +36,8 @@ router.post('/signup', async (req, res) => {
 });
 
 // Enhanced Login with Access & Refresh Tokens (supports rememberMe)
-router.post('/login', async (req, res) => {
+// Login - with rate limiting
+router.post('/login', authLimiter, async (req, res) => {
   const { name, password, rememberMe } = req.body;
 
   try {

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
+import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -113,6 +114,7 @@ const Navbar = () => {
   
   // Add debugging to check mobile detection
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+  const { openDrawer } = useAuthDrawer();
 
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -182,7 +184,8 @@ const Navbar = () => {
 
   const handleBuyNow = () => {
     if (!user) {
-      return navigate('/login');
+      openDrawer('login');
+      return;
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.');
@@ -290,12 +293,12 @@ const Navbar = () => {
 
             {/* Auth */}
             {user == null ? (
-              <Link
-                to="/login"
+              <button
+                onClick={() => openDrawer('login')}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
               >
                 Sign In
-              </Link>
+              </button>
             ) : (
               <LogoutToggle user={user} />
             )}

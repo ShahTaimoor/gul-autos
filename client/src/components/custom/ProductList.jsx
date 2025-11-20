@@ -27,6 +27,7 @@ import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
+import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -157,6 +158,7 @@ const ProductList = () => {
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   
   const dispatch = useDispatch();
+  const { openDrawer } = useAuthDrawer();
   
   // Update URL params when search or category changes
   const updateURLParams = useCallback((updates) => {
@@ -374,7 +376,7 @@ const ProductList = () => {
   const handleAddToCart = useCallback((product) => {
     if (!user) {
       toast.warning('You must login first');
-      navigate('/login');
+      openDrawer('login');
       return;
     }
 
@@ -392,7 +394,7 @@ const ProductList = () => {
       toast.success('Product added to cart');
       // Keep the selected quantity instead of resetting to 1
     }).finally(() => setAddingProductId(null));
-  }, [dispatch, navigate, quantities, user]);
+      }, [dispatch, navigate, quantities, user, openDrawer]);
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
@@ -447,7 +449,8 @@ const ProductList = () => {
 
   const handleBuyNow = useCallback(() => {
     if (!user) {
-      return navigate('/login');
+      openDrawer('login');
+      return;
     }
     if (cartItems.length === 0) {
       toast.error('Your cart is empty.');

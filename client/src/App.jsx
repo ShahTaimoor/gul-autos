@@ -6,6 +6,8 @@ import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
 import ErrorBoundary from './components/custom/ErrorBoundary';
 import OneLoader from './components/ui/OneLoader';
 import { Suspense, lazy } from 'react';
+import { AuthDrawerProvider } from './contexts/AuthDrawerContext';
+import AuthDrawer from './components/custom/AuthDrawer';
 
 // Lazy-load pages
 const RootLayout = lazy(() => import('./components/layouts/RootLayout'));
@@ -14,8 +16,6 @@ const ProtectedRoute = lazy(() => import('./components/custom/ProtectedRoute'));
 
 const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
-const Login = lazy(() => import('./pages/Login'));
-const Signup = lazy(() => import('./pages/Signup'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const MyOrders = lazy(() => import('./pages/MyOrders'));
 const Success = lazy(() => import('./pages/Success'));
@@ -30,6 +30,7 @@ const AllProducts = lazy(() => import('./components/custom/AllProducts'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 const Media = lazy(() => import('./pages/Media'));
+const SearchResults = lazy(() => import('./pages/SearchResults'));
 
 const App = () => {
   const router = createBrowserRouter([
@@ -37,11 +38,9 @@ const App = () => {
       path: '/',
       element: (
         <RootLayout>
-          <ProtectedRoute>
-            <ErrorBoundary>
-              <Home />
-            </ErrorBoundary>
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <Home />
+          </ErrorBoundary>
         </RootLayout>
       ),
     },
@@ -49,11 +48,9 @@ const App = () => {
       path: '/products',
       element: (
         <RootLayout>
-          <ProtectedRoute>
-            <ErrorBoundary>
-              <Products />
-            </ErrorBoundary>
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <Products />
+          </ErrorBoundary>
         </RootLayout>
       ),
     },
@@ -61,27 +58,19 @@ const App = () => {
       path: '/all-products',
       element: (
         <RootLayout>
-          <ProtectedRoute>
-            <ErrorBoundary>
-              <Products />
-            </ErrorBoundary>
-          </ProtectedRoute>
+          <ErrorBoundary>
+            <Products />
+          </ErrorBoundary>
         </RootLayout>
       ),
     },
     {
-      path: '/login',
+      path: '/search',
       element: (
         <RootLayout>
-          <Login />
-        </RootLayout>
-      ),
-    },
-    {
-      path: '/signup',
-      element: (
-        <RootLayout>
-          <Signup />
+          <ErrorBoundary>
+            <SearchResults />
+          </ErrorBoundary>
         </RootLayout>
       ),
     },
@@ -215,13 +204,15 @@ const App = () => {
 
   return (
     <Provider store={store}>
-      <Toaster />
-      <TokenExpirationHandler />
-      <ErrorBoundary>
-        <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><OneLoader size="large" text="Loading..." /></div>}>
-          <RouterProvider router={router} />
-        </Suspense>
-      </ErrorBoundary>
+      <AuthDrawerProvider>
+        <Toaster />
+        <TokenExpirationHandler />
+        <ErrorBoundary>
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><OneLoader size="large" text="Loading..." /></div>}>
+            <RouterProvider router={router} />
+          </Suspense>
+        </ErrorBoundary>
+      </AuthDrawerProvider>
     </Provider>
   );
 };

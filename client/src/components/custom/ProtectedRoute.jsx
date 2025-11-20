@@ -43,41 +43,24 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [user, isAuthenticated, checkAuthentication]);
 
-  const publicPaths = ['/login', '/signup'];
+  const publicPaths = ['/', '/products', '/all-products', '/search', '/success'];
 
-  // Handle token expiration - redirect to login page
+  // Handle token expiration - stay on current page
   if (tokenExpired) {
     dispatch(clearTokenExpired());
     dispatch(logout());
-    
-    // Redirect to login page
-    const redirectPath = '/login';
-    
-    // Use window.location for immediate redirect
-    window.location.href = `${redirectPath}?expired=true`;
-    return null;
+    return children; // Allow access, user will see logged out state
   }
 
   // Check if user is not authenticated and trying to access protected route
   if (!isAuthenticated && !publicPaths.includes(pathname)) {
-    const redirectPath = '/login';
-    window.location.href = redirectPath;
-    return null;
-  }
-
-  // Admin or Super Admin trying to revisit /login
-  if ((user?.role === 1 || user?.role === 2) && pathname === '/login') {
-    return <Navigate to="/admin/dashboard" replace />;
+    // Redirect to home page instead of login
+    return <Navigate to="/" replace />;
   }
 
   // Normal user trying to access admin route
   if (user?.role === 0 && pathname.startsWith('/admin')) {
     return <Navigate to="/" replace />;
-  }
-
-  // Authenticated trying to access login/signup
-  if (isAuthenticated && publicPaths.includes(pathname)) {
-    return <Navigate to={(user?.role === 1 || user?.role === 2) ? '/admin/dashboard' : '/'} replace />;
   }
 
   // Empty cart, disallow checkout

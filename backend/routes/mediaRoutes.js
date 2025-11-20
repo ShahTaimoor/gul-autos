@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { uploadImageOnCloudinary } = require('../utils/cloudinary');
 const { isAuthorized, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const { uploadLimiter } = require('../middleware/security');
 const Media = require('../models/Media');
 const router = express.Router();
 
@@ -44,7 +45,7 @@ const upload = multer({
 // @route POST /api/media/upload
 // @desc Upload multiple images to Cloudinary
 // @access Private/Admin
-router.post('/media/upload', isAuthorized, isAdminOrSuperAdmin, upload.array('images', 10), async (req, res) => {
+router.post('/media/upload', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.array('images', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({

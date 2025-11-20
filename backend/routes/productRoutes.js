@@ -5,6 +5,7 @@ const router = express.Router();
 const upload = require('../middleware/multer')
 const { deleteImageOnCloudinary, uploadImageOnCloudinary } = require('../utils/cloudinary');
 const { isAuthorized, isAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const { uploadLimiter } = require('../middleware/security');
 const { default: mongoose } = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
@@ -13,9 +14,9 @@ const XLSX = require('xlsx');
 // @desc Create a new Product
 // @access Private/Admin
 
-router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
+router.post('/create-product', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
-    const { title, description, price, category, stock } = req.body;
+    const { title, description, price, category, stock, isFeatured } = req.body;
 
 
     if (!title || !price || !category || !stock || !req.file) {
@@ -59,6 +60,7 @@ router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single(
       price,
       category,
       stock,
+      isFeatured: isFeatured === 'true' || isFeatured === true,
       user: req.user._id,
       picture: { secure_url, public_id }
     });
@@ -81,7 +83,7 @@ router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single(
 // @route POST /api/products/import-excel
 // @desc Import products from Excel file
 // @access Private/Admin
-router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
+router.post('/import-excel', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -304,10 +306,10 @@ router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('e
 // @rout PUT /api/products/update-product/:id
 // @desc Update an existing product ID
 // @access Private/Admin
-router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
+router.put('/update-product/:id', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, price, category, stock } = req.body;
+    const { title, description, price, category, stock, isFeatured } = req.body;
     const product = await Product.findById(id);
 
     if (!product) {
@@ -334,7 +336,8 @@ router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.sing
     if (description) product.description = description;
     if (price) product.price = price;
     if (category) product.category = category;
-    if (stock) product.stock = stock;
+    if (stock !== undefined) product.stock = stock;
+    if (isFeatured !== undefined) product.isFeatured = isFeatured === 'true' || isFeatured === true;
 
     // Handle image update
     if (req.file) {
@@ -508,8 +511,29 @@ router.get('/get-products', async (req, res) => {
     if (search && search.trim()) {
       const trimmedSearch = search.trim();
       
+      // Extract words from brackets: (word) or {word} or [word]
+      const bracketWords = [];
+      const bracketPatterns = [
+        /\(([^)]+)\)/g,  // (word)
+        /\{([^}]+)\}/g,  // {word}
+        /\[([^\]]+)\]/g  // [word]
+      ];
+      
+      bracketPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(trimmedSearch)) !== null) {
+          bracketWords.push(match[1].trim());
+        }
+      });
+      
+      // Remove bracket content from search string for normal processing
+      let searchWithoutBrackets = trimmedSearch
+        .replace(/\([^)]+\)/g, '')  // Remove (word)
+        .replace(/\{[^}]+\}/g, '')  // Remove {word}
+        .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+      
       // Split search into keywords and years
-      const words = trimmedSearch.split(/\s+/).filter(word => word.length > 0);
+      const words = searchWithoutBrackets.split(/\s+/).filter(word => word.length > 0);
       const keywords = [];
       const years = [];
       
@@ -521,6 +545,9 @@ router.get('/get-products', async (req, res) => {
           keywords.push(word);
         }
       });
+      
+      // Add bracket words to keywords
+      keywords.push(...bracketWords);
       
       // If searching for "grill", exclude products that are clearly not grills
       if (keywords.includes('grill') || keywords.includes('grille')) {
@@ -536,26 +563,37 @@ router.get('/get-products', async (req, res) => {
         });
       }
       
-      // If we have both keywords and years, require ALL to match
-      if (keywords.length > 0 && years.length > 0) {
-        // Define product-specific keywords that must be present
-        const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
-        
-        // Check if search contains product-specific keywords
-        const hasProductTypeKeyword = keywords.some(kw => 
-          productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
-        );
-        
-        // Build AND conditions - ALL keywords must be present
-        const allKeywordConditions = keywords.map(keyword => {
-          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          return {
-            $or: [
-              { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-              { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
-            ]
-          };
-        });
+        // If we have both keywords and years, require ALL to match
+        if (keywords.length > 0 && years.length > 0) {
+          // Define product-specific keywords that must be present
+          const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
+          
+          // Check if search contains product-specific keywords
+          const hasProductTypeKeyword = keywords.some(kw => 
+            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
+          );
+          
+          // First, try to find categories matching the search term
+          const categoryMatches = await Category.find({
+            name: { $regex: trimmedSearch, $options: 'i' }
+          }).select('_id');
+          const categoryIds = categoryMatches.map(cat => cat._id);
+          
+          // Build AND conditions - ALL keywords must be present
+          const allKeywordConditions = keywords.map(keyword => {
+            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const condition = {
+              $or: [
+                { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
+                { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+              ]
+            };
+            // If category matches found, also include category search
+            if (categoryIds.length > 0) {
+              condition.$or.push({ category: { $in: categoryIds } });
+            }
+            return condition;
+          });
         
         // Build AND conditions - ALL years must be present
         const allYearConditions = years.map(year => {
@@ -597,15 +635,26 @@ router.get('/get-products', async (req, res) => {
           productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
         );
         
+        // First, try to find categories matching the search term
+        const categoryMatches = await Category.find({
+          name: { $regex: trimmedSearch, $options: 'i' }
+        }).select('_id');
+        const categoryIds = categoryMatches.map(cat => cat._id);
+        
         // Build AND conditions - ALL keywords must be present
         const allKeywordConditions = keywords.map(keyword => {
           const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          return {
+          const condition = {
             $or: [
               { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
               { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
             ]
           };
+          // If category matches found, also include category search
+          if (categoryIds.length > 0) {
+            condition.$or.push({ category: { $in: categoryIds } });
+          }
+          return condition;
         });
         
         // If searching for a specific product type, require it to be in title (more strict)
@@ -629,6 +678,12 @@ router.get('/get-products', async (req, res) => {
       }
       // If only years, search for any of the years
       else if (years.length > 0) {
+        // Also check for category matches
+        const categoryMatches = await Category.find({
+          name: { $regex: trimmedSearch, $options: 'i' }
+        }).select('_id');
+        const categoryIds = categoryMatches.map(cat => cat._id);
+        
         const yearPatterns = [];
         years.forEach(year => {
           yearPatterns.push(
@@ -636,6 +691,10 @@ router.get('/get-products', async (req, res) => {
             { description: { $regex: year, $options: 'i' } }
           );
         });
+        // Add category search if matches found
+        if (categoryIds.length > 0) {
+          yearPatterns.push({ category: { $in: categoryIds } });
+        }
         query.$or = yearPatterns;
       }
     }
@@ -646,28 +705,28 @@ router.get('/get-products', async (req, res) => {
     let sortObject = {};
     switch (sortBy) {
       case 'az':
-        sortObject = { title: 1 };
+        sortObject = { isFeatured: -1, title: 1 }; // Featured first, then alphabetical
         break;
       case 'za':
-        sortObject = { title: -1 };
+        sortObject = { isFeatured: -1, title: -1 }; // Featured first, then reverse alphabetical
         break;
       case 'price-low':
-        sortObject = { price: 1 };
+        sortObject = { isFeatured: -1, price: 1 }; // Featured first, then price low to high
         break;
       case 'price-high':
-        sortObject = { price: -1 };
+        sortObject = { isFeatured: -1, price: -1 }; // Featured first, then price high to low
         break;
       case 'newest':
-        sortObject = { createdAt: -1 };
+        sortObject = { isFeatured: -1, createdAt: -1 }; // Featured first, then newest
         break;
       case 'oldest':
-        sortObject = { createdAt: 1 };
+        sortObject = { isFeatured: -1, createdAt: 1 }; // Featured first, then oldest
         break;
       case 'stock-high':
-        sortObject = { stock: -1 };
+        sortObject = { isFeatured: -1, stock: -1 }; // Featured first, then stock high to low
         break;
       case 'stock-low':
-        sortObject = { stock: 1 };
+        sortObject = { isFeatured: -1, stock: 1 }; // Featured first, then stock low to high
         break;
       case 'relevance':
         // For search results, prioritize exact matches and relevance
@@ -675,29 +734,57 @@ router.get('/get-products', async (req, res) => {
           // Custom sorting for better relevance
           // This will be handled in the aggregation pipeline below
           sortObject = { 
+            isFeatured: -1, // Featured first
             title: 1, // Exact matches first
             createdAt: -1 // Then by newest
           };
         } else {
-          sortObject = { createdAt: -1 };
+          sortObject = { isFeatured: -1, createdAt: -1 }; // Featured first, then newest
         }
         break;
       default:
         // If searching, default to relevance-based sorting
         if (search && search.trim()) {
           sortObject = { 
+            isFeatured: -1, // Featured first
             title: 1,
             createdAt: -1 
           };
         } else {
-          sortObject = { title: 1 };
+          sortObject = { isFeatured: -1, title: 1 }; // Featured first, then alphabetical
         }
     }
 
     // For search results, use aggregation pipeline for better relevance scoring
     let products;
     if (search && search.trim()) {
-      const searchWords = search.trim().toLowerCase().split(/\s+/);
+      const trimmedSearch = search.trim();
+      
+      // Extract words from brackets: (word) or {word} or [word]
+      const bracketWords = [];
+      const bracketPatterns = [
+        /\(([^)]+)\)/g,  // (word)
+        /\{([^}]+)\}/g,  // {word}
+        /\[([^\]]+)\]/g  // [word]
+      ];
+      
+      bracketPatterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(trimmedSearch)) !== null) {
+          bracketWords.push(match[1].trim().toLowerCase());
+        }
+      });
+      
+      // Remove bracket content from search string for normal processing
+      let searchWithoutBrackets = trimmedSearch
+        .replace(/\([^)]+\)/g, '')  // Remove (word)
+        .replace(/\{[^}]+\}/g, '')  // Remove {word}
+        .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+      
+      const searchWords = searchWithoutBrackets.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+      
+      // Add bracket words to search words
+      searchWords.push(...bracketWords);
       
       // Define product-specific keywords for bonus scoring
       const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
@@ -790,12 +877,19 @@ router.get('/get-products', async (req, res) => {
                       5, 0
                     ]
                   }))
+                },
+                // Category name matches - medium priority
+                {
+                  $cond: [
+                    { $regexMatch: { input: { $toLower: { $ifNull: ["$category.name", ""] } }, regex: search.trim().toLowerCase() } },
+                    50, 0
+                  ]
                 }
               ]
             }
           }
         },
-        { $sort: { relevanceScore: -1, createdAt: -1 } },
+        { $sort: { isFeatured: -1, relevanceScore: -1, createdAt: -1 } }, // Featured first, then by relevance
         { $skip: limit === 0 ? 0 : (page - 1) * limit },
         { $limit: limit || 1000 },
         {
@@ -821,6 +915,7 @@ router.get('/get-products', async (req, res) => {
             price: 1,
             description: 1,
             stock: 1,
+            isFeatured: 1,
             createdAt: 1,
             user: { $arrayElemAt: ['$user', 0] },
             category: { $arrayElemAt: ['$category', 0] }
@@ -829,7 +924,7 @@ router.get('/get-products', async (req, res) => {
       ]);
     } else {
       products = await Product.find(query)
-        .select('title picture price description stock createdAt')
+        .select('title picture price description stock isFeatured createdAt')
         .populate('user', 'name')
         .populate('category', 'name')
         .sort(sortObject)
@@ -890,8 +985,32 @@ router.get('/search-suggestions', async (req, res) => {
     const searchTerm = q.trim();
     const searchLimit = Math.min(parseInt(limit) || 10, 20); // Max 20 suggestions
     
+    // Extract words from brackets: (word) or {word} or [word]
+    const bracketWords = [];
+    const bracketPatterns = [
+      /\(([^)]+)\)/g,  // (word)
+      /\{([^}]+)\}/g,  // {word}
+      /\[([^\]]+)\]/g  // [word]
+    ];
+    
+    bracketPatterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(searchTerm)) !== null) {
+        bracketWords.push(match[1].trim());
+      }
+    });
+    
+    // Remove bracket content from search string for normal processing
+    let searchWithoutBrackets = searchTerm
+      .replace(/\([^)]+\)/g, '')  // Remove (word)
+      .replace(/\{[^}]+\}/g, '')  // Remove {word}
+      .replace(/\[[^\]]+\]/g, ''); // Remove [word]
+    
     // Build search query with relevance scoring
-    const searchWords = searchTerm.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+    const searchWords = searchWithoutBrackets.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+    
+    // Add bracket words to search words
+    searchWords.push(...bracketWords.map(w => w.toLowerCase()));
     
     // Create search patterns for better matching
     const keywordPatterns = searchWords.map(keyword => {

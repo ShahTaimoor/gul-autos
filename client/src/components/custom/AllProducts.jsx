@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 
 import { toast } from 'sonner';
-import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
@@ -73,13 +73,27 @@ const AllProducts = () => {
   // Local state for UI-specific functionality
   const [categorySearch, setCategorySearch] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [gridType, setGridType] = useState('grid2');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    stock: '',
+    category: '',
+    picture: '',
+    isFeatured: false,
+  });
+  const [editPreviewImage, setEditPreviewImage] = useState('');
+  const [editCategorySearch, setEditCategorySearch] = useState('');
 
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
+  const debouncedEditCategorySearch = useDebounce(editCategorySearch, 300);
 
   // Memoized combined categories - backend handles filtering, so we just combine with "All"
   const combinedCategories = useMemo(() => [
@@ -107,6 +121,13 @@ const AllProducts = () => {
   useEffect(() => {
     dispatch(AllCategory(debouncedCategorySearch));
   }, [dispatch, debouncedCategorySearch]);
+
+  // Fetch categories for edit modal when search term changes (debounced)
+  useEffect(() => {
+    if (showEditModal) {
+      dispatch(AllCategory(debouncedEditCategorySearch));
+    }
+  }, [dispatch, debouncedEditCategorySearch, showEditModal]);
 
   // Fetch products on component mount
   useEffect(() => {
@@ -213,11 +234,113 @@ const AllProducts = () => {
     }
   }, [dispatch]);
 
-  // Handle edit product - preserve current page number
-  const handleEdit = useCallback((product) => {
-    const currentPage = pagination.currentPage;
-    navigate(`/admin/dashboard/update/${product._id}?page=${currentPage}`);
-  }, [navigate, pagination.currentPage]);
+  // Handle edit product - open modal instead of navigating
+  const handleEdit = useCallback(async (product) => {
+    try {
+      setSelectedProduct(product);
+      setShowEditModal(true);
+      // Fetch full product details
+      const result = await dispatch(getSingleProduct(product._id)).unwrap();
+      if (result?.product) {
+        const prod = result.product;
+        setEditFormData({
+          title: prod.title || '',
+          description: prod.description || '',
+          price: prod.price || '',
+          stock: prod.stock || '',
+          category: prod.category?._id || '',
+          picture: '',
+          isFeatured: prod.isFeatured || false,
+        });
+        setEditPreviewImage(prod.picture?.secure_url || prod.image || '');
+      }
+    } catch (error) {
+      toast.error('Failed to load product details');
+    }
+  }, [dispatch]);
+
+  // Handle edit form submission
+  const handleEditSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (isUpdating || !selectedProduct) return;
+    
+    setIsUpdating(true);
+    try {
+      // Create FormData for file upload
+      const formDataObj = new FormData();
+      Object.keys(editFormData).forEach(key => {
+        if (key === 'picture') {
+          // Only append if it's a File object (new image uploaded)
+          if (editFormData[key] instanceof File) {
+            formDataObj.append(key, editFormData[key]);
+          }
+        } else if (key === 'isFeatured') {
+          formDataObj.append(key, editFormData[key]);
+        } else if (editFormData[key] !== '' && editFormData[key] !== null && editFormData[key] !== undefined) {
+          formDataObj.append(key, editFormData[key]);
+        }
+      });
+
+      const result = await dispatch(updateSingleProduct({ 
+        id: selectedProduct._id, 
+        inputValues: formDataObj 
+      })).unwrap();
+      
+      if (result?.success) {
+        toast.success(result?.message || 'Product updated successfully!');
+      } else {
+        toast.success('Product updated successfully!');
+      }
+      
+      setShowEditModal(false);
+      setSelectedProduct(null);
+      setEditFormData({
+        title: '',
+        description: '',
+        price: '',
+        stock: '',
+        category: '',
+        picture: '',
+        isFeatured: false,
+      });
+      setEditPreviewImage('');
+      
+      // Refresh products list
+      const currentPage = pagination.currentPage;
+      await dispatch(fetchProducts({ 
+        category: search.category, 
+        searchTerm: search.searchTerm, 
+        page: currentPage, 
+        limit: 24, 
+        stockFilter: search.stockFilter,
+        sortBy: search.sortBy
+      }));
+    } catch (error) {
+      toast.error(error?.message || error || 'Failed to update product');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [dispatch, editFormData, isUpdating, selectedProduct, pagination.currentPage, search]);
+
+  // Handle edit form change
+  const handleEditChange = useCallback((e) => {
+    const { name, value, type, files, checked } = e.target;
+    if (type === 'file') {
+      const file = files[0];
+      setEditFormData((prev) => ({ ...prev, [name]: file }));
+      setEditPreviewImage(URL.createObjectURL(file));
+    } else if (type === 'checkbox') {
+      setEditFormData((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setEditFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  }, []);
+
+  // Handle edit category change
+  const handleEditCategoryChange = useCallback((value) => {
+    setEditFormData((prev) => ({ ...prev, category: value }));
+    setEditCategorySearch('');
+  }, []);
 
   // Handle stock toggle
   const handleStockToggle = useCallback(async (product) => {
@@ -809,6 +932,244 @@ const AllProducts = () => {
                         <div className="flex items-center gap-2">
                           <Plus className="h-4 w-4" />
                           Create Product
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Professional Edit Product Modal */}
+        {showEditModal && selectedProduct && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-green-600 to-blue-600 px-8 py-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Edit Product</h2>
+                    <p className="text-green-100 mt-1">Update product information</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedProduct(null);
+                      setEditFormData({
+                        title: '',
+                        description: '',
+                        price: '',
+                        stock: '',
+                        category: '',
+                        picture: '',
+                        isFeatured: false,
+                      });
+                      setEditPreviewImage('');
+                    }}
+                    className="text-white hover:bg-white/20 rounded-full p-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-8 max-h-[calc(95vh-120px)] overflow-y-auto">
+                <form onSubmit={handleEditSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-title" className="text-sm font-semibold text-gray-700">
+                        Product Title *
+                      </Label>
+                      <Input
+                        id="edit-title"
+                        name="title"
+                        value={editFormData.title}
+                        onChange={handleEditChange}
+                        placeholder="Enter product title"
+                        required
+                        className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-price" className="text-sm font-semibold text-gray-700">
+                        Price (PKR) *
+                      </Label>
+                      <Input
+                        id="edit-price"
+                        name="price"
+                        type="number"
+                        value={editFormData.price}
+                        onChange={handleEditChange}
+                        placeholder="0.00"
+                        required
+                        className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category" className="text-sm font-semibold text-gray-700">
+                      Category *
+                    </Label>
+                    <Select value={editFormData.category} onValueChange={handleEditCategoryChange}>
+                      <SelectTrigger className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="p-3">
+                          <Input
+                            placeholder="Search categories..."
+                            value={editCategorySearch}
+                            onChange={(e) => setEditCategorySearch(e.target.value)}
+                            className="mb-3"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        {filteredCategories.map((cat) => (
+                          <SelectItem key={cat._id} value={cat._id} className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                              {cat.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-description" className="text-sm font-semibold text-gray-700">
+                      Description *
+                    </Label>
+                    <Textarea
+                      id="edit-description"
+                      name="description"
+                      value={editFormData.description}
+                      onChange={handleEditChange}
+                      placeholder="Describe your product..."
+                      required
+                      rows={4}
+                      className="border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 resize-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-stock" className="text-sm font-semibold text-gray-700">
+                        Stock Quantity *
+                      </Label>
+                      <Input
+                        id="edit-stock"
+                        name="stock"
+                        type="number"
+                        value={editFormData.stock}
+                        onChange={handleEditChange}
+                        placeholder="Enter stock quantity"
+                        required
+                        className="h-12 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-picture" className="text-sm font-semibold text-gray-700">
+                        Product Image
+                      </Label>
+                      <label
+                        htmlFor="edit-picture"
+                        className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:border-blue-500 hover:bg-blue-50 transition duration-200"
+                      >
+                        <span className="text-gray-500 text-sm">Click to upload new image</span>
+                        <span className="text-xs text-gray-400">(JPEG, PNG, WebP)</span>
+                        <Input
+                          type="file"
+                          id="edit-picture"
+                          name="picture"
+                          accept="image/*"
+                          onChange={handleEditChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {editPreviewImage && (
+                        <div className="relative mt-2 w-32 h-32">
+                          <img
+                            src={editPreviewImage}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditPreviewImage('');
+                              setEditFormData((prev) => ({ ...prev, picture: '' }));
+                            }}
+                            className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs shadow-md hover:bg-red-700"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Featured Checkbox */}
+                  <div className="flex items-center space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="edit-isFeatured"
+                      name="isFeatured"
+                      checked={editFormData.isFeatured || false}
+                      onChange={handleEditChange}
+                      className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 focus:ring-2 cursor-pointer"
+                    />
+                    <Label htmlFor="edit-isFeatured" className="text-sm font-medium text-gray-700 flex items-center gap-2 cursor-pointer">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span>Mark as Featured Product</span>
+                    </Label>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowEditModal(false);
+                        setSelectedProduct(null);
+                        setEditFormData({
+                          title: '',
+                          description: '',
+                          price: '',
+                          stock: '',
+                          category: '',
+                          picture: '',
+                          isFeatured: false,
+                        });
+                        setEditPreviewImage('');
+                      }}
+                      className="flex-1 h-12 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-200"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={isUpdating}
+                      className="flex-1 h-12 rounded-xl bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isUpdating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Updating...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Edit className="h-4 w-4" />
+                          Update Product
                         </div>
                       )}
                     </Button>
