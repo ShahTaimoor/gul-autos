@@ -55,11 +55,34 @@ app.use(cookieParser());
 app.use(express.static('public'));
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://gultraders.com',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  // Add any other allowed origins here
+].filter(Boolean); // Remove undefined values
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL, // e.g., 'https://your-frontend.com'
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // Log the blocked origin for debugging
+      logger.warn(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 hours
 };
 app.use(cors(corsOptions));
 
