@@ -9,7 +9,7 @@ const mongoose = require('mongoose');
 // Simple refresh-token blacklist model (TTL via expiresAt)
 const blacklistedTokenSchema = new mongoose.Schema({
   token: { type: String, required: true, unique: true, index: true },
-  expiresAt: { type: Date, required: true, index: true },
+  expiresAt: { type: Date, required: true },
 });
 blacklistedTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 const BlacklistedToken = mongoose.models.BlacklistedToken || mongoose.model('BlacklistedToken', blacklistedTokenSchema);
