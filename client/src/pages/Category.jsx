@@ -38,6 +38,7 @@ import {
   AllCategory,
   deleteCategory,
   updateCategory,
+  toggleCategoryActive,
 } from '@/redux/slices/categories/categoriesSlice';
 import { 
   Loader2, 
@@ -53,7 +54,9 @@ import {
   MoreVertical,
   Image as ImageIcon,
   Eye,
-  Settings
+  Settings,
+  Power,
+  PowerOff
 } from 'lucide-react';
 import {
   Table,
@@ -64,6 +67,7 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
+import { Checkbox } from '../components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +93,8 @@ const Category = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 
   const [sortBy, setSortBy] = useState('name'); // 'name', 'position', 'created'
   const [sortOrder, setSortOrder] = useState('asc'); // 'asc' or 'desc'
+  const [activeStatusFilter, setActiveStatusFilter] = useState('all'); // 'all', 'active', 'inactive'
+  const [selectedCategories, setSelectedCategories] = useState([]); // Array of category IDs
   const { categories, status, error } = useSelector((state) => state.categories);
   
   // Debounce search term to avoid too many API calls
@@ -170,6 +176,11 @@ const Category = () => {
     if (editingCategory.position !== undefined && editingCategory.position !== '') {
       updateData.position = parseInt(editingCategory.position);
     }
+    
+    // Add active status if it's provided
+    if (editingCategory.active !== undefined) {
+      updateData.active = editingCategory.active;
+    }
 
     dispatch(updateCategory(updateData))
       .unwrap()
@@ -220,6 +231,26 @@ const Category = () => {
       });
   };
 
+  const handleToggleActive = (category) => {
+    setLoading(true);
+    dispatch(toggleCategoryActive(category.slug))
+      .unwrap()
+      .then((response) => {
+        if (response?.success) {
+          toast.success(response?.message || `Category ${response.data.active ? 'activated' : 'deactivated'} successfully`);
+          dispatch(AllCategory(''));
+        } else {
+          toast.error(response?.message || 'Failed to toggle category status');
+        }
+      })
+      .catch((error) => {
+        toast.error(error || 'Failed to toggle category status');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   const startEditing = (category) => {
     setEditingCategory({ ...category, picture: null });
     setIsDialogOpen(true);
@@ -237,26 +268,116 @@ const Category = () => {
     setIsDialogOpen(false);
   };
 
-  // Categories are now filtered by backend - only client-side sorting needed
-  const filteredCategories = [...(categories || [])].sort((a, b) => {
-    let comparison = 0;
-    
-    switch (sortBy) {
-      case 'name':
-        comparison = a.name.localeCompare(b.name);
-        break;
-      case 'position':
-        comparison = (a.position || 999) - (b.position || 999);
-        break;
-      case 'created':
-        comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-        break;
-      default:
-        comparison = 0;
+  // Categories are now filtered by backend - only client-side sorting and active status filtering needed
+  const filteredCategories = [...(categories || [])]
+    .filter((category) => {
+      // Filter by active status
+      if (activeStatusFilter === 'active') {
+        return category.active === true;
+      } else if (activeStatusFilter === 'inactive') {
+        return category.active === false;
+      }
+      return true; // 'all' - show all categories
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'position':
+          comparison = (a.position || 999) - (b.position || 999);
+          break;
+        case 'created':
+          comparison = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+          break;
+        default:
+          comparison = 0;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  // Handle individual category selection
+  const handleCategorySelect = (categoryId) => {
+    setSelectedCategories((prev) => {
+      if (prev.includes(categoryId)) {
+        return prev.filter((id) => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  // Handle select all
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedCategories(filteredCategories.map((cat) => cat._id));
+    } else {
+      setSelectedCategories([]);
     }
-    
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
+  };
+
+  // Check if all filtered categories are selected
+  const isAllSelected = filteredCategories.length > 0 && filteredCategories.every((cat) => selectedCategories.includes(cat._id));
+  const isIndeterminate = selectedCategories.length > 0 && selectedCategories.length < filteredCategories.length;
+
+  // Bulk activate selected categories
+  const handleBulkActivate = async () => {
+    if (selectedCategories.length === 0) {
+      toast.error('Please select at least one category');
+      return;
+    }
+
+    setLoading(true);
+    const promises = selectedCategories.map((id) => {
+      const category = categories.find((cat) => cat._id === id);
+      if (category && !category.active) {
+        return dispatch(toggleCategoryActive(category.slug));
+      }
+      return Promise.resolve();
+    });
+
+    try {
+      await Promise.all(promises);
+      toast.success(`${selectedCategories.length} categor${selectedCategories.length > 1 ? 'ies' : 'y'} activated successfully`);
+      setSelectedCategories([]);
+      dispatch(AllCategory(''));
+    } catch (error) {
+      toast.error('Failed to activate some categories');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Bulk deactivate selected categories
+  const handleBulkDeactivate = async () => {
+    if (selectedCategories.length === 0) {
+      toast.error('Please select at least one category');
+      return;
+    }
+
+    setLoading(true);
+    const promises = selectedCategories.map((id) => {
+      const category = categories.find((cat) => cat._id === id);
+      if (category && category.active) {
+        return dispatch(toggleCategoryActive(category.slug));
+      }
+      return Promise.resolve();
+    });
+
+    try {
+      await Promise.all(promises);
+      toast.success(`${selectedCategories.length} categor${selectedCategories.length > 1 ? 'ies' : 'y'} deactivated successfully`);
+      setSelectedCategories([]);
+      dispatch(AllCategory(''));
+    } catch (error) {
+      toast.error('Failed to deactivate some categories');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch categories - initial load
   useEffect(() => {
@@ -267,6 +388,11 @@ const Category = () => {
   useEffect(() => {
     dispatch(AllCategory(debouncedSearchTerm));
   }, [dispatch, debouncedSearchTerm]);
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedCategories([]);
+  }, [activeStatusFilter, searchTerm]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100/50">
@@ -322,25 +448,60 @@ const Category = () => {
               </div>
 
               {editingCategory && (
-                <div className="space-y-3">
-                  <Label htmlFor="position" className="text-sm font-medium text-slate-700">
-                    Position (Optional)
-                  </Label>
-                  <Input
-                    id="position"
-                    name="position"
-                    type="number"
-                    value={editingCategory.position || ''}
-                    onChange={handleChange}
-                    placeholder="Enter position number (1, 2, 3...)"
-                    min="1"
-                    disabled={loading}
-                    className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
-                  />
-                  <p className="text-sm text-slate-500">
-                    Lower numbers appear first. Leave empty to keep current position.
-                  </p>
-                </div>
+                <>
+                  <div className="space-y-3">
+                    <Label htmlFor="position" className="text-sm font-medium text-slate-700">
+                      Position (Optional)
+                    </Label>
+                    <Input
+                      id="position"
+                      name="position"
+                      type="number"
+                      value={editingCategory.position || ''}
+                      onChange={handleChange}
+                      placeholder="Enter position number (1, 2, 3...)"
+                      min="1"
+                      disabled={loading}
+                      className="h-11 border-slate-300 focus:border-blue-500 focus:ring-blue-500/20"
+                    />
+                    <p className="text-sm text-slate-500">
+                      Lower numbers appear first. Leave empty to keep current position.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Status
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Badge variant={editingCategory.active ? "default" : "secondary"} className="text-sm px-3 py-1">
+                        {editingCategory.active ? (
+                          <>
+                            <Power className="h-3 w-3 mr-1" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <PowerOff className="h-3 w-3 mr-1" />
+                            Inactive
+                          </>
+                        )}
+                      </Badge>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingCategory({ ...editingCategory, active: !editingCategory.active })}
+                        disabled={loading}
+                        className="h-9"
+                      >
+                        {editingCategory.active ? 'Deactivate' : 'Activate'}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-slate-500">
+                      Active categories are visible to users. Inactive categories are hidden.
+                    </p>
+                  </div>
+                </>
               )}
 
               <div className="space-y-4">
@@ -497,6 +658,21 @@ const Category = () => {
 
             {/* Filter Controls */}
             <div className="flex items-center gap-3">
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium text-slate-700">Status:</Label>
+                <Select value={activeStatusFilter} onValueChange={setActiveStatusFilter}>
+                  <SelectTrigger className="w-36 h-9 border-slate-300">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="active">Active Only</SelectItem>
+                    <SelectItem value="inactive">Inactive Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Sort By */}
               <div className="flex items-center gap-2">
                 <Label className="text-sm font-medium text-slate-700">Sort by:</Label>
@@ -549,25 +725,79 @@ const Category = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-200">
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
-                <p className="text-sm text-slate-600 mt-1">
-                  {filteredCategories.length} of {categories.length} categories
-                  {searchTerm && ` matching "${searchTerm}"`}
-                </p>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-900">Categories</h2>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {filteredCategories.length} of {categories.length} categories
+                    {searchTerm && ` matching "${searchTerm}"`}
+                    {activeStatusFilter !== 'all' && ` (${activeStatusFilter === 'active' ? 'Active' : 'Inactive'} only)`}
+                  </p>
+                </div>
+                {searchTerm && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSearchTerm('')}
+                    className="text-slate-600 hover:text-slate-900"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear Search
+                  </Button>
+                )}
               </div>
-              {searchTerm && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSearchTerm('')}
-                  className="text-slate-600 hover:text-slate-900"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Clear Search
-                </Button>
-              )}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    className="h-5 w-5"
+                  />
+                  <Label 
+                    htmlFor="select-all"
+                    className="text-sm font-medium text-slate-700 cursor-pointer"
+                    onClick={() => handleSelectAll(!isAllSelected)}
+                  >
+                    Select All {filteredCategories.length > 0 && `(${filteredCategories.length})`}
+                  </Label>
+                </div>
+                {selectedCategories.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="px-3 py-1">
+                      {selectedCategories.length} selected
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkActivate}
+                      disabled={loading}
+                      className="h-8 px-3 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    >
+                      <Power className="h-3 w-3 mr-1" />
+                      Activate Selected
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkDeactivate}
+                      disabled={loading}
+                      className="h-8 px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      <PowerOff className="h-3 w-3 mr-1" />
+                      Deactivate Selected
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedCategories([])}
+                      className="h-8 px-3"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -616,7 +846,14 @@ const Category = () => {
                     {viewMode === 'grid' ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {filteredCategories.map((category, index) => (
-                          <div key={category._id} className="group relative bg-white border border-slate-200 rounded-xl hover:shadow-lg transition-all duration-200 overflow-hidden">
+                          <div key={category._id} className={`group relative bg-white border rounded-xl hover:shadow-lg transition-all duration-200 overflow-hidden ${selectedCategories.includes(category._id) ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200'}`}>
+                            <div className="absolute top-2 left-2 z-10">
+                              <Checkbox
+                                checked={selectedCategories.includes(category._id)}
+                                onCheckedChange={() => handleCategorySelect(category._id)}
+                                className="h-5 w-5 bg-white border-2"
+                              />
+                            </div>
                             <div className="aspect-square bg-slate-50 flex items-center justify-center">
                               <img
                                 src={category.image}
@@ -637,9 +874,27 @@ const Category = () => {
                                     .join(' ')
                                   }
                                 </h3>
-                                <Badge variant="secondary" className="ml-2 text-xs font-mono">
-                                  {category.position || index + 1}
-                                </Badge>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge variant="secondary" className="text-xs font-mono">
+                                    {category.position || index + 1}
+                                  </Badge>
+                                  <Badge 
+                                    variant={category.active ? "default" : "outline"} 
+                                    className={`text-xs ${category.active ? 'bg-green-500 hover:bg-green-600' : 'bg-slate-200 text-slate-600'}`}
+                                  >
+                                    {category.active ? (
+                                      <>
+                                        <Power className="h-2.5 w-2.5 mr-1" />
+                                        Active
+                                      </>
+                                    ) : (
+                                      <>
+                                        <PowerOff className="h-2.5 w-2.5 mr-1" />
+                                        Inactive
+                                      </>
+                                    )}
+                                  </Badge>
+                                </div>
                               </div>
                               <p className="text-xs text-slate-500 mb-3">{category.slug}</p>
                               <div className="flex items-center justify-between">
@@ -653,6 +908,25 @@ const Category = () => {
                                   >
                                     <Edit className="h-3 w-3 mr-1" />
                                     Edit
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleToggleActive(category)}
+                                    disabled={loading}
+                                    className={`h-8 px-3 text-xs ${category.active ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                                  >
+                                    {category.active ? (
+                                      <>
+                                        <PowerOff className="h-3 w-3 mr-1" />
+                                        Deactivate
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Power className="h-3 w-3 mr-1" />
+                                        Activate
+                                      </>
+                                    )}
                                   </Button>
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -700,7 +974,14 @@ const Category = () => {
                     ) : (
                       <div className="space-y-3">
                         {filteredCategories.map((category, index) => (
-                          <div key={category._id} className="flex items-center p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors duration-200">
+                          <div key={category._id} className={`flex items-center p-4 rounded-lg hover:bg-slate-100 transition-colors duration-200 ${selectedCategories.includes(category._id) ? 'bg-blue-50 border-2 border-blue-500' : 'bg-slate-50'}`}>
+                            <div className="flex-shrink-0 mr-4">
+                              <Checkbox
+                                checked={selectedCategories.includes(category._id)}
+                                onCheckedChange={() => handleCategorySelect(category._id)}
+                                className="h-5 w-5"
+                              />
+                            </div>
                             <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden mr-4">
                               <img
                                 src={category.image}
@@ -724,6 +1005,22 @@ const Category = () => {
                                 <Badge variant="secondary" className="text-xs font-mono">
                                   {category.position || index + 1}
                                 </Badge>
+                                <Badge 
+                                  variant={category.active ? "default" : "outline"} 
+                                  className={`text-xs ${category.active ? 'bg-green-500 hover:bg-green-600' : 'bg-slate-200 text-slate-600'}`}
+                                >
+                                  {category.active ? (
+                                    <>
+                                      <Power className="h-2.5 w-2.5 mr-1" />
+                                      Active
+                                    </>
+                                  ) : (
+                                    <>
+                                      <PowerOff className="h-2.5 w-2.5 mr-1" />
+                                      Inactive
+                                    </>
+                                  )}
+                                </Badge>
                               </div>
                               <p className="text-sm text-slate-500">{category.slug}</p>
                             </div>
@@ -737,6 +1034,25 @@ const Category = () => {
                               >
                                 <Edit className="h-4 w-4 mr-1" />
                                 Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleActive(category)}
+                                disabled={loading}
+                                className={`h-8 px-3 ${category.active ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                              >
+                                {category.active ? (
+                                  <>
+                                    <PowerOff className="h-4 w-4 mr-1" />
+                                    Deactivate
+                                  </>
+                                ) : (
+                                  <>
+                                    <Power className="h-4 w-4 mr-1" />
+                                    Activate
+                                  </>
+                                )}
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>

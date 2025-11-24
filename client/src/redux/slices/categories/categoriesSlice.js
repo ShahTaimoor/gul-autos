@@ -15,9 +15,9 @@ export const AddCategory = createAsyncThunk(
 
 export const updateCategory = createAsyncThunk(
     'categories/updateCategory',
-    async ({ name, slug, picture, position }, thunkAPI) => {
+    async ({ name, slug, picture, position, active }, thunkAPI) => {
         try {
-            const res = await categoryService.updateCat({ name, slug, picture, position });
+            const res = await categoryService.updateCat({ name, slug, picture, position, active });
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
@@ -54,6 +54,18 @@ export const SingleCategory = createAsyncThunk(
     async (slug, thunkAPI) => {
         try {
             const res = await categoryService.getSingleCat(slug);
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
+
+export const toggleCategoryActive = createAsyncThunk(
+    'categories/toggleCategoryActive',
+    async (slug, thunkAPI) => {
+        try {
+            const res = await categoryService.toggleCategoryActive(slug);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
@@ -104,6 +116,15 @@ const categoriesSlice = createSlice({
 
             })
             .addCase(updateCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
+            .addCase(toggleCategoryActive.pending, (state) => { state.status = 'loading'; })
+            .addCase(toggleCategoryActive.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const updatedCategory = action.payload.data;
+                state.categories = state.categories.map((cat) =>
+                    cat._id === updatedCategory._id ? { ...cat, active: updatedCategory.active } : cat
+                );
+            })
+            .addCase(toggleCategoryActive.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
            
 
     }

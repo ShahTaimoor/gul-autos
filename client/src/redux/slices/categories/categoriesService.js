@@ -16,12 +16,13 @@ const createCat = async (inputValues) => {
 };
 
 // Update Category
-const updateCat = async ({ name, slug, picture, position }) => {
+const updateCat = async ({ name, slug, picture, position, active }) => {
     try {
         const formData = new FormData();
         formData.append('name', name);
         if (picture) formData.append('picture', picture);
         if (position !== undefined) formData.append('position', position);
+        if (active !== undefined) formData.append('active', active);
 
         const axiosResponse = await axiosInstance.put(
             `/update-category/${slug}`,
@@ -88,6 +89,22 @@ const getSingleCat = async (slug) => {
     }
 };
 
-const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat };
+// Toggle Category Active Status
+const toggleCategoryActive = async (slug) => {
+    try {
+        const axiosResponse = await axiosInstance.patch(
+            `/toggle-category-active/${slug}`,
+            {},
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+const categoryService = { createCat, getAllCat, deleteCat, updateCat, getSingleCat, toggleCategoryActive };
 
 export default categoryService;

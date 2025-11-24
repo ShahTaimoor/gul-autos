@@ -55,7 +55,8 @@ router.post('/create-category', uploadLimiter, upload.single('picture'), isAutho
             name,
             slug: slugify(name, { lower: true, strict: true }),
             picture: { secure_url, public_id },
-            position: newPosition
+            position: newPosition,
+            active: true
         });
 
         // Normalize positions after creation
@@ -110,6 +111,10 @@ router.put('/update-category/:slug', uploadLimiter, upload.single('picture'), is
 
         if (position !== undefined) {
             updateData.position = parseInt(position);
+        }
+
+        if (req.body.active !== undefined) {
+            updateData.active = req.body.active === 'true' || req.body.active === true;
         }
 
         let updatedCategory = await Category.findOneAndUpdate(
@@ -230,6 +235,31 @@ router.get('/single-category/:slug', async (req, res) => {
     } catch (error) {
         console.error('Error fetching single category:', error);
         res.status(500).json({ success: false, message: 'Server error while fetching single category' });
+    }
+});
+
+// Toggle category active status
+router.patch('/toggle-category-active/:slug', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const category = await Category.findOne({ slug });
+        
+        if (!category) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+
+        // Toggle the active status
+        category.active = !category.active;
+        await category.save();
+
+        return res.status(200).json({
+            success: true,
+            message: `Category ${category.active ? 'activated' : 'deactivated'} successfully`,
+            data: category
+        });
+    } catch (error) {
+        console.error('Error toggling category active status:', error);
+        res.status(500).json({ success: false, message: 'Server error while toggling category status' });
     }
 });
 
