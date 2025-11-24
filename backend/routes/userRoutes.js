@@ -49,21 +49,33 @@ router.post('/signup', authLimiter, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ 
+    
+    // Build user object with only defined fields
+    const userData = {
       name: trimmedName, 
-      password: hashedPassword,
-      phone: phone ? phone.trim() : undefined,
-      address: address ? address.trim() : undefined,
-      city: city ? city.trim() : undefined
-    });
+      password: hashedPassword
+    };
+    
+    if (phone && phone.trim()) {
+      userData.phone = phone.trim();
+    }
+    if (address && address.trim()) {
+      userData.address = address.trim();
+    }
+    if (city && city.trim()) {
+      userData.city = city.trim();
+    }
+    
+    const user = await User.create(userData);
 
-    // Remove password from response
-    user.password = undefined;
+    // Convert Mongoose document to plain object and exclude password
+    const userObject = user.toObject();
+    delete userObject.password;
 
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      user,
+      user: userObject,
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -101,7 +113,9 @@ router.post('/login', authLimiter, async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid username or password' });
 
-    user.password = undefined;
+    // Convert Mongoose document to plain object and exclude password
+    const userObject = user.toObject();
+    delete userObject.password;
 
     // Create access token (1 year duration)
     const accessToken = jwt.sign(
@@ -137,7 +151,7 @@ router.post('/login', authLimiter, async (req, res) => {
       .cookie('refreshToken', refreshToken, refreshCookieOptions)
       .status(200).json({
         success: true,
-        user,
+        user: userObject,
         accessToken,
       });
   } catch (error) {

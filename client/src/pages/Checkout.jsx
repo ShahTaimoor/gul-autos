@@ -70,9 +70,16 @@ const Checkout = ({ closeModal }) => {
       return toast('Please fill out all fields');
     }
 
-    const totalPrice = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+    // Filter out items with null/deleted products
+    const validCartItems = cartItems.filter((item) => item.product && item.product._id);
 
-    const productArray = cartItems.map((item) => ({
+    if (validCartItems.length === 0) {
+      return toast.error('Your cart is empty or contains invalid items');
+    }
+
+    const totalPrice = validCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+    const productArray = validCartItems.map((item) => ({
       id: item.product._id || item.product,
       quantity: item.quantity,
     }));

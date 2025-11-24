@@ -285,7 +285,11 @@ const CartDrawer = () => {
   }, [user, navigate, cartItems.length, validationMap]);
 
   // Memoized cart items to prevent unnecessary re-renders
-  const memoizedCartItems = useMemo(() => cartItems, [cartItems]);
+  // Filter out items with null/deleted products
+  const memoizedCartItems = useMemo(() => 
+    cartItems.filter((item) => item.product && item.product._id), 
+    [cartItems]
+  );
 
   return (
     <>

@@ -263,13 +263,15 @@ const Navbar = () => {
                 </SheetHeader>
                 <div className="mt-6 max-h-[60vh] overflow-y-auto">
                   {cartItems.length > 0 ? (
-                    cartItems.map((item) => (
-                      <CartProduct
-                        key={item.product._id}
-                        product={item.product}
-                        quantity={item.quantity}
-                      />
-                    ))
+                    cartItems
+                      .filter((item) => item.product && item.product._id)
+                      .map((item) => (
+                        <CartProduct
+                          key={item.product._id}
+                          product={item.product}
+                          quantity={item.quantity}
+                        />
+                      ))
                   ) : (
                     <div className="text-center py-8">
                       <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />

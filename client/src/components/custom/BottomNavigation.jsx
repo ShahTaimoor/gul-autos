@@ -428,13 +428,15 @@ const BottomNavigation = () => {
             </SheetHeader>
             <div className="mt-4 max-h-[60vh] overflow-y-auto">
               {cartItems.length > 0 ? (
-                cartItems.map((item) => (
-                  <CartProduct
-                    key={item.product._id}
-                    product={item.product}
-                    quantity={item.quantity}
-                  />
-                ))
+                cartItems
+                  .filter((item) => item.product && item.product._id)
+                  .map((item) => (
+                    <CartProduct
+                      key={item.product._id}
+                      product={item.product}
+                      quantity={item.quantity}
+                    />
+                  ))
               ) : (
                 <p className="text-center text-gray-500 py-6">Your cart is empty.</p>
               )}

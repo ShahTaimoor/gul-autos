@@ -3,10 +3,25 @@ const Cart = require('../models/Cart');
 const { isAuthorized } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Get current user's 
+// Get current user's cart
 router.get('/', isAuthorized, async (req, res) => {
   const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
-  res.json({ items: cart ? cart.items : [] });
+  
+  if (!cart) {
+    return res.json({ items: [] });
+  }
+  
+  // Filter out items with null/deleted products
+  const validItems = cart.items.filter(item => item.product !== null);
+  
+  // If there are invalid items, clean up the cart in the database
+  if (validItems.length !== cart.items.length) {
+    cart.items = validItems;
+    cart.updatedAt = new Date();
+    await cart.save();
+  }
+  
+  res.json({ items: validItems });
 });
 
 // Add/update item in cart
@@ -24,7 +39,18 @@ router.post('/add', isAuthorized, async (req, res) => {
   }
   await cart.save();
   cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
-  res.json({ items: cart.items });
+  
+  // Filter out items with null/deleted products
+  const validItems = cart.items.filter(item => item.product !== null);
+  
+  // Clean up invalid items from database
+  if (validItems.length !== cart.items.length) {
+    cart.items = validItems;
+    cart.updatedAt = new Date();
+    await cart.save();
+  }
+  
+  res.json({ items: validItems });
 });
 
 // Remove item from cart
@@ -36,7 +62,18 @@ router.post('/remove', isAuthorized, async (req, res) => {
   cart.updatedAt = new Date();
   await cart.save();
   cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
-  res.json({ items: cart.items });
+  
+  // Filter out items with null/deleted products
+  const validItems = cart.items.filter(item => item.product !== null);
+  
+  // Clean up invalid items from database
+  if (validItems.length !== cart.items.length) {
+    cart.items = validItems;
+    cart.updatedAt = new Date();
+    await cart.save();
+  }
+  
+  res.json({ items: validItems });
 });
 
 // Empty cart
@@ -63,7 +100,18 @@ router.post('/update', isAuthorized, async (req, res) => {
   cart.updatedAt = new Date();
   await cart.save();
   cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
-  res.json({ items: cart.items });
+  
+  // Filter out items with null/deleted products
+  const validItems = cart.items.filter(item => item.product !== null);
+  
+  // Clean up invalid items from database
+  if (validItems.length !== cart.items.length) {
+    cart.items = validItems;
+    cart.updatedAt = new Date();
+    await cart.save();
+  }
+  
+  res.json({ items: validItems });
 });
 
 module.exports = router;
