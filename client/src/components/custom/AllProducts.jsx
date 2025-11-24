@@ -32,11 +32,13 @@ import {
   MoreVertical,
   Star,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 
 import { toast } from 'sonner';
-import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 
 const AllProducts = () => {
@@ -90,6 +92,8 @@ const AllProducts = () => {
   });
   const [editPreviewImage, setEditPreviewImage] = useState('');
   const [editCategorySearch, setEditCategorySearch] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
 
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
@@ -392,6 +396,62 @@ const AllProducts = () => {
     setPreviewImage(image);
   }, []);
 
+  // Handle product selection
+  const handleProductSelect = useCallback((productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  }, []);
+
+  // Handle select all
+  const handleSelectAll = useCallback(() => {
+    if (selectedProducts.length === sortedProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(sortedProducts.map(p => p._id));
+    }
+  }, [selectedProducts.length, sortedProducts]);
+
+  // Handle bulk mark as featured
+  const handleBulkMarkFeatured = useCallback(async (isFeatured) => {
+    if (selectedProducts.length === 0) {
+      toast.error('Please select at least one product');
+      return;
+    }
+
+    setIsBulkUpdating(true);
+    try {
+      await dispatch(bulkUpdateFeatured({ 
+        productIds: selectedProducts, 
+        isFeatured 
+      })).unwrap();
+      
+      toast.success(
+        `Successfully ${isFeatured ? 'marked' : 'unmarked'} ${selectedProducts.length} product(s) as featured`
+      );
+      setSelectedProducts([]);
+      
+      // Refresh products list
+      const currentPage = pagination.currentPage;
+      await dispatch(fetchProducts({ 
+        category: search.category, 
+        searchTerm: search.searchTerm, 
+        page: currentPage, 
+        limit: 24, 
+        stockFilter: search.stockFilter,
+        sortBy: search.sortBy
+      }));
+    } catch (error) {
+      toast.error(error?.message || 'Failed to update featured status');
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  }, [dispatch, selectedProducts, pagination.currentPage, search]);
+
   // Only show main loader for initial loading, not for search/filter operations
   if (status === 'loading' && products.length === 0) {
     return (
@@ -568,9 +628,27 @@ const AllProducts = () => {
           {/* Results Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Products ({sortedProducts.length})
-              </h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSelectAll}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  title={selectedProducts.length === sortedProducts.length ? 'Deselect all' : 'Select all'}
+                >
+                  {selectedProducts.length === sortedProducts.length && sortedProducts.length > 0 ? (
+                    <CheckSquare className="h-5 w-5 text-blue-600" />
+                  ) : (
+                    <Square className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Products ({sortedProducts.length})
+                </h2>
+                {selectedProducts.length > 0 && (
+                  <Badge variant="default" className="px-3 py-1 bg-blue-600">
+                    {selectedProducts.length} selected
+                  </Badge>
+                )}
+              </div>
               {search.searchTerm && (
                 <Badge variant="secondary" className="px-3 py-1">
                   Search: "{search.searchTerm}"
@@ -583,6 +661,38 @@ const AllProducts = () => {
               )}
             </div>
             
+            {/* Bulk Actions */}
+            {selectedProducts.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleBulkMarkFeatured(true)}
+                  disabled={isBulkUpdating}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Mark as Featured
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkMarkFeatured(false)}
+                  disabled={isBulkUpdating}
+                  className="border-gray-300"
+                >
+                  Remove Featured
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedProducts([])}
+                  className="text-gray-600"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Products Grid */}
@@ -595,9 +705,39 @@ const AllProducts = () => {
               <Card 
                 key={product._id} 
                 className={`group relative overflow-hidden bg-white border-0 shadow-sm hover:shadow-xl transition-all duration-500 hover:-translate-y-2 ${
+                  selectedProducts.includes(product._id) ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+                } ${
                   gridType === 'grid3' ? 'flex flex-row items-center gap-6 p-6' : 'p-0'
                 }`}
               >
+                {/* Selection Checkbox */}
+                <div className="absolute top-3 left-3 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleProductSelect(product._id);
+                    }}
+                    className="p-1.5 bg-white/90 backdrop-blur-sm rounded-md shadow-md hover:bg-white transition-colors"
+                    title={selectedProducts.includes(product._id) ? 'Deselect' : 'Select'}
+                  >
+                    {selectedProducts.includes(product._id) ? (
+                      <CheckSquare className="h-5 w-5 text-blue-600" />
+                    ) : (
+                      <Square className="h-5 w-5 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Featured Badge */}
+                {product.isFeatured && (
+                  <div className="absolute top-3 right-3 z-10">
+                    <Badge className="bg-yellow-500 text-white px-2 py-1 text-xs">
+                      <Star className="h-3 w-3 mr-1" />
+                      Featured
+                    </Badge>
+                  </div>
+                )}
+
                 {/* Product Image */}
                 <div className={`relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 transition-all duration-500 group-hover:scale-105 cursor-pointer ${
                   gridType === 'grid3' 
@@ -615,18 +755,20 @@ const AllProducts = () => {
                   />
                   
                   {/* Stock Badge */}
-                  <div className="absolute top-3 right-3">
-                    <Badge 
-                      variant={product.stock > 0 ? 'default' : 'destructive'}
-                      className={`px-3 py-1 text-xs font-medium ${
-                        product.stock > 0 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
-                          : 'bg-red-100 text-red-800 border-red-200'
-                      }`}
-                    >
-                      {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                    </Badge>
-                  </div>
+                  {!product.isFeatured && (
+                    <div className="absolute top-3 right-3">
+                      <Badge 
+                        variant={product.stock > 0 ? 'default' : 'destructive'}
+                        className={`px-3 py-1 text-xs font-medium ${
+                          product.stock > 0 
+                            ? 'bg-green-100 text-green-800 border-green-200' 
+                            : 'bg-red-100 text-red-800 border-red-200'
+                        }`}
+                      >
+                        {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                      </Badge>
+                    </div>
+                  )}
 
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">

@@ -86,6 +86,18 @@ export const updateProductStock = createAsyncThunk(
     }
 );
 
+export const bulkUpdateFeatured = createAsyncThunk(
+    'products/bulkUpdateFeatured',
+    async ({ productIds, isFeatured }, thunkAPI) => {
+        try {
+            const res = await productService.bulkUpdateFeatured({ productIds, isFeatured });
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
+
 export const fetchSearchSuggestions = createAsyncThunk(
     'products/fetchSearchSuggestions',
     async ({ query, limit = 10 }, thunkAPI) => {
@@ -242,6 +254,29 @@ export const productsSlice = createSlice({
                 }
             })
             .addCase(updateProductStock.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.payload;
+            })
+            .addCase(bulkUpdateFeatured.pending, (state) => {
+                state.status = 'loading';
+                state.error = null;
+            })
+            .addCase(bulkUpdateFeatured.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const { productIds, isFeatured } = action.meta.arg;
+                
+                // Update all selected products in the current list
+                state.products = state.products.map(product => {
+                    if (productIds.includes(product._id)) {
+                        return {
+                            ...product,
+                            isFeatured: isFeatured
+                        };
+                    }
+                    return product;
+                });
+            })
+            .addCase(bulkUpdateFeatured.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })

@@ -405,6 +405,49 @@ router.put('/update-product-stock/:id', isAuthorized, isAdminOrSuperAdmin, async
   }
 });
 
+// @route PUT /api/products/bulk-update-featured
+// @desc Bulk update featured status for multiple products
+// @access Private/Admin
+router.put('/bulk-update-featured', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
+  try {
+    const { productIds, isFeatured } = req.body;
+
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Product IDs array is required' 
+      });
+    }
+
+    if (isFeatured === undefined || isFeatured === null) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'isFeatured value is required' 
+      });
+    }
+
+    const featuredValue = isFeatured === 'true' || isFeatured === true;
+
+    // Update all products
+    const result = await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $set: { isFeatured: featuredValue } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully ${featuredValue ? 'marked' : 'unmarked'} ${result.modifiedCount} product(s) as featured`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error bulk updating featured status:', error);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server error while updating featured status' 
+    });
+  }
+});
+
 // @route DELETE /api/products/delete-product/:id
 // @desc Delete a product by ID
 // @access Private/Admin

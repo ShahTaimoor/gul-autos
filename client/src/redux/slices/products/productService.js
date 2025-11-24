@@ -127,6 +127,24 @@ const updateProductStock = async ({ id, stock }) => {
     }
 };
 
+// bulk update featured status
+const bulkUpdateFeatured = async ({ productIds, isFeatured }) => {
+    try {
+        const axiosResponse = await axiosInstance.put(
+            '/bulk-update-featured',
+            { productIds, isFeatured },
+            {
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+        return axiosResponse.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
 // search suggestions/autocomplete
 const getSearchSuggestions = async (query, limit = 10) => {
     try {
@@ -145,6 +163,6 @@ const getSearchSuggestions = async (query, limit = 10) => {
     }
 };
 
-const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock, getSearchSuggestions };
+const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock, bulkUpdateFeatured, getSearchSuggestions };
 
 export default productService;
