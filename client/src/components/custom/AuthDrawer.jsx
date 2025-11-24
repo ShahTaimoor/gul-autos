@@ -33,11 +33,14 @@ const AuthDrawer = () => {
     }
   }, [open, initialMode]);
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState({ name: '', password: '' });
+  const [errorMsg, setErrorMsg] = useState({ name: '', password: '', phone: '', address: '', city: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [inputValue, setInputValues] = useState({
     name: '',
-    password: ''
+    password: '',
+    phone: '',
+    address: '',
+    city: ''
   });
 
   // Check if user is logged in, close drawer
@@ -50,15 +53,16 @@ const AuthDrawer = () => {
   // Reset form when drawer opens/closes
   useEffect(() => {
     if (!open) {
-      setInputValues({ name: '', password: '' });
-      setErrorMsg({ name: '', password: '' });
+      setInputValues({ name: '', password: '', phone: '', address: '', city: '' });
+      setErrorMsg({ name: '', password: '', phone: '', address: '', city: '' });
       setShowPassword(false);
     }
   }, [open]);
 
   // Memoized validation functions
   const validateForm = useCallback(() => {
-    const errors = { name: '', password: '' };
+    const errors = { name: '', password: '', phone: '', address: '', city: '' };
+    const isLoginMode = mode === 'login';
     
     if (!inputValue.name.trim()) {
       errors.name = 'Shop name is required';
@@ -68,8 +72,23 @@ const AuthDrawer = () => {
       errors.password = 'Password is required';
     }
     
+    // Only validate phone, address, city for signup
+    if (!isLoginMode) {
+      if (!inputValue.phone.trim()) {
+        errors.phone = 'Phone number is required';
+      }
+      
+      if (!inputValue.address.trim()) {
+        errors.address = 'Address is required';
+      }
+      
+      if (!inputValue.city.trim()) {
+        errors.city = 'City is required';
+      }
+    }
+    
     return errors;
-  }, [inputValue]);
+  }, [inputValue, mode]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -92,14 +111,14 @@ const AuthDrawer = () => {
     }
 
     setLoading(true);
-    setErrorMsg({ name: '', password: '' });
+    setErrorMsg({ name: '', password: '', phone: '', address: '', city: '' });
 
     try {
       const response = await dispatch(login(inputValue)).unwrap();
       
       if (response?.user) {
         toast.success('Login successful');
-        setInputValues({ name: '', password: '' });
+        setInputValues({ name: '', password: '', phone: '', address: '', city: '' });
         setOpen(false);
         // User will stay on current page after login
       } else {
@@ -125,7 +144,7 @@ const AuthDrawer = () => {
         passwordError = 'Invalid password';
       }
 
-      setErrorMsg({ name: nameError, password: passwordError });
+      setErrorMsg({ name: nameError, password: passwordError, phone: '', address: '', city: '' });
       toast.error('Invalid username or password');
     } finally {
       setLoading(false);
@@ -137,13 +156,13 @@ const AuthDrawer = () => {
     
     // Client-side validation
     const validationErrors = validateForm();
-    if (validationErrors.name || validationErrors.password) {
+    if (validationErrors.name || validationErrors.password || validationErrors.phone || validationErrors.address || validationErrors.city) {
       setErrorMsg(validationErrors);
       return;
     }
 
     setLoading(true);
-    setErrorMsg({ name: '', password: '' });
+    setErrorMsg({ name: '', password: '', phone: '', address: '', city: '' });
 
     try {
       const response = await axios.post(
@@ -154,14 +173,37 @@ const AuthDrawer = () => {
         }
       );
 
-      toast.success('Signup successful! Please login.');
-      setInputValues({ name: '', password: '' });
-      // Switch to login mode after successful signup
-      setMode('login');
+      if (response.data?.success) {
+        toast.success('Signup successful! Please login.');
+        setInputValues({ name: '', password: '', phone: '', address: '', city: '' });
+        // Switch to login mode after successful signup
+        setMode('login');
+      } else {
+        toast.error(response.data?.message || 'Signup failed. Please try again.');
+        setErrorMsg({ name: response.data?.message || 'Signup failed', password: '', phone: '', address: '', city: '' });
+      }
     } catch (err) {
-      console.error(err);
-      toast.error('User already exists. Please choose another name.');
-      setErrorMsg({ name: 'User already exists', password: '' });
+      console.error('Signup error:', err);
+      
+      // Handle different error types
+      let errorMessage = 'Signup failed. Please try again.';
+      let nameError = '';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+        nameError = err.response.data.message;
+      } else if (err.response?.status === 400) {
+        errorMessage = 'User with this shop name already exists. Please choose another name.';
+        nameError = 'User already exists';
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+        nameError = 'Server error';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      toast.error(errorMessage);
+      setErrorMsg({ name: nameError, password: '', phone: '', address: '', city: '' });
     } finally {
       setLoading(false);
     }
@@ -173,8 +215,8 @@ const AuthDrawer = () => {
 
   const toggleMode = useCallback(() => {
     setMode(prev => prev === 'login' ? 'signup' : 'login');
-    setInputValues({ name: '', password: '' });
-    setErrorMsg({ name: '', password: '' });
+    setInputValues({ name: '', password: '', phone: '', address: '', city: '' });
+    setErrorMsg({ name: '', password: '', phone: '', address: '', city: '' });
   }, []);
 
   const isLogin = mode === 'login';
@@ -263,19 +305,81 @@ const AuthDrawer = () => {
               )}
             </div>
 
-            {/* Forgot Password Link (Login only) */}
-            {isLogin && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  className="text-sm text-gray-900 underline hover:text-primary transition-colors"
-                  onClick={() => {
-                    // TODO: Implement forgot password functionality
-                    toast.info('Forgot password feature coming soon');
-                  }}
-                >
-                  Forgot your password?
-                </button>
+            {/* Phone Field (Signup only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-sm font-semibold text-gray-900">
+                  Phone Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  name="phone"
+                  placeholder="Enter your phone number"
+                  value={inputValue.phone}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  autoComplete="tel"
+                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                {errorMsg.phone && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errorMsg.phone}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Address Field (Signup only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-sm font-semibold text-gray-900">
+                  Address <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="address"
+                  type="text"
+                  name="address"
+                  placeholder="Enter your address"
+                  value={inputValue.address}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  autoComplete="street-address"
+                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                {errorMsg.address && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errorMsg.address}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* City Field (Signup only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-sm font-semibold text-gray-900">
+                  City <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="city"
+                  type="text"
+                  name="city"
+                  placeholder="Enter your city"
+                  value={inputValue.city}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  autoComplete="address-level2"
+                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+                {errorMsg.city && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errorMsg.city}
+                  </p>
+                )}
               </div>
             )}
 
@@ -310,32 +414,6 @@ const AuthDrawer = () => {
               </button>
             </div>
           </form>
-
-          {/* Chat Icon (Floating) - Optional */}
-          <div className="absolute bottom-6 right-6">
-            <button
-              className="w-12 h-12 bg-primary hover:bg-primary/90 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all"
-              aria-label="Chat support"
-              onClick={() => {
-                // TODO: Implement chat functionality
-                toast.info('Chat support coming soon');
-              }}
-            >
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </button>
-          </div>
         </div>
       </DrawerContent>
     </Drawer>

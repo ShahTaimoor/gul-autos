@@ -18,11 +18,47 @@ const router = express.Router();
 
 // Signup - with rate limiting
 router.post('/signup', authLimiter, async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, phone, address, city } = req.body;
 
   try {
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Shop name is required' 
+      });
+    }
+    
+    if (!password || password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Trim the name to ensure consistency
+    const trimmedName = name.trim();
+    
+    // Check if user already exists (using trimmed name)
+    const existingUser = await User.findOne({ name: trimmedName });
+    if (existingUser) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User with this shop name already exists. Please choose another name.' 
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, password: hashedPassword });
+    const user = await User.create({ 
+      name: trimmedName, 
+      password: hashedPassword,
+      phone: phone ? phone.trim() : undefined,
+      address: address ? address.trim() : undefined,
+      city: city ? city.trim() : undefined
+    });
+
+    // Remove password from response
+    user.password = undefined;
 
     res.status(201).json({
       success: true,
@@ -30,8 +66,20 @@ router.post('/signup', authLimiter, async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Server error during registration');
+    console.error('Signup error:', error);
+    
+    // Handle duplicate key error (MongoDB unique constraint)
+    if (error.code === 11000 || error.name === 'MongoServerError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User with this shop name already exists. Please choose another name.' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error during registration' 
+    });
   }
 });
 
@@ -41,7 +89,13 @@ router.post('/login', authLimiter, async (req, res) => {
   const { name, password, rememberMe } = req.body;
 
   try {
-    const user = await User.findOne({ name });
+    // Trim the name to match how it's stored (User schema has trim: true)
+    const trimmedName = name ? name.trim() : '';
+    if (!trimmedName) {
+      return res.status(400).json({ message: 'Shop name is required' });
+    }
+    
+    const user = await User.findOne({ name: trimmedName });
     if (!user) return res.status(400).json({ message: 'Invalid username or password' });
 
     const isMatch = await bcrypt.compare(password, user.password);

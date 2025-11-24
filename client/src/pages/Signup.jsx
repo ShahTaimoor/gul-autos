@@ -15,7 +15,10 @@ const Signup = () => {
   const navigate = useNavigate();
   const [inputValue, setInputValues] = useState({
     name: '',
-    password: ''
+    password: '',
+    phone: '',
+    address: '',
+    city: ''
   });
 
   const handleChange = (e) => {
@@ -37,11 +40,34 @@ const Signup = () => {
         }
       );
 
-      toast.success('Signup successful! Please login.');
-      navigate('/');
+      if (response.data?.success) {
+        toast.success('Signup successful! Please login.');
+        navigate('/');
+      } else {
+        toast.error(response.data?.message || 'Signup failed. Please try again.');
+        setError(response.data?.message || 'Signup failed');
+      }
     } catch (err) {
-      console.error(err);
-      toast.error('User already exists. Please choose another name.');
+      console.error('Signup error:', err);
+      
+      // Handle different error types
+      let errorMessage = 'Signup failed. Please try again.';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        errorMessage = 'User with this shop name already exists. Please choose another name.';
+        setError('User already exists');
+      } else if (err.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+        setError('Server error');
+      } else if (err.message) {
+        errorMessage = err.message;
+        setError(err.message);
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -142,6 +168,60 @@ const Signup = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+            </div>
+
+            {/* Phone Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Phone Number
+              </label>
+              <Input
+                onChange={handleChange}
+                placeholder='Enter your phone number'
+                type='tel'
+                name='phone'
+                value={inputValue.phone}
+                required
+                disabled={loading}
+                autoComplete="tel"
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200'
+              />
+            </div>
+
+            {/* Address Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                Address
+              </label>
+              <Input
+                onChange={handleChange}
+                placeholder='Enter your address'
+                type='text'
+                name='address'
+                value={inputValue.address}
+                required
+                disabled={loading}
+                autoComplete="street-address"
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200'
+              />
+            </div>
+
+            {/* City Field */}
+            <div className='space-y-2'>
+              <label className='block text-sm font-semibold text-gray-700'>
+                City
+              </label>
+              <Input
+                onChange={handleChange}
+                placeholder='Enter your city'
+                type='text'
+                name='city'
+                value={inputValue.city}
+                required
+                disabled={loading}
+                autoComplete="address-level2"
+                className='h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200'
+              />
             </div>
           </div>
 
