@@ -243,11 +243,13 @@ const ProductList = () => {
     }
   });
 
-  // Memoized combined categories
+  // Memoized combined categories - filter to show only active categories
   const combinedCategories = useMemo(() => {
+    // Filter to show only active categories (active === true)
+    const activeCategories = (categories || []).filter(cat => cat.active === true);
     const allCategories = [
       { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
-      ...(categories || [])
+      ...activeCategories
     ];
     // Sort by position if position exists, otherwise keep original order
     return allCategories.sort((a, b) => {
