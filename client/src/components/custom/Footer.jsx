@@ -27,7 +27,7 @@ const Footer = () => {
                   GULTRADERS
                 </h2>
                 <p className="text-slate-300 text-sm font-medium tracking-wide uppercase">
-                  Body Kits & Car Accessories
+                  Wholesale Dealers
                 </p>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   Premium automotive accessories and body kits for car enthusiasts. 

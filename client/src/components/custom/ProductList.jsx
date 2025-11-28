@@ -558,11 +558,13 @@ const ProductList = () => {
       />
 
       {/* Pagination */}
-      <Pagination
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        onPageChange={handlePageChange}
-      />
+      <div className="px-2 sm:px-0 mt-6 mb-4">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
 
       {/* Image Preview Modal */}
       {previewImage && (

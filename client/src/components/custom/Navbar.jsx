@@ -211,7 +211,7 @@ const Navbar = () => {
               </div>
               <div className="hidden sm:block">
                 <div className="text-base font-semibold text-gray-900">GULTRADERS</div>
-                <div className="text-xs text-gray-500">Car Accessories</div>
+                <div className="text-xs text-gray-500">Wholesale Dealers</div>
               </div>
             </Link>
           </div>

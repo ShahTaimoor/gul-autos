@@ -50,19 +50,19 @@ const Pagination = React.memo(({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="relative flex items-center justify-center gap-1 overflow-x-auto scrollbar-hide max-w-full">
+    <div className="w-full overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-center gap-1 min-w-max mx-auto px-2">
         {/* Previous Button */}
         <button
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="relative flex items-center justify-center h-8 px-2 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-8 px-2 sm:px-3 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
           aria-label="Previous page"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Previous
+          <span className="hidden sm:inline">Previous</span>
         </button>
 
         {/* Page Numbers */}
@@ -71,7 +71,7 @@ const Pagination = React.memo(({
             key={page === '...' ? `ellipsis-${index}` : page}
             onClick={() => typeof page === 'number' && onPageChange(page)}
             disabled={page === '...'}
-            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-medium transition-all hover:scale-[1.01] ${
+            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-medium transition-all hover:scale-[1.01] flex-shrink-0 ${
               page === currentPage
                 ? 'bg-gradient-to-br from-[#DC2626] to-[#991B1B] text-white border-[#DC2626] shadow-lg shadow-red-500/30'
                 : page === '...'
@@ -88,11 +88,11 @@ const Pagination = React.memo(({
         <button
           onClick={handleNext}
           disabled={currentPage === totalPages}
-          className="relative flex items-center justify-center h-8 px-2 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="relative flex items-center justify-center h-8 px-2 sm:px-3 rounded-full bg-white/90 backdrop-blur-sm text-xs text-gray-700 hover:bg-red-50 hover:text-primary hover:border-primary hover:scale-[1.01] active:scale-95 transition-all border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap flex-shrink-0"
           aria-label="Next page"
         >
-          Next
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <span className="hidden sm:inline">Next</span>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
