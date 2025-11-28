@@ -47,6 +47,7 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
   };
 
   const handleDecrease = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty > 1) {
       updateQuantity(inputQty - 1);
@@ -54,6 +55,7 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
   };
 
   const handleIncrease = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty < stock) {
       updateQuantity(inputQty + 1);
@@ -77,6 +79,7 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 border rounded-full">
           <button
+            type="button"
             onClick={handleDecrease}
             className="w-6 h-6 rounded-l-full flex items-center justify-center text-xs font-bold hover:bg-gray-200"
             disabled={inputQty <= 1}
@@ -85,6 +88,7 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
           </button>
           <span className="w-8 text-center text-xs font-medium">{inputQty}</span>
           <button
+            type="button"
             onClick={handleIncrease}
             className="w-6 h-6 rounded-r-full flex items-center justify-center text-xs font-bold hover:bg-gray-200"
             disabled={inputQty >= stock}

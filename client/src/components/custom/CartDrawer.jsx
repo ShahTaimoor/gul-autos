@@ -139,6 +139,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   }, [inputQty, quantity, stock, dispatch, _id]);
 
   const handleDecrease = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty > 1) {
       updateQuantity(inputQty - 1);
@@ -148,6 +149,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   }, [inputQty, updateQuantity]);
 
   const handleIncrease = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty < stock) {
       updateQuantity(inputQty + 1);
@@ -187,6 +189,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
         <div className="flex items-center gap-3 ml-auto">
           <div className="flex items-center gap-1 border rounded-full shadow-sm border-gray-300">
             <button
+              type="button"
               onClick={handleDecrease}
               className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
               disabled={inputQty <= 1}
@@ -210,6 +213,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
               className="w-10 text-center text-sm focus:outline-none bg-transparent appearance-none font-medium"
             />
             <button
+              type="button"
               onClick={handleIncrease}
               className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
               disabled={inputQty >= stock}

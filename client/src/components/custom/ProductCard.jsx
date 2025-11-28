@@ -65,12 +65,14 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
     const newValue = Math.max((parseInt(quantity) || 1) - 1, 1);
     onQuantityChange(product._id, newValue, product.stock);
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
     const newValue = Math.min((parseInt(quantity) || 1) + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
@@ -180,6 +182,7 @@ const ProductCard = React.memo(({
           <div className="flex items-center justify-center w-[55%] md:w-1/2">
             <div className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
               <button
+                type="button"
                 onClick={handleDecrease}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(e) => {
@@ -210,6 +213,7 @@ const ProductCard = React.memo(({
               />
 
               <button
+                type="button"
                 onClick={handleIncrease}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={(e) => {

@@ -53,6 +53,7 @@ const CartProduct = ({ product, quantity }) => {
   };
 
   const handleDecrease = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty > 1) {
       updateQuantity(inputQty - 1);
@@ -60,6 +61,7 @@ const CartProduct = ({ product, quantity }) => {
   };
 
   const handleIncrease = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     if (inputQty < stock) {
       updateQuantity(inputQty + 1);
@@ -83,6 +85,7 @@ const CartProduct = ({ product, quantity }) => {
       <div className="flex items-center space-x-3">
         <div className="flex items-center border border-gray-200 rounded-md">
           <button
+            type="button"
             onClick={handleDecrease}
             className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={inputQty <= 1}
@@ -91,6 +94,7 @@ const CartProduct = ({ product, quantity }) => {
           </button>
           <span className="w-8 text-center text-sm font-medium text-gray-900">{inputQty}</span>
           <button
+            type="button"
             onClick={handleIncrease}
             className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={inputQty >= stock}
