@@ -38,7 +38,7 @@ import { toast } from "sonner";
 // Sidebar links with enhanced structure
 const items = [
   { 
-    title: "Products", 
+    title: "All Products", 
     url: "/admin/dashboard/all-products", 
     icon: GalleryVerticalEnd, 
     description: "Manage Products",
