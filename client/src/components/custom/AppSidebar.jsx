@@ -17,7 +17,6 @@ import {
   Settings,
   Bell,
   ChevronRight,
-  Sparkles,
 } from "lucide-react";
 import {
   Sidebar,
@@ -178,18 +177,11 @@ export function AppSidebar() {
     <Sidebar className="shadow-xl border-r bg-slate-900 text-slate-100">
       {/* Modern Header with User Info */}
       <SidebarHeader className="p-6 border-b border-slate-800 bg-slate-900">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">Admin Panel</h2>
-          </div>
-        </div>
+       
         
         {/* User Profile Section */}
         {user && (
-          <div className="mt-6 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+          <div className="mt-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
             <div className="flex items-center gap-3">
               <Avatar className="w-9 h-9 border border-slate-600">
                 <AvatarImage src={user.avatar} />
