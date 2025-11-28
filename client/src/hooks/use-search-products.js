@@ -18,7 +18,7 @@ export const useSearchProducts = ({
   
   const [category, setCategory] = useState(initialCategory);
   const [page, setPage] = useState(initialPage);
-  const [limit] = useState(initialLimit);
+  const [limit, setLimit] = useState(initialLimit);
   const [stockFilter, setStockFilter] = useState(initialStockFilter);
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [allProducts, setAllProducts] = useState([]);
@@ -33,7 +33,7 @@ export const useSearchProducts = ({
   // If client-side suggestions are needed, fetch products on-demand instead of on mount
 
   // Handle search with debounced term and request deduplication
-  const handleSearch = useCallback((searchTerm, debounceDelay = 150, overrideCategory = null, overridePage = null) => {
+  const handleSearch = useCallback((searchTerm, debounceDelay = 150, overrideCategory = null, overridePage = null, overrideLimit = null) => {
     // Don't clear suggestion IDs here - they are managed by the caller
     // Only clear if explicitly clearing search AND no suggestion IDs are set
     if ((!searchTerm || searchTerm.trim() === '') && enterSuggestionIdsRef.current.length === 0) {
@@ -54,13 +54,14 @@ export const useSearchProducts = ({
     }
     // Use override page if provided, otherwise use state page
     const currentPage = overridePage !== null ? overridePage : page;
+    const currentLimit = overrideLimit !== null ? overrideLimit : limit;
     // If we have product IDs, don't use search term - let backend filter by IDs
     const searchParam = hasSuggestionIds ? '' : (searchTerm || '');
     
     const productIdsParam = hasSuggestionIds ? enterSuggestionIdsRef.current.join(',') : undefined;
 
     // Create request key for deduplication
-    const requestKey = `${searchCategory}-${searchParam}-${currentPage}-${limit}-${stockFilter}-${sortBy}-${productIdsParam || ''}`;
+    const requestKey = `${searchCategory}-${searchParam}-${currentPage}-${currentLimit}-${stockFilter}-${sortBy}-${productIdsParam || ''}`;
     
     // Check if this exact request is already pending
     if (pendingRequestsRef.current.has(requestKey)) {
@@ -80,7 +81,7 @@ export const useSearchProducts = ({
       category: searchCategory, 
       searchTerm: searchParam, 
       page: currentPage, 
-      limit, 
+      limit: currentLimit, 
       stockFilter,
       sortBy,
       productIds: productIdsParam
@@ -158,6 +159,15 @@ export const useSearchProducts = ({
     resetPagination();
   }, [resetPagination]);
 
+  const updateLimit = useCallback((newLimit) => {
+    const parsedLimit = Math.max(1, parseInt(newLimit, 10) || initialLimit);
+    setLimit(parsedLimit);
+    setPage(1);
+    lastRequestParamsRef.current = null;
+    // Fetch immediately with new page size
+    handleSearch('', 0, null, 1, parsedLimit);
+  }, [handleSearch, initialLimit]);
+
   return {
     // State
     category,
@@ -173,6 +183,7 @@ export const useSearchProducts = ({
     setPage: handlePageChange,
     setStockFilter: updateStockFilter,
     setSortBy: updateSortBy,
+    setLimit: updateLimit,
     setEnterSuggestionIds: (ids) => {
       setEnterSuggestionIds(ids);
       enterSuggestionIdsRef.current = ids;

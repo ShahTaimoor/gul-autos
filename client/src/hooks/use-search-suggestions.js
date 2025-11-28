@@ -28,7 +28,7 @@ export const useSearchSuggestions = (allProducts = [], useApi = true) => {
         
         // Check if each search word exists in EITHER title OR description
         const allWordsMatch = searchWords.every(word => {
-          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const wordEscaped = word.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
           const regex = new RegExp('(\\b|^)' + wordEscaped, 'i');
           // Each word can be in title OR description (not necessarily all in one)
           return regex.test(title) || regex.test(description);

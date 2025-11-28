@@ -409,13 +409,19 @@ button, [role="button"] {
   [data-sonner-toaster] {
     inset: auto 16px 0 auto;
     top: 24px !important;
+    z-index: 9999 !important;
   }
 }
 
 @media (max-width: 1023px) {
   [data-sonner-toaster] {
     inset: 80px 16px auto auto;
+    z-index: 9999 !important;
   }
+}
+
+[data-sonner-toaster] {
+  z-index: 9999 !important;
 }
 
 [data-sonner-toast] {
@@ -424,6 +430,8 @@ button, [role="button"] {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   font-family: "Roboto", sans-serif;
   animation: slideInRight 0.3s ease-out;
+  z-index: 9999 !important;
+  position: relative;
 }
 
 [data-sonner-toast][data-type="success"] {

@@ -39,15 +39,10 @@ export const highlightSearchTerm = (text, searchTerm) => {
   
   if (searchWords.length === 0) return cleanText;
   
+  const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+
   // Create a regex pattern that matches any of the search words
-  // Don't escape brackets for bracket words, but escape other special chars
-  const pattern = new RegExp(`(${searchWords.map(word => {
-    // If word contains brackets, handle it specially
-    if (word.includes('(') || word.includes('{') || word.includes('[')) {
-      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
-    }
-    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }).join('|')})`, 'gi');
+  const pattern = new RegExp(`(${searchWords.map(escapeRegExp).join('|')})`, 'gi');
 
   // Split text by the pattern while keeping the matches
   const parts = cleanText.split(pattern);
@@ -111,15 +106,10 @@ export const highlightSearchTermCustom = (text, searchTerm, HighlightComponent) 
   // Add bracket words to search words
   searchWords.push(...bracketWords);
   
+  const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+
   // Create a regex pattern that matches any of the search words
-  // Don't escape brackets for bracket words, but escape other special chars
-  const pattern = new RegExp(`(${searchWords.map(word => {
-    // If word contains brackets, handle it specially
-    if (word.includes('(') || word.includes('{') || word.includes('[')) {
-      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
-    }
-    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }).join('|')})`, 'gi');
+  const pattern = new RegExp(`(${searchWords.map(escapeRegExp).join('|')})`, 'gi');
 
   const parts = text.split(pattern);
   

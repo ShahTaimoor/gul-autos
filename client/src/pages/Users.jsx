@@ -184,7 +184,7 @@ const Users = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <OneLoader size="large" text="Loading Users..." />
         </div>
@@ -193,25 +193,25 @@ const Users = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                <UsersIcon className="h-6 w-6 text-white" />
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <UsersIcon className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">User Management</h1>
-                <p className="text-slate-600">Manage user roles and permissions</p>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">User Management</h1>
+                <p className="text-gray-500">Manage user roles and permissions</p>
               </div>
             </div>
             <Button 
               onClick={getAllUsers} 
               variant="outline" 
               size="sm"
-              className="border-slate-300 hover:bg-slate-50"
+              className="border-gray-300 hover:bg-gray-50 text-gray-700"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
@@ -221,49 +221,49 @@ const Users = () => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Total Users</p>
-                <p className="text-2xl font-bold text-slate-800">{userStats.total}</p>
+                <p className="text-sm font-medium text-gray-500">Total Users</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{userStats.total}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <UsersIcon className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-gray-100 rounded-md">
+                <UsersIcon className="h-5 w-5 text-gray-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Regular Users</p>
-                <p className="text-2xl font-bold text-blue-600">{userStats.users}</p>
+                <p className="text-sm font-medium text-gray-500">Regular Users</p>
+                <p className="text-2xl font-bold text-blue-600 mt-1">{userStats.users}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
+              <div className="p-2 bg-blue-50 rounded-md">
                 <User className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Admins</p>
-                <p className="text-2xl font-bold text-green-600">{userStats.admins}</p>
+                <p className="text-sm font-medium text-gray-500">Admins</p>
+                <p className="text-2xl font-bold text-green-600 mt-1">{userStats.admins}</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
+              <div className="p-2 bg-green-50 rounded-md">
                 <Shield className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Super Admins</p>
-                <p className="text-2xl font-bold text-purple-600">{userStats.superAdmins}</p>
+                <p className="text-sm font-medium text-gray-500">Super Admins</p>
+                <p className="text-2xl font-bold text-purple-600 mt-1">{userStats.superAdmins}</p>
               </div>
-              <div className="p-3 bg-purple-100 rounded-lg">
+              <div className="p-2 bg-purple-50 rounded-md">
                 <Crown className="h-5 w-5 text-purple-600" />
               </div>
             </div>
@@ -271,22 +271,22 @@ const Users = () => {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search users by name, address, city, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-slate-400" />
+              <Filter className="h-4 w-4 text-gray-400" />
               <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 border-gray-300">
                   <SelectValue placeholder="Filter by role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -301,29 +301,29 @@ const Users = () => {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
+              <thead className="bg-gray-50/50 border-b border-gray-200">
                 <tr>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     #
                   </th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     User Details
                   </th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Contact Info
                   </th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Current Role
                   </th>
-                  <th className="py-4 px-6 text-left text-sm font-semibold text-slate-700 border-b border-slate-200">
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {paginatedUsers.map((user, index) => {
                   const { label: roleLabel, color: roleColor } = getRoleLabel(user.role);
                   const isUpdating = updatingRoles[user._id];
@@ -332,28 +332,28 @@ const Users = () => {
                   return (
                     <tr
                       key={user._id || index}
-                      className="hover:bg-slate-50 transition-colors duration-150"
+                      className="hover:bg-gray-50 transition-colors duration-150"
                     >
-                      <td className="py-4 px-6 text-sm font-medium text-slate-600">
+                      <td className="py-4 px-6 text-sm font-medium text-gray-500">
                         {index + 1}
                       </td>
                       <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg">
-                            <Building2 className="h-4 w-4 text-slate-600" />
+                          <div className="p-2 bg-gray-100 rounded-full">
+                            <User className="h-5 w-5 text-gray-500" />
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-800 capitalize">{user.name}</div>
-                            <div className="text-sm text-slate-500">User #{index + 1}</div>
+                            <div className="font-semibold text-gray-900 capitalize">{user.name}</div>
+                            <div className="text-sm text-gray-500">ID: {user._id.slice(-6)}</div>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           {user.address && (
                             <div className="flex items-start gap-2">
-                              <MapPin className="h-3 w-3 text-slate-400 mt-1 flex-shrink-0" />
-                              <span className="text-sm text-slate-600" title={user.address}>
+                              <MapPin className="h-3.5 w-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-600" title={user.address}>
                                 {user.address.length > 40 
                                   ? `${user.address.substring(0, 40)}...` 
                                   : user.address
@@ -363,20 +363,20 @@ const Users = () => {
                           )}
                           {user.city && (
                             <div className="flex items-center gap-2">
-                              <Building2 className="h-3 w-3 text-slate-400" />
-                              <span className="text-sm text-slate-600">{user.city}</span>
+                              <Building2 className="h-3.5 w-3.5 text-gray-400" />
+                              <span className="text-sm text-gray-600">{user.city}</span>
                             </div>
                           )}
                           {user.phone && (
                             <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3 text-slate-400" />
-                              <span className="text-sm text-slate-600">{user.phone}</span>
+                              <Phone className="h-3.5 w-3.5 text-gray-400" />
+                              <span className="text-sm text-gray-600">{user.phone}</span>
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <Badge className={`${roleColor} flex items-center gap-1 w-fit`}>
+                        <Badge className={`${roleColor} flex items-center gap-1.5 w-fit px-2.5 py-1 font-medium border-0`}>
                           {getRoleIcon(user.role)}
                           {roleLabel}
                         </Badge>
@@ -385,8 +385,8 @@ const Users = () => {
                         <div className="flex items-center gap-2">
                           {currentUser?.role === 2 ? (
                             isCurrentUser ? (
-                              <span className="text-sm text-amber-600 flex items-center gap-1">
-                                <AlertCircle className="h-4 w-4" />
+                              <span className="text-xs text-amber-600 flex items-center gap-1 font-medium bg-amber-50 px-2 py-1 rounded">
+                                <AlertCircle className="h-3 w-3" />
                                 Cannot change own role
                               </span>
                             ) : (
@@ -396,39 +396,39 @@ const Users = () => {
                                   onValueChange={(value) => handleRoleChange(user._id, value)}
                                   disabled={isUpdating}
                                 >
-                                  <SelectTrigger className="w-40">
+                                  <SelectTrigger className="w-36 h-9 text-sm border-gray-300">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="0">
                                       <div className="flex items-center gap-2">
-                                        <User className="h-4 w-4" />
+                                        <User className="h-3.5 w-3.5" />
                                         User
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="1">
                                       <div className="flex items-center gap-2">
-                                        <Shield className="h-4 w-4" />
+                                        <Shield className="h-3.5 w-3.5" />
                                         Admin
                                       </div>
                                     </SelectItem>
                                     <SelectItem value="2">
                                       <div className="flex items-center gap-2">
-                                        <Crown className="h-4 w-4" />
+                                        <Crown className="h-3.5 w-3.5" />
                                         Super Admin
                                       </div>
                                     </SelectItem>
                                   </SelectContent>
                                 </Select>
                                 {isUpdating && (
-                                  <OneLoader size="small" text="Updating..." showText={false} />
+                                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                                 )}
                               </div>
                             )
                           ) : (
-                            <span className="text-sm text-slate-500 flex items-center gap-1">
-                              <AlertCircle className="h-4 w-4" />
-                              Only Super Admin can change roles
+                            <span className="text-xs text-gray-400 flex items-center gap-1 italic">
+                              <Shield className="h-3 w-3" />
+                              View Only
                             </span>
                           )}
                         </div>
@@ -443,13 +443,13 @@ const Users = () => {
 
         {/* Pagination */}
         {filteredUsers.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               {/* Items per page selector */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-600">Show</span>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Show</span>
                 <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
-                  <SelectTrigger className="w-20">
+                  <SelectTrigger className="w-[70px] h-8 border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -459,12 +459,12 @@ const Users = () => {
                     <SelectItem value="50">50</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-slate-600">per page</span>
+                <span>rows</span>
               </div>
 
               {/* Page info */}
-              <div className="text-sm text-slate-600">
-                Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+              <div className="text-sm text-gray-500">
+                Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(endIndex, filteredUsers.length)}</span> of <span className="font-semibold text-gray-900">{filteredUsers.length}</span> users
               </div>
 
               {/* Pagination controls */}
@@ -474,10 +474,9 @@ const Users = () => {
                   size="sm"
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="border-slate-300 hover:bg-slate-50"
+                  className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  Previous
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -486,12 +485,12 @@ const Users = () => {
                       key={index}
                       onClick={() => typeof page === 'number' && handlePageChange(page)}
                       disabled={page === '...'}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`h-8 min-w-[2rem] px-2 text-sm font-medium rounded-md transition-colors ${
                         page === currentPage
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-blue-600 text-white shadow-sm'
                           : page === '...'
-                          ? 'text-slate-400 cursor-default'
-                          : 'text-slate-600 hover:bg-slate-100'
+                          ? 'text-gray-400 cursor-default bg-transparent'
+                          : 'text-gray-600 hover:bg-gray-100 border border-transparent hover:border-gray-200'
                       }`}
                     >
                       {page}
@@ -504,9 +503,8 @@ const Users = () => {
                   size="sm"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="border-slate-300 hover:bg-slate-50"
+                  className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-50"
                 >
-                  Next
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -516,18 +514,31 @@ const Users = () => {
 
         {/* Empty State */}
         {filteredUsers.length === 0 && users.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-            <Search className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">No users found</h3>
-            <p className="text-slate-600">Try adjusting your search or filter criteria</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No users found</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              We couldn't find any users matching your search "{searchTerm}" or filter criteria.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => {setSearchTerm(''); setRoleFilter('all');}}
+              className="mt-4 border-gray-300"
+            >
+              Clear Filters
+            </Button>
           </div>
         )}
 
         {users.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
-            <UsersIcon className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-800 mb-2">No users found</h3>
-            <p className="text-slate-600">No users have been registered yet</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UsersIcon className="h-8 w-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No users registered yet</h3>
+            <p className="text-gray-500">There are currently no users in the system.</p>
           </div>
         )}
       </div>

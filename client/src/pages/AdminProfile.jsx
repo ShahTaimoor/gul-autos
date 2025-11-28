@@ -152,178 +152,163 @@ const AdminProfile = () => {
 
   return (
     <div className="container mt-20 mx-auto p-4 max-w-4xl">
-      <Card className="overflow-hidden">
-        <div className="bg-gradient-to-r from-primary to-secondary h-32 relative">
+      <Card className="overflow-hidden border border-gray-200 shadow-sm">
+        <div className="bg-slate-900 h-32 relative">
           <div className="absolute -bottom-16 left-6">
-            <Avatar className="w-32 h-32 border-4 border-background">
+            <Avatar className="w-32 h-32 border-4 border-white shadow-sm bg-white">
               <AvatarImage src={user?.avatar} />
-              <AvatarFallback className="text-3xl bg-background">
+              <AvatarFallback className="text-3xl bg-slate-100 text-slate-600">
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </div>
         </div>
 
-        <CardHeader className="pt-20">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-3xl">{user?.name}</CardTitle>
-            <div className={`px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 ${roleInfo.color}`}>
+        <CardHeader className="pt-20 pb-6 px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-3xl font-bold text-gray-900">{user?.name}</CardTitle>
+              <p className="text-gray-500 mt-1">{user?.email}</p>
+            </div>
+            <div className={`px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 w-fit ${roleInfo.color}`}>
               <roleInfo.icon className="h-4 w-4" />
               {roleInfo.label}
             </div>
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-6 pb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="username" className="flex items-center gap-2">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 p-1 rounded-lg">
+              <TabsTrigger 
+                value="username" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-gray-900"
+              >
                 <User className="h-4 w-4" />
                 Change Username
               </TabsTrigger>
-              <TabsTrigger value="password" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="password" 
+                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-gray-900"
+              >
                 <Lock className="h-4 w-4" />
                 Change Password
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="username" className="space-y-6 mt-6">
-              <div className="space-y-4">
+            <TabsContent value="username" className="space-y-6 mt-8">
+              <div className="space-y-6 max-w-md">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Update Username</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Change your username. This will be visible to other users.
+                  <h3 className="text-lg font-semibold text-gray-900">Update Username</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This will be your visible display name to other users.
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="relative w-full">
-                    <input
-                      id="newUsername"
-                      name="newUsername"
-                      type="text"
-                      placeholder=" "
-                      value={usernameData.newUsername}
-                      onChange={handleUsernameChange}
-                      required
-                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                    />
-                    <label
-                      htmlFor="newUsername"
-                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-                    >
-                      New Username
-                    </label>
-                  </div>
+                <div className="space-y-2">
+                  <label htmlFor="newUsername" className="text-sm font-medium text-gray-700 block">
+                    New Username
+                  </label>
+                  <Input
+                    id="newUsername"
+                    name="newUsername"
+                    type="text"
+                    placeholder="Enter new username"
+                    value={usernameData.newUsername}
+                    onChange={handleUsernameChange}
+                    required
+                    className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  />
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="password" className="space-y-6 mt-6">
-              <div className="space-y-4">
+            <TabsContent value="password" className="space-y-6 mt-8">
+              <div className="space-y-6 max-w-md">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Change Password</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Update your password to keep your account secure.
+                  <h3 className="text-lg font-semibold text-gray-900">Change Password</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Ensure your account is secure by using a strong password.
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   {/* Old Password */}
-                  <div className="relative w-full">
-                    <input
-                      id="oldPassword"
-                      name="oldPassword"
-                      type={showPasswords.old ? "text" : "password"}
-                      placeholder=" "
-                      value={passwordData.oldPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 pr-10 text-sm bg-white
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                    />
-                    <label
-                      htmlFor="oldPassword"
-                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-                    >
+                  <div className="space-y-2">
+                    <label htmlFor="oldPassword" className="text-sm font-medium text-gray-700 block">
                       Current Password
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('old')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.old ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    <div className="relative">
+                      <Input
+                        id="oldPassword"
+                        name="oldPassword"
+                        type={showPasswords.old ? "text" : "password"}
+                        placeholder="Enter current password"
+                        value={passwordData.oldPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('old')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.old ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* New Password */}
-                  <div className="relative w-full">
-                    <input
-                      id="newPassword"
-                      name="newPassword"
-                      type={showPasswords.new ? "text" : "password"}
-                      placeholder=" "
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 pr-10 text-sm bg-white
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                    />
-                    <label
-                      htmlFor="newPassword"
-                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-                    >
+                  <div className="space-y-2">
+                    <label htmlFor="newPassword" className="text-sm font-medium text-gray-700 block">
                       New Password
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('new')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    <div className="relative">
+                      <Input
+                        id="newPassword"
+                        name="newPassword"
+                        type={showPasswords.new ? "text" : "password"}
+                        placeholder="Enter new password"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('new')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Confirm Password */}
-                  <div className="relative w-full">
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showPasswords.confirm ? "text" : "password"}
-                      placeholder=" "
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange}
-                      required
-                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 pr-10 text-sm bg-white
-        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
-                    />
-                    <label
-                      htmlFor="confirmPassword"
-                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
-        transition-all duration-200 ease-in-out pointer-events-none
-        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
-        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
-                    >
+                  <div className="space-y-2">
+                    <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 block">
                       Confirm New Password
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('confirm')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type={showPasswords.confirm ? "text" : "password"}
+                        placeholder="Confirm new password"
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility('confirm')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -331,7 +316,7 @@ const AdminProfile = () => {
           </Tabs>
         </CardContent>
 
-        <CardFooter className="flex justify-end items-center space-x-3 pt-4">
+        <CardFooter className="flex justify-end items-center px-6 py-4 bg-gray-50 border-t border-gray-100">
           <Button
             onClick={() => {
               if (activeTab === 'username') {
@@ -341,7 +326,7 @@ const AdminProfile = () => {
               }
             }}
             disabled={status === 'loading'}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
           >
             {status === 'loading' ? (
               <OneLoader size="small" text="Saving..." showText={false} />
@@ -354,5 +339,3 @@ const AdminProfile = () => {
     </div>
   );
 };
-
-export default AdminProfile;

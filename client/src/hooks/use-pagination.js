@@ -8,10 +8,11 @@ export const usePagination = ({
   initialPage = 1,
   initialLimit = 24,
   totalItems = 0,
-  onPageChange = null
+  onPageChange = null,
+  onLimitChange = null
 } = {}) => {
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [limit] = useState(initialLimit);
+  const [limit, setLimit] = useState(initialLimit);
 
   // Calculate total pages
   const totalPages = useMemo(() => {
@@ -81,6 +82,16 @@ export const usePagination = ({
     }
   }, [currentPage, limit]);
 
+  // Update page size and reset pagination
+  const handleLimitChange = useCallback((newLimit) => {
+    const parsedLimit = Math.max(1, parseInt(newLimit, 10) || initialLimit);
+    setLimit(parsedLimit);
+    setCurrentPage(1);
+    if (onLimitChange && typeof onLimitChange === 'function') {
+      onLimitChange(parsedLimit);
+    }
+  }, [initialLimit, onLimitChange]);
+
   // Generate visible page numbers for pagination component
   const getVisiblePages = useCallback((maxVisible = 5) => {
     if (totalPages <= maxVisible) {
@@ -131,6 +142,7 @@ export const usePagination = ({
     goToLastPage,
     resetPagination,
     updateTotalItems,
-    getVisiblePages
+    getVisiblePages,
+    setLimit: handleLimitChange
   };
 };

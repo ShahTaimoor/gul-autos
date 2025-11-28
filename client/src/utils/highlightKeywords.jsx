@@ -40,14 +40,9 @@ export const highlightKeywords = (text, searchTerm) => {
   // Add bracket words to search words
   searchWords.push(...bracketWords);
   
-  // Escape special regex characters (but preserve bracket words)
-  const escapedWords = searchWords.map(word => {
-    // If word contains brackets, handle it specially
-    if (word.includes('(') || word.includes('{') || word.includes('[')) {
-      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
-    }
-    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  });
+  const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+
+  const escapedWords = searchWords.map(escapeRegExp);
 
   if (escapedWords.length === 0) {
     return text;
@@ -125,14 +120,9 @@ export const highlightKeywordsHTML = (text, searchTerm) => {
   // Add bracket words to search words
   searchWords.push(...bracketWords);
   
-  // Escape special regex characters (but preserve bracket words)
-  const escapedWords = searchWords.map(word => {
-    // If word contains brackets, handle it specially
-    if (word.includes('(') || word.includes('{') || word.includes('[')) {
-      return word.replace(/[.*+?^$|\\]/g, '\\$&'); // Escape only non-bracket special chars
-    }
-    return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  });
+  const escapeRegExp = (word) => word.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+
+  const escapedWords = searchWords.map(escapeRegExp);
 
   if (escapedWords.length === 0) {
     return text;

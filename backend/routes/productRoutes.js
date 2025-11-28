@@ -553,6 +553,16 @@ router.get('/get-products', async (req, res) => {
     // Handle enhanced search filter with keyword and year matching
     if (search && search.trim()) {
       const trimmedSearch = search.trim();
+      const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+      const buildWordPattern = (value) => {
+        const escaped = escapeRegExp(value);
+        const startsWithWord = /\w/.test(value[0] || '');
+        const endsWithWord = /\w/.test(value[value.length - 1] || '');
+        if (startsWithWord && endsWithWord) return `\\b${escaped}\\b`;
+        if (startsWithWord) return `\\b${escaped}`;
+        if (endsWithWord) return `${escaped}\\b`;
+        return escaped;
+      };
       
       // Extract words from brackets: (word) or {word} or [word]
       const bracketWords = [];
@@ -618,17 +628,17 @@ router.get('/get-products', async (req, res) => {
           
           // First, try to find categories matching the search term
           const categoryMatches = await Category.find({
-            name: { $regex: trimmedSearch, $options: 'i' }
+            name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
           }).select('_id');
           const categoryIds = categoryMatches.map(cat => cat._id);
           
           // Build AND conditions - ALL keywords must be present
           const allKeywordConditions = keywords.map(keyword => {
-            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const keywordPattern = buildWordPattern(keyword);
             const condition = {
               $or: [
-                { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-                { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+                { title: { $regex: keywordPattern, $options: 'i' } },
+                { description: { $regex: keywordPattern, $options: 'i' } }
               ]
             };
             // If category matches found, also include category search
@@ -640,10 +650,11 @@ router.get('/get-products', async (req, res) => {
         
         // Build AND conditions - ALL years must be present
         const allYearConditions = years.map(year => {
+          const escapedYear = escapeRegExp(year);
           return {
             $or: [
-              { title: { $regex: year, $options: 'i' } },
-              { description: { $regex: year, $options: 'i' } }
+              { title: { $regex: escapedYear, $options: 'i' } },
+              { description: { $regex: escapedYear, $options: 'i' } }
             ]
           };
         });
@@ -654,10 +665,10 @@ router.get('/get-products', async (req, res) => {
             productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
           );
           if (productTypeKeyword) {
-            const escapedPTKeyword = productTypeKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedPTKeyword = buildWordPattern(productTypeKeyword);
             // Require product type keyword to be in title (more strict)
             allKeywordConditions.push({
-              title: { $regex: `\\b${escapedPTKeyword}\\b`, $options: 'i' }
+              title: { $regex: escapedPTKeyword, $options: 'i' }
             });
           }
         }
@@ -680,17 +691,17 @@ router.get('/get-products', async (req, res) => {
         
         // First, try to find categories matching the search term
         const categoryMatches = await Category.find({
-          name: { $regex: trimmedSearch, $options: 'i' }
+          name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
         }).select('_id');
         const categoryIds = categoryMatches.map(cat => cat._id);
         
         // Build AND conditions - ALL keywords must be present
         const allKeywordConditions = keywords.map(keyword => {
-          const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const keywordPattern = buildWordPattern(keyword);
           const condition = {
             $or: [
-              { title: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } },
-              { description: { $regex: `\\b${escapedKeyword}\\b`, $options: 'i' } }
+              { title: { $regex: keywordPattern, $options: 'i' } },
+              { description: { $regex: keywordPattern, $options: 'i' } }
             ]
           };
           // If category matches found, also include category search
@@ -706,10 +717,10 @@ router.get('/get-products', async (req, res) => {
             productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
           );
           if (productTypeKeyword) {
-            const escapedPTKeyword = productTypeKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedPTKeyword = buildWordPattern(productTypeKeyword);
             // Require product type keyword to be in title (more strict)
             allKeywordConditions.push({
-              title: { $regex: `\\b${escapedPTKeyword}\\b`, $options: 'i' }
+              title: { $regex: escapedPTKeyword, $options: 'i' }
             });
           }
         }
@@ -723,15 +734,16 @@ router.get('/get-products', async (req, res) => {
       else if (years.length > 0) {
         // Also check for category matches
         const categoryMatches = await Category.find({
-          name: { $regex: trimmedSearch, $options: 'i' }
+          name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
         }).select('_id');
         const categoryIds = categoryMatches.map(cat => cat._id);
         
         const yearPatterns = [];
         years.forEach(year => {
+          const escapedYear = escapeRegExp(year);
           yearPatterns.push(
-            { title: { $regex: year, $options: 'i' } },
-            { description: { $regex: year, $options: 'i' } }
+            { title: { $regex: escapedYear, $options: 'i' } },
+            { description: { $regex: escapedYear, $options: 'i' } }
           );
         });
         // Add category search if matches found
@@ -1026,6 +1038,22 @@ router.get('/search-suggestions', async (req, res) => {
     }
 
     const searchTerm = q.trim();
+    const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
+    const buildWordPattern = (value) => {
+      const escaped = escapeRegExp(value);
+      const startsWithWord = /\w/.test(value[0] || '');
+      const endsWithWord = /\w/.test(value[value.length - 1] || '');
+      if (startsWithWord && endsWithWord) return `\\b${escaped}\\b`;
+      if (startsWithWord) return `\\b${escaped}`;
+      if (endsWithWord) return `${escaped}\\b`;
+      return escaped;
+    };
+    const buildStartsWithPattern = (value) => {
+      const escaped = escapeRegExp(value);
+      const endsWithWord = /\w/.test(value[value.length - 1] || '');
+      return endsWithWord ? `^${escaped}\\b` : `^${escaped}`;
+    };
+    const escapedSearchTerm = escapeRegExp(searchTerm.toLowerCase());
     const searchLimit = Math.min(parseInt(limit) || 10, 20); // Max 20 suggestions
     
     // Extract words from brackets: (word) or {word} or [word]
@@ -1057,11 +1085,11 @@ router.get('/search-suggestions', async (req, res) => {
     
     // Create search patterns for better matching
     const keywordPatterns = searchWords.map(keyword => {
-      const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const wordPattern = buildWordPattern(keyword);
       return {
         $or: [
-          { title: { $regex: `\\b${escapedKeyword}`, $options: 'i' } },
-          { description: { $regex: `\\b${escapedKeyword}`, $options: 'i' } }
+          { title: { $regex: wordPattern, $options: 'i' } },
+          { description: { $regex: wordPattern, $options: 'i' } }
         ]
       };
     });
@@ -1082,21 +1110,21 @@ router.get('/search-suggestions', async (req, res) => {
               // Title starts with exact search phrase (highest priority)
               {
                 $cond: [
-                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchTerm.toLowerCase()}` } },
+                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${escapedSearchTerm}` } },
                   300, 0
                 ]
               },
               // Exact phrase match in title
               {
                 $cond: [
-                  { $regexMatch: { input: { $toLower: "$title" }, regex: searchTerm.toLowerCase() } },
+                  { $regexMatch: { input: { $toLower: "$title" }, regex: escapedSearchTerm } },
                   200, 0
                 ]
               },
               // First word of title matches first search word
               {
                 $cond: [
-                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchWords[0]}\\b` } },
+                  searchWords.length ? { $regexMatch: { input: { $toLower: "$title" }, regex: buildStartsWithPattern(searchWords[0]) } } : false,
                   150, 0
                 ]
               },
@@ -1105,7 +1133,7 @@ router.get('/search-suggestions', async (req, res) => {
                 $cond: [
                   { 
                     $and: searchWords.map(word => ({ 
-                      $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
+                      $regexMatch: { input: { $toLower: "$title" }, regex: buildWordPattern(word) } 
                     }))
                   },
                   100, 0
@@ -1115,7 +1143,7 @@ router.get('/search-suggestions', async (req, res) => {
               {
                 $sum: searchWords.map(word => ({
                   $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } },
+                    { $regexMatch: { input: { $toLower: "$title" }, regex: buildWordPattern(word) } },
                     30, 0
                   ]
                 }))
@@ -1124,7 +1152,7 @@ router.get('/search-suggestions', async (req, res) => {
               {
                 $sum: searchWords.map(word => ({
                   $cond: [
-                    { $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } },
+                    { $regexMatch: { input: { $toLower: "$description" }, regex: buildWordPattern(word) } },
                     10, 0
                   ]
                 }))
