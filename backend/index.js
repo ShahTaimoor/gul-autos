@@ -14,7 +14,6 @@ const cartRoutes = require('./routes/cartRoutes');
 // Security middleware
 const {
   helmetConfig,
-  generalLimiter,
   mongoSanitizeConfig,
   hppConfig,
   compressionConfig
@@ -35,8 +34,8 @@ app.set('trust proxy', 1);
 app.use(helmetConfig);
 app.use(compressionConfig);
 
-// Rate limiting - Apply before other middleware
-app.use('/api', generalLimiter);
+// Rate limiting is applied only to login endpoints (see userRoutes.js)
+// Removed global rate limiting to allow unrestricted access to other routes
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
