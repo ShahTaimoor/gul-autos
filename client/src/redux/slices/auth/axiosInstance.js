@@ -59,10 +59,32 @@ axiosInstance.interceptors.response.use(
     const isLoginRequest = originalRequest?.url?.includes('/login') && originalRequest?.method === 'post';
     const isRefreshRequest = originalRequest?.url?.includes('/refresh-token');
     
+    // Check if it's a cart request (cart routes are at /api/, /api/add, /api/remove, etc.)
+    const url = originalRequest?.url || '';
+    const isCartRequest = url === '/' || 
+                         url === '/add' || 
+                         url === '/remove' || 
+                         url === '/empty' || 
+                         url === '/update' ||
+                         url.includes('/cart');
+    
     if (error.response?.status === 401 && !originalRequest._retry) {
       // If it's a login request, don't treat it as token expiry
       if (isLoginRequest || isRefreshRequest) {
         return Promise.reject(error);
+      }
+      
+      // For cart requests, if user is authenticated in Redux but getting 401,
+      // cookies might not be ready yet after login - don't auto-refresh
+      // Let the component handle the error (it will check user state)
+      if (isCartRequest && storeRef) {
+        const state = storeRef.getState();
+        const { user, isAuthenticated } = state.auth;
+        // If user is authenticated in state but getting 401, cookies might not be ready yet
+        // Don't auto-refresh and open drawer, just reject and let component handle it
+        if (user && isAuthenticated) {
+          return Promise.reject(error);
+        }
       }
 
       // If already refreshing, queue the request

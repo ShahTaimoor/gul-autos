@@ -399,6 +399,15 @@ const ProductList = () => {
     })).then(() => {
       toast.success('Product added to cart');
       // Keep the selected quantity instead of resetting to 1
+    }).catch((error) => {
+      // If user is authenticated but getting error, it might be a cookie issue
+      // Show a helpful message instead of opening drawer
+      if (user) {
+        toast.error('Failed to add to cart. Please try again.');
+      } else {
+        toast.warning('You must login first');
+        openDrawer('login');
+      }
     }).finally(() => setAddingProductId(null));
       }, [dispatch, navigate, quantities, user, openDrawer]);
 

@@ -12,7 +12,7 @@ import { adminLogin } from '@/redux/slices/auth/authSlice';
 const AdminLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState({ shopName: '', password: '' });
@@ -24,10 +24,10 @@ const AdminLogin = () => {
 
   // Redirect if already logged in as admin
   useEffect(() => {
-    if (user && (user.role === 1 || user.role === 2)) {
+    if (isAuthenticated && user && (user.role === 1 || user.role === 2)) {
       navigate('/admin/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isAuthenticated, navigate]);
 
   // Validation function
   const validateForm = useCallback(() => {
@@ -76,7 +76,12 @@ const AdminLogin = () => {
       if (response?.success && response?.user) {
         toast.success('Admin login successful!');
         setInputValues({ shopName: '', password: '' });
-        navigate('/admin/dashboard', { replace: true });
+        // Wait for Redux state to update, then navigate
+        // The useEffect will handle navigation when isAuthenticated becomes true
+        // But also navigate directly as fallback
+        setTimeout(() => {
+          navigate('/admin/dashboard', { replace: true });
+        }, 200);
       } else {
         setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
         toast.error('Authentication failed');
