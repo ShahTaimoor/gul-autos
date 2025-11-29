@@ -479,7 +479,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 24, stockFilter = 'all', sortBy = 'az', productIds } = req.query;
+    let { category, search, page = 1, limit = 24, stockFilter = 'active', sortBy = 'az', productIds } = req.query;
 
     if (limit === 'all') {
       limit = 0; 
