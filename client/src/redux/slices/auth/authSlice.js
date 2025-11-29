@@ -81,6 +81,18 @@ export const signupOrLogin = createAsyncThunk(
   }
 );
 
+export const adminLogin = createAsyncThunk(
+  'auth/adminLogin',
+  async (userData, thunkAPI) => {
+    try {
+      return await authService.adminLogin(userData);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Admin authentication failed';
+      return thunkAPI.rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -172,6 +184,20 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(signupOrLogin.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(adminLogin.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(adminLogin.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.tokenExpired = false;
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
+      })
+      .addCase(adminLogin.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });

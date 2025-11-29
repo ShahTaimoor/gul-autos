@@ -94,6 +94,14 @@ router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
     const existingUser = await User.findOne({ name: trimmedShopName });
     
     if (existingUser) {
+      // Check if user is admin or super admin - they must use admin login
+      if (existingUser.role === 1 || existingUser.role === 2) {
+        return res.status(403).json({ 
+          success: false,
+          message: 'Account already exists. Please login instead.' 
+        });
+      }
+
       // User exists → Attempt login
       const isMatch = await bcrypt.compare(password, existingUser.password);
       if (!isMatch) {
@@ -103,16 +111,18 @@ router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
         });
       }
       
-      // Password matches → Login successful
+      // Password matches → Login successful (only for regular users)
       return generateAndSetTokens(existingUser, res, rememberMe, false);
     } else {
       // User does not exist → Signup + Auto-login
       const hashedPassword = await bcrypt.hash(password, 10);
       
       // Build user object with only defined fields
+      // Always create as regular user (role 0) - admins must be created separately
       const userData = {
         name: trimmedShopName, 
-        password: hashedPassword
+        password: hashedPassword,
+        role: 0 // Regular user
       };
       
       if (phone && phone.trim()) {
@@ -184,9 +194,11 @@ router.post('/signup', authLimiter, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     // Build user object with only defined fields
+    // Always create as regular user (role 0) - admins must be created separately
     const userData = {
       name: trimmedName, 
-      password: hashedPassword
+      password: hashedPassword,
+      role: 0 // Regular user
     };
     
     if (phone && phone.trim()) {
@@ -243,6 +255,13 @@ router.post('/login', authLimiter, async (req, res) => {
     const user = await User.findOne({ name: trimmedName });
     if (!user) return res.status(400).json({ message: 'Invalid username or password' });
 
+    // Check if user is admin or super admin - they must use admin login
+    if (user.role === 1 || user.role === 2) {
+      return res.status(403).json({ 
+        message: 'Account already exists. Please login instead.' 
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid username or password' });
 
@@ -290,6 +309,80 @@ router.post('/login', authLimiter, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send('Server error during login');
+  }
+});
+
+// Admin Login - with rate limiting and role check
+router.post('/admin/login', authLimiter, async (req, res) => {
+  const { name, password, rememberMe } = req.body;
+
+  try {
+    // Trim the name to match how it's stored (User schema has trim: true)
+    const trimmedName = name ? name.trim() : '';
+    if (!trimmedName) {
+      return res.status(400).json({ message: 'Shop name is required' });
+    }
+    
+    const user = await User.findOne({ name: trimmedName });
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user is admin or super admin
+    if (user.role !== 1 && user.role !== 2) {
+      return res.status(403).json({ message: 'Access denied. Admin access required.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Convert Mongoose document to plain object and exclude password
+    const userObject = user.toObject();
+    delete userObject.password;
+
+    // Create access token (1 year duration)
+    const accessToken = jwt.sign(
+      { id: user._id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '365d' }
+    );
+
+    // Create refresh token (1 year duration)
+    const refreshToken = jwt.sign(
+      { id: user._id, type: 'refresh' }, 
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, 
+      { expiresIn: '365d' }
+    );
+
+    // Set secure cookies for mobile compatibility
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year for access token
+    };
+
+    const refreshCookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+    };
+
+    return res
+      .cookie('accessToken', accessToken, cookieOptions)
+      .cookie('refreshToken', refreshToken, refreshCookieOptions)
+      .status(200).json({
+        success: true,
+        user: userObject,
+        accessToken,
+        message: 'Admin login successful'
+      });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ message: 'Server error during admin login' });
   }
 });
 

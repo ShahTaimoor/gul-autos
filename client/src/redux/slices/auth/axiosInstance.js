@@ -108,8 +108,15 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle other errors
+    // Check if it's an authentication endpoint - let components handle those errors
+    const isAuthEndpoint = originalRequest?.url?.includes('/login') || 
+                          originalRequest?.url?.includes('/signup-or-login') ||
+                          originalRequest?.url?.includes('/signup') ||
+                          originalRequest?.url?.includes('/admin/login');
+    
     if (error.response?.status === 403) {
-      if (typeof window !== 'undefined') {
+      // Don't show generic toast for auth endpoints - let components handle it
+      if (!isAuthEndpoint && typeof window !== 'undefined') {
         toast.error('Access denied. Insufficient permissions.');
       }
     } else if (error.response?.status >= 500) {

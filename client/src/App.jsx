@@ -31,6 +31,7 @@ const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 const Media = lazy(() => import('./pages/Media'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 
 const App = () => {
   const router = createBrowserRouter([
@@ -110,6 +111,12 @@ const App = () => {
             <Profile />
           </RootLayout>
         </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/login',
+      element: (
+        <AdminLogin />
       ),
     },
     {

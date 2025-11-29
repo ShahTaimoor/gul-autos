@@ -43,5 +43,12 @@ const signupOrLogin = async (userData) => {
   return response.data;
 };
 
-const authService = { loginUser, updateProfile, updateUserRole, changePassword, updateUsername, signupOrLogin };
+const adminLogin = async (userData) => {
+  const response = await axiosInstance.post('/admin/login', userData, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return response.data;
+};
+
+const authService = { loginUser, updateProfile, updateUserRole, changePassword, updateUsername, signupOrLogin, adminLogin };
 export default authService;

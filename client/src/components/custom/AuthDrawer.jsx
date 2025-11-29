@@ -110,9 +110,17 @@ const AuthDrawer = () => {
         toast.error('Authentication failed');
       }
     } catch (error) {
-      const errorMessage = error || 'Invalid shop name or password';
+      let errorMessage = error || 'Invalid shop name or password';
+      
+      // Check if it's an admin login error
+      if (errorMessage.includes('admin login') || errorMessage.includes('Admin accounts')) {
+        errorMessage = 'Admin accounts must use the admin login page';
+        toast.error(errorMessage, { duration: 5000 });
+      } else {
+        toast.error(errorMessage);
+      }
+      
       setErrorMsg({ shopName: errorMessage, password: errorMessage });
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

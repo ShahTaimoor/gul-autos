@@ -54,13 +54,22 @@ const ProtectedRoute = ({ children }) => {
 
   // Check if user is not authenticated and trying to access protected route
   if (!isAuthenticated && !publicPaths.includes(pathname)) {
-    // Redirect to home page instead of login
+    // If trying to access admin route, redirect to admin login
+    if (pathname.startsWith('/admin')) {
+      return <Navigate to="/admin/login" replace />;
+    }
+    // Otherwise redirect to home page
     return <Navigate to="/" replace />;
   }
 
   // Normal user trying to access admin route
   if (user?.role === 0 && pathname.startsWith('/admin')) {
     return <Navigate to="/" replace />;
+  }
+
+  // Authenticated but not admin trying to access admin route
+  if (isAuthenticated && user && user.role !== 1 && user.role !== 2 && pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    return <Navigate to="/admin/login" replace />;
   }
 
   // Empty cart, disallow checkout
