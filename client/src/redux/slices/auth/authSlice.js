@@ -69,6 +69,18 @@ export const updateUsername = createAsyncThunk(
   }
 );
 
+export const signupOrLogin = createAsyncThunk(
+  'auth/signupOrLogin',
+  async (userData, thunkAPI) => {
+    try {
+      return await authService.signupOrLogin(userData);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Authentication failed';
+      return thunkAPI.rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -146,6 +158,20 @@ const authSlice = createSlice({
         localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(updateUsername.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(signupOrLogin.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(signupOrLogin.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.tokenExpired = false;
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
+      })
+      .addCase(signupOrLogin.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       });

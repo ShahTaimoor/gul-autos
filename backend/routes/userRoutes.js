@@ -16,6 +16,139 @@ const BlacklistedToken = mongoose.models.BlacklistedToken || mongoose.model('Bla
 
 const router = express.Router();
 
+// Helper function to generate and set tokens
+const generateAndSetTokens = (user, res, rememberMe = false, isNewUser = false) => {
+  // Create access token (1 year duration)
+  const accessToken = jwt.sign(
+    { id: user._id, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: '365d' }
+  );
+
+  // Create refresh token (1 year duration)
+  const refreshToken = jwt.sign(
+    { id: user._id, type: 'refresh' }, 
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, 
+    { expiresIn: '365d' }
+  );
+
+  // Set secure cookies
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+    maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year for access token
+  };
+
+  const refreshCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+    maxAge: (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+  };
+
+  // Convert Mongoose document to plain object and exclude password
+  const userObject = user.toObject();
+  delete userObject.password;
+
+  return res
+    .cookie('accessToken', accessToken, cookieOptions)
+    .cookie('refreshToken', refreshToken, refreshCookieOptions)
+    .status(200)
+    .json({
+      success: true,
+      user: userObject,
+      accessToken,
+      isNewUser,
+      message: isNewUser 
+        ? 'Account created and logged in successfully' 
+        : 'Logged in successfully'
+    });
+};
+
+// Unified Signup or Login Endpoint
+// If shop exists → login, if not → signup + auto-login
+router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
+  const { shopName, password, phone, address, city, rememberMe } = req.body;
+
+  try {
+    // Validate required fields
+    if (!shopName || !shopName.trim()) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Shop name is required' 
+      });
+    }
+    
+    if (!password || password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Trim the shop name to ensure consistency
+    const trimmedShopName = shopName.trim();
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({ name: trimmedShopName });
+    
+    if (existingUser) {
+      // User exists → Attempt login
+      const isMatch = await bcrypt.compare(password, existingUser.password);
+      if (!isMatch) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid shop name or password' 
+        });
+      }
+      
+      // Password matches → Login successful
+      return generateAndSetTokens(existingUser, res, rememberMe, false);
+    } else {
+      // User does not exist → Signup + Auto-login
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Build user object with only defined fields
+      const userData = {
+        name: trimmedShopName, 
+        password: hashedPassword
+      };
+      
+      if (phone && phone.trim()) {
+        userData.phone = phone.trim();
+      }
+      if (address && address.trim()) {
+        userData.address = address.trim();
+      }
+      if (city && city.trim()) {
+        userData.city = city.trim();
+      }
+      
+      // Create new user
+      const newUser = await User.create(userData);
+      
+      // Auto-login after signup
+      return generateAndSetTokens(newUser, res, rememberMe, true);
+    }
+  } catch (error) {
+    console.error('Signup-or-login error:', error);
+    
+    // Handle duplicate key error (MongoDB unique constraint)
+    if (error.code === 11000 || error.name === 'MongoServerError') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Shop name already exists. Please try logging in instead.' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error during authentication' 
+    });
+  }
+});
+
 // Signup - with rate limiting
 router.post('/signup', authLimiter, async (req, res) => {
   const { name, password, phone, address, city } = req.body;
