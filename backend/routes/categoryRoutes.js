@@ -2,7 +2,6 @@ const express = require('express');
 const Category = require('../models/Category');
 const slugify = require('slugify');
 const { isAuthorized, isAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
-const { uploadLimiter } = require('../middleware/security');
 const upload = require('../middleware/multer');
 const { uploadImageOnCloudinary, deleteImageOnCloudinary } = require('../utils/cloudinary');
 
@@ -24,7 +23,7 @@ const normalizePositions = async () => {
 };
 
 // Create category
-router.post('/create-category', uploadLimiter, upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
+router.post('/create-category', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { name } = req.body;
 
@@ -74,7 +73,7 @@ router.post('/create-category', uploadLimiter, upload.single('picture'), isAutho
 });
 
 // Update category
-router.put('/update-category/:slug', uploadLimiter, upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
+router.put('/update-category/:slug', upload.single('picture'), isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { name, position } = req.body;
         const { slug } = req.params;

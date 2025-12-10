@@ -5,7 +5,6 @@ const router = express.Router();
 const upload = require('../middleware/multer')
 const { deleteImageOnCloudinary, uploadImageOnCloudinary } = require('../utils/cloudinary');
 const { isAuthorized, isAdmin, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
-const { uploadLimiter } = require('../middleware/security');
 const { default: mongoose } = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
@@ -14,7 +13,7 @@ const XLSX = require('xlsx');
 // @desc Create a new Product
 // @access Private/Admin
 
-router.post('/create-product', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
+router.post('/create-product', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
     const { title, description, price, category, stock, isFeatured } = req.body;
 
@@ -83,7 +82,7 @@ router.post('/create-product', uploadLimiter, isAuthorized, isAdminOrSuperAdmin,
 // @route POST /api/products/import-excel
 // @desc Import products from Excel file
 // @access Private/Admin
-router.post('/import-excel', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
+router.post('/import-excel', isAuthorized, isAdminOrSuperAdmin, upload.single('excelFile'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -306,7 +305,7 @@ router.post('/import-excel', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, u
 // @rout PUT /api/products/update-product/:id
 // @desc Update an existing product ID
 // @access Private/Admin
-router.put('/update-product/:id', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
+router.put('/update-product/:id', isAuthorized, isAdminOrSuperAdmin, upload.single('picture'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, price, category, stock, isFeatured } = req.body;
