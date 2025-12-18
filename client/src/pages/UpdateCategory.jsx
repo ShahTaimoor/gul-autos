@@ -10,7 +10,6 @@ import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { SingleCategory, updateCategory } from '@/redux/slices/categories/categoriesSlice';
 
@@ -35,15 +34,11 @@ const UpdateCategory = () => {
             .unwrap()
             .then((response) => {
                 if (response?.success) {
-                    toast.success(response?.message);
                     navigate('/admin/category');
-                } else {
-                    toast.error(response?.message || 'Failed to update category');
                 }
                 setLoading(false);
             })
             .catch((error) => {
-                toast.error(error || 'Failed to update category');
                 setLoading(false);
             });
     };
@@ -62,12 +57,9 @@ const UpdateCategory = () => {
                         .join(' ');
                     setCatName(formattedName);
                     setPosition(response.data.category?.position || '');
-                } else {
-                    toast.error(response?.message || 'Failed to fetch category');
                 }
             })
             .catch((error) => {
-                toast.error(error || 'Failed to fetch category');
             })
             .finally(() => setLoading(false));
     }, [dispatch, slug]);

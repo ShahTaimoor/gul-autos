@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { removeFromCart, updateCartQuantity } from '../redux/slices/cart/cartSlice'
 import CartImage from '../components/ui/CartImage'
 import Checkout from './Checkout'
-import { toast } from 'sonner'
 import { useAuthDrawer } from '../contexts/AuthDrawerContext'
 
 // Cart Product Component
@@ -38,7 +37,6 @@ const CartProduct = ({ product, quantity }) => {
   const handleRemove = (e) => {
     e.stopPropagation()
     dispatch(removeFromCart(_id))
-    toast.success('Product removed from cart')
   }
 
   const handleDecrease = (e) => {
@@ -161,7 +159,6 @@ const Success = () => {
       return
     }
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty.')
       return
     }
     setOpenCheckoutDialog(true)

@@ -15,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '../ui/select';
-import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 const UpdateProduct = () => {
@@ -120,7 +119,6 @@ const UpdateProduct = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message);
           setInputValue({
             title: '',
             price: '',
@@ -132,12 +130,9 @@ const UpdateProduct = () => {
           });
           setPreviewImage('');
           navigate(`/admin/dashboard/all-products?page=${returnPage}`);
-        } else {
-          toast.error(response?.message || 'Failed to update product');
         }
       })
       .catch((error) => {
-        toast.error(error || 'Failed to update product');
       })
       .finally(() => setLoading(false));
   };

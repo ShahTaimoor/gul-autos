@@ -148,29 +148,18 @@ router.post('/media/upload', uploadLimiter, isAuthorized, isAdminOrSuperAdmin, u
 // @access Private/Admin
 router.get('/media', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 2000, search = '' } = req.query;
+    const { page = 1, limit = 2000 } = req.query;
     const pageNum = Math.max(1, parseInt(page));
     const limitNum = Math.max(1, parseInt(limit));
     const skip = (pageNum - 1) * limitNum;
 
-    let query = {};
-    if (search && search.trim()) {
-      query = {
-        $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { originalName: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
-        ]
-      };
-    }
-
-    const media = await Media.find(query)
+    const media = await Media.find({})
       .populate('uploadedBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum);
 
-    const total = await Media.countDocuments(query);
+    const total = await Media.countDocuments({});
 
     res.status(200).json({
       success: true,
@@ -193,49 +182,6 @@ router.get('/media', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
   }
 });
 
-// @route GET /api/media/search
-// @desc Search uploaded media by name
-// @access Private/Admin
-router.get('/media/search', isAuthorized, isAdminOrSuperAdmin, async (req, res) => {
-  try {
-    const { q, limit = 2000, offset = 0 } = req.query;
-
-    if (!q || q.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query is required'
-      });
-    }
-
-    const media = await Media.find({
-      $or: [
-        { name: { $regex: q, $options: 'i' } },
-        { originalName: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } }
-      ]
-    })
-    .populate('uploadedBy', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(parseInt(limit))
-    .skip(parseInt(offset));
-
-    res.status(200).json({
-      success: true,
-      data: media,
-      query: q,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
-  } catch (error) {
-    console.error('Media search error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during search',
-      error: error.message
-    });
-  }
-});
 
 // @route DELETE /api/media/bulk
 // @desc Delete multiple media items

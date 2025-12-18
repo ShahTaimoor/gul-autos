@@ -1,7 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
-import { Toaster } from './components/ui/sonner';
 import TokenExpirationHandler from './components/custom/TokenExpirationHandler';
 import ErrorBoundary from './components/custom/ErrorBoundary';
 import OneLoader from './components/ui/OneLoader';
@@ -30,7 +29,6 @@ const AllProducts = lazy(() => import('./components/custom/AllProducts'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 const Media = lazy(() => import('./pages/Media'));
-const SearchResults = lazy(() => import('./pages/SearchResults'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 
 const App = () => {
@@ -61,16 +59,6 @@ const App = () => {
         <RootLayout>
           <ErrorBoundary>
             <Products />
-          </ErrorBoundary>
-        </RootLayout>
-      ),
-    },
-    {
-      path: '/search',
-      element: (
-        <RootLayout>
-          <ErrorBoundary>
-            <SearchResults />
           </ErrorBoundary>
         </RootLayout>
       ),
@@ -212,7 +200,6 @@ const App = () => {
   return (
     <Provider store={store}>
       <AuthDrawerProvider>
-        <Toaster />
         <TokenExpirationHandler />
         <ErrorBoundary>
           <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><OneLoader size="large" text="Loading..." /></div>}>

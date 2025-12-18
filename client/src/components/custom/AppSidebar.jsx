@@ -32,7 +32,6 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 
 
 // Sidebar links with enhanced structure
@@ -159,7 +158,6 @@ export function AppSidebar() {
   const handleStatusUpdate = async (orderId, newStatus) => {
     // ...existing code...
     await dispatch(updateOrderStatus({ orderId, status: newStatus, packerName: packer })).unwrap();
-    toast.success(`Order marked as ${newStatus}`);
     dispatch(fetchPendingOrderCount());
   };
 

@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema(
         },
         city: {
             type: String
+        },
+        username: {
+            type: String,
+            trim: true
         }
     },
     { timestamps: true }

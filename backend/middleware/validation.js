@@ -44,6 +44,24 @@ const userValidation = {
       .isMobilePhone()
       .withMessage('Please provide a valid phone number'),
     
+    body('username')
+      .optional()
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Username must be between 2 and 50 characters'),
+    
+    body('address')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Address must be less than 200 characters'),
+    
+    body('city')
+      .optional()
+      .trim()
+      .isLength({ max: 50 })
+      .withMessage('City must be less than 50 characters'),
+    
     handleValidationErrors
   ],
 
@@ -73,6 +91,24 @@ const userValidation = {
       .optional()
       .isMobilePhone()
       .withMessage('Please provide a valid phone number'),
+    
+    body('username')
+      .optional()
+      .trim()
+      .isLength({ min: 2, max: 50 })
+      .withMessage('Username must be between 2 and 50 characters'),
+    
+    body('address')
+      .optional()
+      .trim()
+      .isLength({ max: 200 })
+      .withMessage('Address must be less than 200 characters'),
+    
+    body('city')
+      .optional()
+      .trim()
+      .isLength({ max: 50 })
+      .withMessage('City must be less than 50 characters'),
     
     handleValidationErrors
   ]
@@ -268,7 +304,10 @@ const joiSchemas = {
       name: Joi.string().min(2).max(50).pattern(/^[a-zA-Z\s]+$/).required(),
       email: Joi.string().email().required(),
       password: Joi.string().min(6).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required(),
-      phone: Joi.string().pattern(/^\+?[\d\s-()]+$/).optional()
+      phone: Joi.string().pattern(/^\+?[\d\s-()]+$/).optional(),
+      username: Joi.string().min(2).max(50).optional(),
+      address: Joi.string().max(200).optional(),
+      city: Joi.string().max(50).optional()
     }),
     
     login: Joi.object({

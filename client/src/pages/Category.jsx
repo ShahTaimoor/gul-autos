@@ -32,7 +32,6 @@ import {
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import {
   AddCategory,
   AllCategory,
@@ -130,7 +129,6 @@ const Category = () => {
 
   const addNewCategory = () => {
     if (!inputValues.name.trim()) {
-      toast.error('Category name cannot be empty');
       return;
     }
 
@@ -143,16 +141,12 @@ const Category = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message);
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
           dispatch(AllCategory(''));
-        } else {
-          toast.error(response?.message || 'Failed to add category');
         }
       })
       .catch((error) => {
-        toast.error(error || 'Failed to add category');
       })
       .finally(() => {
         setLoading(false);
@@ -161,7 +155,6 @@ const Category = () => {
 
   const updateExistingCategory = () => {
     if (!editingCategory?.name?.trim()) {
-      toast.error('Category name cannot be empty');
       return;
     }
 
@@ -186,18 +179,14 @@ const Category = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message);
           // ✅ Clear form and editing state
           setEditingCategory(null);
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
           dispatch(AllCategory(''));
-        } else {
-          toast.error(response?.message || 'Failed to update category');
         }
       })
       .catch((error) => {
-        toast.error(error || 'Failed to update category');
       })
       .finally(() => {
         setLoading(false);
@@ -216,14 +205,10 @@ const Category = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message || 'Category deleted successfully');
           dispatch(AllCategory(''));
-        } else {
-          toast.error(response?.message || 'Failed to delete category');
         }
       })
       .catch((error) => {
-        toast.error(error || 'Failed to delete category');
       })
       .finally(() => {
         setLoading(false);
@@ -237,14 +222,10 @@ const Category = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message || `Category ${response.data.active ? 'activated' : 'deactivated'} successfully`);
           dispatch(AllCategory(''));
-        } else {
-          toast.error(response?.message || 'Failed to toggle category status');
         }
       })
       .catch((error) => {
-        toast.error(error || 'Failed to toggle category status');
       })
       .finally(() => {
         setLoading(false);
@@ -326,7 +307,6 @@ const Category = () => {
   // Bulk activate selected categories
   const handleBulkActivate = async () => {
     if (selectedCategories.length === 0) {
-      toast.error('Please select at least one category');
       return;
     }
 
@@ -341,11 +321,9 @@ const Category = () => {
 
     try {
       await Promise.all(promises);
-      toast.success(`${selectedCategories.length} categor${selectedCategories.length > 1 ? 'ies' : 'y'} activated successfully`);
       setSelectedCategories([]);
       dispatch(AllCategory(''));
     } catch (error) {
-      toast.error('Failed to activate some categories');
     } finally {
       setLoading(false);
     }
@@ -354,7 +332,6 @@ const Category = () => {
   // Bulk deactivate selected categories
   const handleBulkDeactivate = async () => {
     if (selectedCategories.length === 0) {
-      toast.error('Please select at least one category');
       return;
     }
 
@@ -369,11 +346,9 @@ const Category = () => {
 
     try {
       await Promise.all(promises);
-      toast.success(`${selectedCategories.length} categor${selectedCategories.length > 1 ? 'ies' : 'y'} deactivated successfully`);
       setSelectedCategories([]);
       dispatch(AllCategory(''));
     } catch (error) {
-      toast.error('Failed to deactivate some categories');
     } finally {
       setLoading(false);
     }

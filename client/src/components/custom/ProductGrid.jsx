@@ -11,8 +11,7 @@ const ProductGrid = React.memo(({
   onAddToCart, 
   addingProductId, 
   cartItems, 
-  onPreviewImage,
-  searchTerm = ''
+  onPreviewImage
 }) => {
   const isInCartMap = useMemo(() => {
     const map = new Map();
@@ -35,13 +34,33 @@ const ProductGrid = React.memo(({
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-10">
-        <p className="text-lg text-gray-500 mb-4">
-          No products found for your search.
-        </p>
-        <p className="text-sm text-gray-400">
-          Try adjusting your search terms or browse our categories.
-        </p>
+      <div className="text-center py-16 px-4">
+        <div className="max-w-md mx-auto">
+          <div className="mb-4">
+            <svg
+              className="mx-auto h-16 w-16 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <p className="text-lg font-medium text-gray-900 mb-2">
+            No products found
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            We couldn't find any products matching your search.
+          </p>
+          <p className="text-xs text-gray-400">
+            Try adjusting your search terms or browse our categories.
+          </p>
+        </div>
       </div>
     );
   }
@@ -63,7 +82,6 @@ const ProductGrid = React.memo(({
           isInCart={isInCartMap.get(product._id) || false}
           gridType={gridType}
           setPreviewImage={onPreviewImage}
-          searchTerm={searchTerm}
         />
       ))}
     </div>

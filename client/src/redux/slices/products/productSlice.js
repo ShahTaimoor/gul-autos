@@ -15,15 +15,16 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, searchTerm, page = 1, limit = 24, stockFilter, sortBy = 'az', productIds }, thunkAPI) => {
+    async ({ category, page = 1, limit = 24, stockFilter, sortBy = 'relevance' }, thunkAPI) => {
         try {
-            const res = await productService.allProduct(category, searchTerm, page, limit, stockFilter, sortBy, productIds);
+            const res = await productService.allProduct(category, page, limit, stockFilter, sortBy);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
         }
     }
 );
+
 
 
 export const getSingleProduct = createAsyncThunk(
@@ -98,44 +99,36 @@ export const bulkUpdateFeatured = createAsyncThunk(
     }
 );
 
-export const fetchSearchSuggestions = createAsyncThunk(
-    'products/fetchSearchSuggestions',
-    async ({ query, limit = 10 }, thunkAPI) => {
+export const searchProducts = createAsyncThunk(
+    'products/searchProducts',
+    async ({ query, limit = 20 }, thunkAPI) => {
         try {
-            // Only fetch if query is at least 2 characters
-            if (!query || query.trim().length < 2) {
-                return { data: [], query };
-            }
-            const res = await productService.getSearchSuggestions(query.trim(), limit);
-            return { data: res.data || [], query: query.trim() };
+            const res = await productService.searchProducts(query, limit);
+            return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
         }
     }
 );
 
+
 const initialState = {
     products: [],
     singleProducts: null,
+    searchResults: [],
+    searchQuery: '',
     status: 'idle',
+    searchStatus: 'idle',
     error: null,
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    searchSuggestions: [],
-    suggestionsStatus: 'idle',
-    suggestionsCache: {}, // Cache for search suggestions
 };
 
 export const productsSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {
-        clearSearchSuggestions: (state) => {
-            state.searchSuggestions = [];
-            state.suggestionsStatus = 'idle';
-        },
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(AddProduct.pending, (state) => {
@@ -280,27 +273,22 @@ export const productsSlice = createSlice({
                 state.status = 'failed';
                 state.error = action.payload;
             })
-            .addCase(fetchSearchSuggestions.pending, (state) => {
-                state.suggestionsStatus = 'loading';
+            .addCase(searchProducts.pending, (state) => {
+                state.searchStatus = 'loading';
+                state.error = null;
             })
-            .addCase(fetchSearchSuggestions.fulfilled, (state, action) => {
-                state.suggestionsStatus = 'succeeded';
-                state.searchSuggestions = action.payload.data || [];
-                // Cache the suggestions
-                if (action.payload.query) {
-                    state.suggestionsCache[action.payload.query.toLowerCase()] = {
-                        data: action.payload.data || [],
-                        timestamp: Date.now()
-                    };
-                }
+            .addCase(searchProducts.fulfilled, (state, action) => {
+                state.searchStatus = 'succeeded';
+                state.searchResults = action.payload.data || [];
+                state.searchQuery = action.payload.query || '';
             })
-            .addCase(fetchSearchSuggestions.rejected, (state, action) => {
-                state.suggestionsStatus = 'failed';
-                state.searchSuggestions = [];
+            .addCase(searchProducts.rejected, (state, action) => {
+                state.searchStatus = 'failed';
+                state.error = action.payload;
+                state.searchResults = [];
             })
 
     }
 });
 
-export const { clearSearchSuggestions } = productsSlice.actions;
 export default productsSlice.reducer;

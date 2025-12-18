@@ -5,7 +5,6 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { updateUserRole } from '../redux/slices/auth/authSlice';
 import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import OneLoader from '../components/ui/OneLoader';
 import { 
   Shield, 
@@ -49,7 +48,6 @@ const Users = () => {
       })
       .catch((error) => {
         console.error('Error fetching users:', error);
-        toast.error('Failed to fetch users');
       })
       .finally(() => {
         setLoading(false);
@@ -63,7 +61,6 @@ const Users = () => {
       const result = await dispatch(updateUserRole({ userId, role: parseInt(newRole) })).unwrap();
       
       if (result.success) {
-        toast.success('User role updated successfully');
         // Update the local state
         setUsers(prevUsers => 
           prevUsers.map(user => 
@@ -72,12 +69,9 @@ const Users = () => {
               : user
           )
         );
-      } else {
-        toast.error(result.message || 'Failed to update user role');
       }
     } catch (error) {
       console.error('Role change error:', error);
-      toast.error(error || 'Failed to update user role');
     } finally {
       setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
     }

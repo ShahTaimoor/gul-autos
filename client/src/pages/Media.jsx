@@ -5,33 +5,28 @@ import { Button } from '../components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
-import SearchBar from '../components/custom/SearchBar';
-import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
-import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search } from 'lucide-react';
 import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
 const Media = () => {
   const dispatch = useDispatch();
   const { products, status, totalItems } = useSelector((state) => state.products);
   
-  // Use the search hook to eliminate duplication
-  const search = useSearch({
-    initialCategory: 'all',
-    initialPage: 1,
-    initialLimit: 24,
-    initialStockFilter: 'all',
-    initialSortBy: 'az'
-  });
+  // Local state for filters
+  const [category, setCategory] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(24);
+  const [stockFilter] = useState('all');
+  const [sortBy] = useState('relevance');
 
   // Use pagination hook to eliminate pagination duplication
   const pagination = usePagination({
     initialPage: 1,
     initialLimit: 24,
     totalItems,
-    onPageChange: (page) => {
-      search.handlePageChange(page);
+    onPageChange: (newPage) => {
+      setPage(newPage);
     }
   });
 
@@ -72,7 +67,6 @@ const Media = () => {
         setUploadedMedia(response.data.data);
       } else {
         console.error('Media fetch failed:', response.data.message);
-        toast.error('Failed to fetch media: ' + response.data.message);
       }
     } catch (error) {
       console.error('Error fetching media:', error);
@@ -82,7 +76,6 @@ const Media = () => {
         status: error.response?.status,
         statusText: error.response?.statusText
       });
-      toast.error('Failed to fetch media: ' + (error.response?.data?.message || error.message));
     } finally {
       setMediaLoading(false);
     }
@@ -93,10 +86,10 @@ const Media = () => {
     fetchMedia();
   }, [fetchMedia]);
 
-  // Fetch products with debounced search using the hook
+  // Fetch products when filters change
   useEffect(() => {
-    search.handleSearch(search.debouncedSearchTerm);
-  }, [search.debouncedSearchTerm, search.page, search.category, search.handleSearch]);
+    dispatch(fetchProducts({ category, page, limit, stockFilter, sortBy }));
+  }, [dispatch, category, page, limit, stockFilter, sortBy]);
 
   // Filter products to show only those with images (backend handles all search filtering)
   useEffect(() => {
@@ -108,10 +101,8 @@ const Media = () => {
       (product.picture?.secure_url || product.image)
     );
 
-    // Only apply basic validation and selected product filtering (no search - backend handles it)
-    const searchFiltered = search.filterProducts(filtered, '', search.selectedProductId);
-    setFilteredProducts(searchFiltered);
-  }, [products, search.selectedProductId, search.filterProducts]);
+    setFilteredProducts(filtered);
+  }, [products]);
 
   // Filter uploaded media for Upload tab with pagination and search
   useEffect(() => {
@@ -161,19 +152,10 @@ const Media = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      toast.success('Image downloaded successfully!');
     } catch (error) {
-      toast.error('Failed to download image');
     }
   }, []);
 
-  const handleSearchChange = useCallback((value) => {
-    search.handleSearchChange(value);
-  }, [search]);
-
-  const handleSearchSubmit = useCallback((term, productId = null) => {
-    search.handleSearchWithTracking(term, productId);
-  }, [search]);
 
   // Upload tab search handlers
   const handleUploadSearchChange = useCallback((value) => {
@@ -209,7 +191,6 @@ const Media = () => {
       const response = await axiosInstance.delete(`/media/${itemId}`);
       
       if (response.data.success) {
-        toast.success('Media deleted successfully');
         // Refresh media list
         await fetchMedia();
         // Remove from selected items if it was selected
@@ -219,7 +200,6 @@ const Media = () => {
       }
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete media: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsDeleting(false);
     }
@@ -227,7 +207,6 @@ const Media = () => {
 
   const handleBulkDelete = useCallback(async () => {
     if (selectedItems.length === 0) {
-      toast.error('No items selected for deletion');
       return;
     }
 
@@ -238,7 +217,6 @@ const Media = () => {
       });
       
       if (response.data.success) {
-        toast.success(`Successfully deleted ${response.data.data.deletedCount} media items`);
         // Refresh media list
         await fetchMedia();
         // Clear selection
@@ -250,7 +228,6 @@ const Media = () => {
       }
     } catch (error) {
       console.error('Bulk delete error:', error);
-      toast.error('Failed to delete media: ' + (error.response?.data?.message || error.message));
     } finally {
       setIsDeleting(false);
     }
@@ -289,7 +266,6 @@ const Media = () => {
 
   const handleImport = useCallback(async () => {
     if (selectedFiles.length === 0) {
-      toast.error('Please select files to import');
       return;
     }
 
@@ -307,7 +283,6 @@ const Media = () => {
     });
 
     if (duplicateNames.length > 0) {
-      toast.error(`Files with these names already exist: ${duplicateNames.join(', ')}`);
       return;
     }
 
@@ -325,7 +300,6 @@ const Media = () => {
       });
 
       if (response.data.success) {
-        toast.success(`Successfully uploaded ${response.data.data.length} images to Cloudinary`);
         // Refresh media list from database
         await fetchMedia();
         setShowImportModal(false);
@@ -334,7 +308,6 @@ const Media = () => {
         throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
-      toast.error('Failed to upload images: ' + (error.response?.data?.message || error.message));
       console.error('Upload error:', error);
     } finally {
       setIsImporting(false);
@@ -348,9 +321,6 @@ const Media = () => {
       try {
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
-        
-        // Show progress
-        toast.info(`Starting export of ${filteredUploadedMedia.length} uploaded images...`);
         
         // Fetch images in parallel batches for better performance
         const batchSize = 5; // Process 5 images at a time
@@ -398,12 +368,9 @@ const Media = () => {
           processedCount += batch.length;
           
           // Update progress
-          const progress = Math.round((processedCount / filteredUploadedMedia.length) * 100);
-          toast.info(`Exporting... ${progress}% (${processedCount}/${filteredUploadedMedia.length})`);
         }
 
-        // Generate zip with progress indication
-        toast.info('Creating ZIP file...');
+        // Generate zip
         const zipBlob = await zip.generateAsync({ 
           type: 'blob',
           compression: 'DEFLATE',
@@ -418,13 +385,10 @@ const Media = () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-
-        toast.success(`Successfully exported ${filteredUploadedMedia.length} uploaded images as ZIP`);
       } catch (zipError) {
         console.error('ZIP creation failed:', zipError);
         
-        // Fallback: download images individually with progress
-        toast.info('ZIP creation failed, downloading images individually...');
+        // Fallback: download images individually
         
         for (let i = 0; i < filteredUploadedMedia.length; i++) {
           const media = filteredUploadedMedia[i];
@@ -447,20 +411,15 @@ const Media = () => {
               URL.revokeObjectURL(url);
               
               // Show progress for individual downloads
-              if ((i + 1) % 5 === 0 || i === filteredUploadedMedia.length - 1) {
-                toast.info(`Downloaded ${i + 1}/${filteredUploadedMedia.length} images`);
-              }
             } catch (error) {
               console.warn(`Failed to fetch image for ${media.name}:`, error);
             }
           }
         }
-        toast.success(`Successfully exported ${filteredUploadedMedia.length} uploaded images individually`);
       }
 
       setShowExportModal(false);
     } catch (error) {
-      toast.error('Failed to export uploaded images');
       console.error('Export error:', error);
     } finally {
       setIsExporting(false);
@@ -474,9 +433,6 @@ const Media = () => {
       try {
         const JSZip = (await import('jszip')).default;
         const zip = new JSZip();
-        
-        // Show progress
-        toast.info(`Starting export of ${filteredProducts.length} images...`);
         
         // Fetch images in parallel batches for better performance
         const batchSize = 5; // Process 5 images at a time
@@ -524,12 +480,9 @@ const Media = () => {
           processedCount += batch.length;
           
           // Update progress
-          const progress = Math.round((processedCount / filteredProducts.length) * 100);
-          toast.info(`Exporting... ${progress}% (${processedCount}/${filteredProducts.length})`);
         }
 
-        // Generate zip with progress indication
-        toast.info('Creating ZIP file...');
+        // Generate zip
         const zipBlob = await zip.generateAsync({ 
           type: 'blob',
           compression: 'DEFLATE',
@@ -544,13 +497,10 @@ const Media = () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-
-        toast.success(`Successfully exported ${filteredProducts.length} images as ZIP`);
       } catch (zipError) {
         console.error('ZIP creation failed:', zipError);
         
-        // Fallback: download images individually with progress
-        toast.info('ZIP creation failed, downloading images individually...');
+        // Fallback: download images individually
         
         for (let i = 0; i < filteredProducts.length; i++) {
           const product = filteredProducts[i];
@@ -573,20 +523,15 @@ const Media = () => {
               URL.revokeObjectURL(url);
               
               // Show progress for individual downloads
-              if ((i + 1) % 5 === 0 || i === filteredProducts.length - 1) {
-                toast.info(`Downloaded ${i + 1}/${filteredProducts.length} images`);
-              }
             } catch (error) {
               console.warn(`Failed to fetch image for ${product.title}:`, error);
             }
           }
         }
-        toast.success(`Successfully exported ${filteredProducts.length} images individually`);
       }
 
       setShowExportModal(false);
     } catch (error) {
-      toast.error('Failed to export images');
       console.error('Export error:', error);
     } finally {
       setIsExporting(false);
@@ -629,18 +574,6 @@ const Media = () => {
           {/* Enhanced Search Bar */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center">
-              {/* Enhanced Search Bar */}
-              <div className="flex-1">
-                <SearchBar
-                  searchTerm={search.searchTerm}
-                  onSearchChange={handleSearchChange}
-                  onSearchSubmit={handleSearchSubmit}
-                  searchHistory={search.searchHistory}
-                  popularSearches={search.popularSearches}
-                  products={search.allProducts}
-                />
-              </div>
-
               {/* Gallery Actions - Export Button */}
               <div className="flex gap-2">
                 <Button
@@ -660,14 +593,12 @@ const Media = () => {
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-600">
                 Showing {filteredProducts.length} product images
-                {search.searchTerm && ` for "${search.searchTerm}"`}
                 {mediaLoading && (
                   <span className="ml-2 text-blue-600 animate-pulse">
                     Loading images...
                   </span>
                 )}
               </p>
-              
             </div>
             
             <p className="text-xs text-gray-500 mt-1">
@@ -740,9 +671,7 @@ const Media = () => {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No images found</h3>
               <p className="text-gray-500">
-                {search.searchTerm
-                  ? 'Try adjusting your search criteria'
-                  : 'No product images available'}
+                No product images available
               </p>
             </div>
           )}
@@ -807,21 +736,6 @@ const Media = () => {
               </div>
             </div>
 
-            {/* Search Bar for Upload Tab */}
-            <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-              <div className="flex flex-col lg:flex-row gap-4 items-center">
-                <div className="flex-1">
-                  <SearchBar
-                    searchTerm={uploadSearchTerm}
-                    onSearchChange={handleUploadSearchChange}
-                    onSearchSubmit={handleUploadSearchSubmit}
-                    searchHistory={[]}
-                    popularSearches={[]}
-                    products={[]}
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Upload Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

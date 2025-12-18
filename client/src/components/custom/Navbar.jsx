@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { User, Download, Smartphone, ShoppingCart } from "lucide-react";
+import { User, Download, Smartphone, ShoppingCart, Search } from "lucide-react";
 import LogoutToggle from "./LogoutToggle";
 import { useSelector } from "react-redux";
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -18,11 +18,11 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
+import SearchModal from "./SearchModal";
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -41,7 +41,6 @@ const CartProduct = ({ product, quantity }) => {
   const handleRemove = (e) => {
     e.stopPropagation();
     dispatch(removeFromCart(_id));
-    toast.success('Product removed from cart');
   };
 
   const handleDecrease = (e) => {
@@ -114,6 +113,7 @@ const Navbar = () => {
   
   // Add debugging to check mobile detection
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+  const [openSearchModal, setOpenSearchModal] = useState(false);
   const { openDrawer } = useAuthDrawer();
 
   // Calculate total quantity
@@ -159,10 +159,10 @@ const Navbar = () => {
     };
   }, []);
 
-  // Desktop-only scroll detection
+  // Mobile-only scroll detection
   useEffect(() => {
-    // Only enable scroll detection on desktop
-    if (window.innerWidth >= 1024) {
+    // Only enable scroll detection on mobile
+    if (window.innerWidth < 1024) {
       const handleScroll = () => {
         setIsScrolled(window.scrollY > 100);
       };
@@ -188,7 +188,6 @@ const Navbar = () => {
       return;
     }
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty.');
       return;
     }
     setOpenCheckoutDialog(true);
@@ -196,7 +195,7 @@ const Navbar = () => {
 
   return (
     <>
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block navbar-scroll ${isScrolled ? 'navbar-hidden' : 'navbar-visible'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
         <div className="flex items-center justify-between h-14">
           {/* Left side: Logo + Brand */}
@@ -230,6 +229,15 @@ const Navbar = () => {
 
           {/* Right side: Actions */}
           <div className="flex items-center space-x-3">
+            {/* Search Button */}
+            <button
+              onClick={() => setOpenSearchModal(true)}
+              className="p-2 bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 hover:scale-110"
+              title="Search Products"
+            >
+              <Search size={20} className="text-gray-700" />
+            </button>
+
             {/* PWA Install Button for Desktop */}
             {!isMobile && showInstallButton && (
               <button
@@ -319,6 +327,9 @@ const Navbar = () => {
         <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
       </DialogContent>
     </Dialog>
+
+    {/* Search Modal */}
+    <SearchModal open={openSearchModal} onOpenChange={setOpenSearchModal} />
     </>
   );
 };

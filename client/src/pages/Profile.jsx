@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { updateProfile } from '@/redux/slices/auth/authSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -18,18 +17,20 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     address: user?.address || '',
     phone: user?.phone || '',
-    city: user?.city || ''
+    city: user?.city || '',
+    username: user?.username || ''
   });
 
   // Show form if user info incomplete
-  const [showForm, setShowForm] = useState(!user?.address || !user?.phone || !user?.city);
+  const [showForm, setShowForm] = useState(!user?.address || !user?.phone || !user?.city || !user?.username);
 
   // Sync local state with updated Redux user info
   useEffect(() => {
     setFormData({
       address: user?.address || '',
       phone: user?.phone || '',
-      city: user?.city || ''
+      city: user?.city || '',
+      username: user?.username || ''
     });
   }, [user]);
 
@@ -43,12 +44,10 @@ const Profile = () => {
     dispatch(updateProfile(formData))
       .unwrap()
       .then(() => {
-        toast.success('Profile updated successfully');
         setShowForm(false);
       })
       .catch((err) => {
         console.error(err);
-        toast.error(err || 'Update failed');
       });
   };
 
@@ -87,7 +86,10 @@ const Profile = () => {
           {!showForm ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-
+                <div>
+                  <p className="text-sm text-muted-foreground">Username</p>
+                  <p className="text-lg font-medium">{user?.username || 'Not provided'}</p>
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
                   <p className="text-lg font-medium">{user?.phone || 'Not provided'}</p>
@@ -96,11 +98,11 @@ const Profile = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Address</p>
-                  <p className="text-lg font-medium overflow-hidden">{user?.address.slice(0, 56).toUpperCase() || 'Not provided'}</p>
+                  <p className="text-lg font-medium overflow-hidden">{user?.address?.slice(0, 56).toUpperCase() || 'Not provided'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">City</p>
-                  <p className="text-lg font-medium">{user?.city.slice(0, 20).toUpperCase() || 'Not provided'}</p>
+                  <p className="text-lg font-medium">{user?.city?.slice(0, 20).toUpperCase() || 'Not provided'}</p>
                 </div>
               </div>
             </div>
@@ -109,6 +111,30 @@ const Profile = () => {
               <h2 className="text-xl font-semibold">Update Profile Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
+                  {/* Username */}
+                  <div className="relative w-full">
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      placeholder=" "
+                      value={formData.username}
+                      onChange={handleChange}
+                      required
+                      className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
+        focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
+                    />
+                    <label
+                      htmlFor="username"
+                      className="absolute left-2.5 -top-2.5 bg-white px-1 text-xs text-[#FED700] 
+        transition-all duration-200 ease-in-out pointer-events-none
+        peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
+        peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
+                    >
+                      Username
+                    </label>
+                  </div>
+
                   {/* Phone */}
                   <div className="relative w-full">
                     <input
@@ -140,7 +166,7 @@ const Profile = () => {
                       name="city"
                       type="text"
                       placeholder=" "
-                      value={formData.city.slice(0, 20)}
+                      value={formData.city}
                       onChange={handleChange}
                       required
                       className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
@@ -156,7 +182,9 @@ const Profile = () => {
                       City
                     </label>
                   </div>
+                </div>
 
+                <div className="space-y-6">
                   {/* Address */}
                   <div className="relative w-full">
                     <textarea

@@ -365,8 +365,8 @@ button, [role="button"] {
   }
 }
 
-/* Navbar scroll animations - Desktop only */
-@media (min-width: 1024px) {
+/* Navbar scroll animations - Mobile only */
+@media (max-width: 1023px) {
   .navbar-scroll {
     transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
   }
@@ -381,8 +381,10 @@ button, [role="button"] {
     transform: translateY(0);
     opacity: 1;
   }
+}
 
-  /* Floating cart animation - Desktop only */
+/* Floating cart animation - Desktop only */
+@media (min-width: 1024px) {
   .cart-floating {
     animation: slideInRight 0.3s ease-out;
   }
@@ -397,11 +399,11 @@ button, [role="button"] {
       opacity: 1;
     }
   }
+}
 
-  /* Search and Categories container transition */
-  .search-categories-container {
-    transition: all 0.3s ease-in-out;
-  }
+/* Search and Categories container transition */
+.search-categories-container {
+  transition: all 0.3s ease-in-out;
 }
 
 /* Custom Toast Styles */

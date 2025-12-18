@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import OneLoader from '@/components/ui/OneLoader';
 import { Eye, EyeOff, ArrowLeft, Shield } from 'lucide-react';
-import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
 import { adminLogin } from '@/redux/slices/auth/authSlice';
 
@@ -74,7 +73,6 @@ const AdminLogin = () => {
       })).unwrap();
       
       if (response?.success && response?.user) {
-        toast.success('Admin login successful!');
         setInputValues({ shopName: '', password: '' });
         // Wait for Redux state to update, then navigate
         // The useEffect will handle navigation when isAuthenticated becomes true
@@ -84,12 +82,10 @@ const AdminLogin = () => {
         }, 200);
       } else {
         setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
-        toast.error('Authentication failed');
       }
     } catch (error) {
       const errorMessage = error || 'Invalid shop name or password';
       setErrorMsg({ shopName: errorMessage, password: errorMessage });
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

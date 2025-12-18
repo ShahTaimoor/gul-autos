@@ -1,6 +1,5 @@
 // Enhanced Axios Instance with Token Refresh & Mobile Support
 import axios from 'axios';
-import { toast } from 'sonner';
 import { logout, setTokenExpired } from './authSlice';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -138,17 +137,8 @@ axiosInstance.interceptors.response.use(
     
     if (error.response?.status === 403) {
       // Don't show generic toast for auth endpoints - let components handle it
-      if (!isAuthEndpoint && typeof window !== 'undefined') {
-        toast.error('Access denied. Insufficient permissions.');
-      }
     } else if (error.response?.status >= 500) {
-      if (typeof window !== 'undefined') {
-        toast.error('Server error. Please try again later.');
-      }
     } else if (error.code === 'ECONNABORTED') {
-      if (typeof window !== 'undefined') {
-        toast.error('Request timeout. Please check your connection.');
-      }
     }
 
     return Promise.reject(error);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import {
   removeFromCart,
@@ -77,7 +76,6 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
 
   const handleBuyNow = useCallback(() => {
     if (inputQty > stock || inputQty <= 0) {
-      toast.error('Invalid product quantity');
       return;
     }
     navigate('/');
@@ -88,9 +86,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     setIsRemoving(true);
     try {
       await dispatch(removeFromCart(_id)).unwrap();
-      toast.success('Product removed from cart');
     } catch (error) {
-      toast.error('Failed to remove product from cart');
     } finally {
       setIsRemoving(false);
     }
@@ -115,7 +111,6 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
         if (parsed <= stock) {
           setInputQty(parsed);
         } else {
-          toast.error(`Only ${stock} items in stock`);
           setInputQty(stock);
         }
       }
@@ -124,12 +119,10 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
 
   const handleInputBlur = useCallback(() => {
     if (inputQty === '' || isNaN(inputQty) || inputQty <= 0) {
-      toast.error('Quantity must be at least 1');
       setInputQty(quantity);
       return;
     }
     if (inputQty > stock) {
-      toast.error(`Only ${stock} items in stock`);
       setInputQty(stock);
       return;
     }
@@ -143,8 +136,6 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     e.stopPropagation();
     if (inputQty > 1) {
       updateQuantity(inputQty - 1);
-    } else {
-      toast.error('Quantity cannot be less than 1');
     }
   }, [inputQty, updateQuantity]);
 
@@ -153,8 +144,6 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     e.stopPropagation();
     if (inputQty < stock) {
       updateQuantity(inputQty + 1);
-    } else {
-      toast.error(`Only ${stock} items in stock`);
     }
   }, [inputQty, stock, updateQuantity]);
 
@@ -267,8 +256,8 @@ const CartDrawer = () => {
   const handleRemove = useCallback((productId) => {
     dispatch(removeFromCart(productId))
       .unwrap()
-      .then(() => toast.success('Product removed from cart'))
-      .catch((err) => toast.error(err));
+      .then(() => {})
+      .catch((err) => {});
   }, [dispatch]);
 
   const handleBuyNow = useCallback(() => {
@@ -277,12 +266,10 @@ const CartDrawer = () => {
       return;
     }
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty.');
       return;
     }
     const hasInvalidQty = Object.values(validationMap).includes(false);
     if (hasInvalidQty) {
-      toast.error('Fix invalid quantities in cart before checkout.');
       return;
     }
     setOpenCheckoutDialog(true);

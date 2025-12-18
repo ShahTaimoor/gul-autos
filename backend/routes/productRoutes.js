@@ -9,6 +9,7 @@ const { default: mongoose } = require('mongoose');
 const multer = require('multer');
 const XLSX = require('xlsx');
 
+
 // @route POST /api/products/create-produ
 // @desc Create a new Product
 // @access Private/Admin
@@ -478,7 +479,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, search, page = 1, limit = 24, stockFilter = 'active', sortBy = 'az', productIds } = req.query;
+    let { category, page = 1, limit = 24, stockFilter = 'active', sortBy = 'relevance' } = req.query;
 
     if (limit === 'all') {
       limit = 0; 
@@ -498,17 +499,6 @@ router.get('/get-products', async (req, res) => {
       query.stock = { $lte: 0 };
     }
 
-    // Handle specific product IDs (from search suggestions)
-    if (productIds && productIds.trim()) {
-      const ids = productIds.split(',').filter(id => id.trim());
-      if (ids.length > 0) {
-        // Validate ObjectIds
-        const validIds = ids.filter(id => mongoose.Types.ObjectId.isValid(id));
-        if (validIds.length > 0) {
-          query._id = { $in: validIds };
-        }
-      }
-    }
 
     // Handle category filter - support both slug and ID for backward compatibility
     if (category && category.trim().toLowerCase() !== 'all') {
@@ -549,209 +539,6 @@ router.get('/get-products', async (req, res) => {
       }
     }
 
-    // Handle enhanced search filter with keyword and year matching
-    if (search && search.trim()) {
-      const trimmedSearch = search.trim();
-      const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-      const buildWordPattern = (value) => {
-        const escaped = escapeRegExp(value);
-        const startsWithWord = /\w/.test(value[0] || '');
-        const endsWithWord = /\w/.test(value[value.length - 1] || '');
-        if (startsWithWord && endsWithWord) return `\\b${escaped}\\b`;
-        if (startsWithWord) return `\\b${escaped}`;
-        if (endsWithWord) return `${escaped}\\b`;
-        return escaped;
-      };
-      
-      // Extract words from brackets: (word) or {word} or [word]
-      const bracketWords = [];
-      const bracketPatterns = [
-        /\(([^)]+)\)/g,  // (word)
-        /\{([^}]+)\}/g,  // {word}
-        /\[([^\]]+)\]/g  // [word]
-      ];
-      
-      bracketPatterns.forEach(pattern => {
-        let match;
-        while ((match = pattern.exec(trimmedSearch)) !== null) {
-          bracketWords.push(match[1].trim());
-        }
-      });
-      
-      // Remove bracket content from search string for normal processing
-      let searchWithoutBrackets = trimmedSearch
-        .replace(/\([^)]+\)/g, '')  // Remove (word)
-        .replace(/\{[^}]+\}/g, '')  // Remove {word}
-        .replace(/\[[^\]]+\]/g, ''); // Remove [word]
-      
-      // Split search into keywords and years
-      const words = searchWithoutBrackets.split(/\s+/).filter(word => word.length > 0);
-      const keywords = [];
-      const years = [];
-      
-      // Separate keywords from years (4-digit numbers)
-      words.forEach(word => {
-        if (/^\d{4}$/.test(word)) {
-          years.push(word);
-        } else {
-          keywords.push(word);
-        }
-      });
-      
-      // Add bracket words to keywords
-      keywords.push(...bracketWords);
-      
-      // If searching for "grill", exclude products that are clearly not grills
-      if (keywords.includes('grill') || keywords.includes('grille')) {
-        const excludeTerms = ['perfume', 'air freshener', 'fragrance', 'scent'];
-        excludeTerms.forEach(term => {
-          query.$and = query.$and || [];
-          query.$and.push({
-            $and: [
-              { title: { $not: { $regex: `\\b${term}\\b`, $options: 'i' } } },
-              { description: { $not: { $regex: `\\b${term}\\b`, $options: 'i' } } }
-            ]
-          });
-        });
-      }
-      
-        // If we have both keywords and years, require ALL to match
-        if (keywords.length > 0 && years.length > 0) {
-          // Define product-specific keywords that must be present
-          const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
-          
-          // Check if search contains product-specific keywords
-          const hasProductTypeKeyword = keywords.some(kw => 
-            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
-          );
-          
-          // First, try to find categories matching the search term
-          const categoryMatches = await Category.find({
-            name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
-          }).select('_id');
-          const categoryIds = categoryMatches.map(cat => cat._id);
-          
-          // Build AND conditions - ALL keywords must be present
-          const allKeywordConditions = keywords.map(keyword => {
-            const keywordPattern = buildWordPattern(keyword);
-            const condition = {
-              $or: [
-                { title: { $regex: keywordPattern, $options: 'i' } },
-                { description: { $regex: keywordPattern, $options: 'i' } }
-              ]
-            };
-            // If category matches found, also include category search
-            if (categoryIds.length > 0) {
-              condition.$or.push({ category: { $in: categoryIds } });
-            }
-            return condition;
-          });
-        
-        // Build AND conditions - ALL years must be present
-        const allYearConditions = years.map(year => {
-          const escapedYear = escapeRegExp(year);
-          return {
-            $or: [
-              { title: { $regex: escapedYear, $options: 'i' } },
-              { description: { $regex: escapedYear, $options: 'i' } }
-            ]
-          };
-        });
-        
-        // If searching for a specific product type, require it to be in title (not just description)
-        if (hasProductTypeKeyword) {
-          const productTypeKeyword = keywords.find(kw => 
-            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
-          );
-          if (productTypeKeyword) {
-            const escapedPTKeyword = buildWordPattern(productTypeKeyword);
-            // Require product type keyword to be in title (more strict)
-            allKeywordConditions.push({
-              title: { $regex: escapedPTKeyword, $options: 'i' }
-            });
-          }
-        }
-        
-        // Combine all conditions - ALL must match
-        query.$and = [
-          ...allKeywordConditions,
-          ...allYearConditions
-        ];
-      }
-      // If only keywords (no years), use precise keyword matching with AND logic
-      else if (keywords.length > 0) {
-        // Define product-specific keywords that must be present
-        const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
-        
-        // Check if search contains product-specific keywords
-        const hasProductTypeKeyword = keywords.some(kw => 
-          productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
-        );
-        
-        // First, try to find categories matching the search term
-        const categoryMatches = await Category.find({
-          name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
-        }).select('_id');
-        const categoryIds = categoryMatches.map(cat => cat._id);
-        
-        // Build AND conditions - ALL keywords must be present
-        const allKeywordConditions = keywords.map(keyword => {
-          const keywordPattern = buildWordPattern(keyword);
-          const condition = {
-            $or: [
-              { title: { $regex: keywordPattern, $options: 'i' } },
-              { description: { $regex: keywordPattern, $options: 'i' } }
-            ]
-          };
-          // If category matches found, also include category search
-          if (categoryIds.length > 0) {
-            condition.$or.push({ category: { $in: categoryIds } });
-          }
-          return condition;
-        });
-        
-        // If searching for a specific product type, require it to be in title (more strict)
-        if (hasProductTypeKeyword && keywords.length > 1) {
-          const productTypeKeyword = keywords.find(kw => 
-            productTypeKeywords.some(pt => kw.toLowerCase().includes(pt) || pt.includes(kw.toLowerCase()))
-          );
-          if (productTypeKeyword) {
-            const escapedPTKeyword = buildWordPattern(productTypeKeyword);
-            // Require product type keyword to be in title (more strict)
-            allKeywordConditions.push({
-              title: { $regex: escapedPTKeyword, $options: 'i' }
-            });
-          }
-        }
-        
-        // Use AND logic - ALL keywords must match
-        if (allKeywordConditions.length > 0) {
-          query.$and = allKeywordConditions;
-        }
-      }
-      // If only years, search for any of the years
-      else if (years.length > 0) {
-        // Also check for category matches
-        const categoryMatches = await Category.find({
-          name: { $regex: escapeRegExp(trimmedSearch), $options: 'i' }
-        }).select('_id');
-        const categoryIds = categoryMatches.map(cat => cat._id);
-        
-        const yearPatterns = [];
-        years.forEach(year => {
-          const escapedYear = escapeRegExp(year);
-          yearPatterns.push(
-            { title: { $regex: escapedYear, $options: 'i' } },
-            { description: { $regex: escapedYear, $options: 'i' } }
-          );
-        });
-        // Add category search if matches found
-        if (categoryIds.length > 0) {
-          yearPatterns.push({ category: { $in: categoryIds } });
-        }
-        query.$or = yearPatterns;
-      }
-    }
 
     const totalProducts = await Product.countDocuments(query);
 
@@ -783,208 +570,21 @@ router.get('/get-products', async (req, res) => {
         sortObject = { isFeatured: -1, stock: 1 }; // Featured first, then stock low to high
         break;
       case 'relevance':
-        // For search results, prioritize exact matches and relevance
-        if (search && search.trim()) {
-          // Custom sorting for better relevance
-          // This will be handled in the aggregation pipeline below
-          sortObject = { 
-            isFeatured: -1, // Featured first
-            title: 1, // Exact matches first
-            createdAt: -1 // Then by newest
-          };
-        } else {
-          sortObject = { isFeatured: -1, createdAt: -1 }; // Featured first, then newest
-        }
+        // Featured products first, sorted by newest (relevance)
+        // Then non-featured products, also sorted by newest (relevance)
+        sortObject = { isFeatured: -1, createdAt: -1 };
         break;
       default:
-        // If searching, default to relevance-based sorting
-        if (search && search.trim()) {
-          sortObject = { 
-            isFeatured: -1, // Featured first
-            title: 1,
-            createdAt: -1 
-          };
-        } else {
-          sortObject = { isFeatured: -1, title: 1 }; // Featured first, then alphabetical
-        }
+        sortObject = { isFeatured: -1, title: 1 }; // Featured first, then alphabetical
     }
 
-    // For search results, use aggregation pipeline for better relevance scoring
-    let products;
-    if (search && search.trim()) {
-      const trimmedSearch = search.trim();
-      
-      // Extract words from brackets: (word) or {word} or [word]
-      const bracketWords = [];
-      const bracketPatterns = [
-        /\(([^)]+)\)/g,  // (word)
-        /\{([^}]+)\}/g,  // {word}
-        /\[([^\]]+)\]/g  // [word]
-      ];
-      
-      bracketPatterns.forEach(pattern => {
-        let match;
-        while ((match = pattern.exec(trimmedSearch)) !== null) {
-          bracketWords.push(match[1].trim().toLowerCase());
-        }
-      });
-      
-      // Remove bracket content from search string for normal processing
-      let searchWithoutBrackets = trimmedSearch
-        .replace(/\([^)]+\)/g, '')  // Remove (word)
-        .replace(/\{[^}]+\}/g, '')  // Remove {word}
-        .replace(/\[[^\]]+\]/g, ''); // Remove [word]
-      
-      const searchWords = searchWithoutBrackets.toLowerCase().split(/\s+/).filter(word => word.length > 0);
-      
-      // Add bracket words to search words
-      searchWords.push(...bracketWords);
-      
-      // Define product-specific keywords for bonus scoring
-      const productTypeKeywords = ['grill', 'grille', 'bumper', 'lip', 'kit', 'light', 'drl', 'led', 'hood', 'spoiler', 'mirror', 'fender', 'door', 'headlight', 'taillight', 'fog', 'perfume', 'mat', 'muffler', 'pipe', 'alarm'];
-      const hasProductTypeKeyword = searchWords.some(word => 
-        productTypeKeywords.some(pt => word.includes(pt) || pt.includes(word))
-      );
-      
-      products = await Product.aggregate([
-        { $match: query },
-        {
-          $addFields: {
-            relevanceScore: {
-              $add: [
-                // Title starts with exact search phrase (highest priority)
-                {
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: `^${search.trim().toLowerCase()}` } },
-                    500, 0
-                  ]
-                },
-                // Exact phrase match anywhere in title
-                {
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: search.trim().toLowerCase() } },
-                    400, 0
-                  ]
-                },
-                // ALL keywords in title (very high score - ensures products matching all keywords appear first)
-                {
-                  $cond: [
-                    { 
-                      $and: searchWords.map(word => ({ 
-                        $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } 
-                      }))
-                    },
-                    300, 0
-                  ]
-                },
-                // Bonus for product-type keyword in title (when searching for specific product types)
-                {
-                  $cond: [
-                    {
-                      $and: [
-                        { $literal: hasProductTypeKeyword },
-                        {
-                          $or: productTypeKeywords.map(pt => ({
-                            $regexMatch: { 
-                              input: { $toLower: "$title" }, 
-                              regex: `\\b${pt}\\b` 
-                            }
-                          }))
-                        }
-                      ]
-                    },
-                    200, 0
-                  ]
-                },
-                // First word of title matches first search word
-                {
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: `^${searchWords[0]}\\b` } },
-                    150, 0
-                  ]
-                },
-                // ALL keywords in description (medium score)
-                {
-                  $cond: [
-                    { 
-                      $and: searchWords.map(word => ({ 
-                        $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } 
-                      }))
-                    },
-                    100, 0
-                  ]
-                },
-                // Individual keyword matches in title (word boundaries) - lower weight
-                {
-                  $sum: searchWords.map(word => ({
-                    $cond: [
-                      { $regexMatch: { input: { $toLower: "$title" }, regex: `\\b${word}\\b` } },
-                      10, 0
-                    ]
-                  }))
-                },
-                // Individual keyword matches in description (word boundaries) - lowest weight
-                {
-                  $sum: searchWords.map(word => ({
-                    $cond: [
-                      { $regexMatch: { input: { $toLower: "$description" }, regex: `\\b${word}\\b` } },
-                      5, 0
-                    ]
-                  }))
-                },
-                // Category name matches - medium priority
-                {
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: { $ifNull: ["$category.name", ""] } }, regex: search.trim().toLowerCase() } },
-                    50, 0
-                  ]
-                }
-              ]
-            }
-          }
-        },
-        { $sort: { isFeatured: -1, relevanceScore: -1, createdAt: -1 } }, // Featured first, then by relevance
-        { $skip: limit === 0 ? 0 : (page - 1) * limit },
-        { $limit: limit || 1000 },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'user',
-            foreignField: '_id',
-            as: 'user'
-          }
-        },
-        {
-          $lookup: {
-            from: 'categories',
-            localField: 'category',
-            foreignField: '_id',
-            as: 'category'
-          }
-        },
-        {
-          $project: {
-            title: 1,
-            picture: 1,
-            price: 1,
-            description: 1,
-            stock: 1,
-            isFeatured: 1,
-            createdAt: 1,
-            user: { $arrayElemAt: ['$user', 0] },
-            category: { $arrayElemAt: ['$category', 0] }
-          }
-        }
-      ]);
-    } else {
-      products = await Product.find(query)
-        .select('title picture price description stock isFeatured createdAt')
-        .populate('user', 'name')
-        .populate('category', 'name')
-        .sort(sortObject)
-        .skip(limit === 0 ? 0 : (page - 1) * limit)
-        .limit(limit || undefined);
-    }
+    const products = await Product.find(query)
+      .select('title picture price description stock isFeatured createdAt')
+      .populate('user', 'name')
+      .populate('category', 'name')
+      .sort(sortObject)
+      .skip(limit === 0 ? 0 : (page - 1) * limit)
+      .limit(limit || undefined);
 
     const newProductArray = products.map((product, index) => {
       const productObj = product.toObject ? product.toObject() : product;
@@ -996,9 +596,7 @@ router.get('/get-products', async (req, res) => {
 
     const message =
       products.length === 0
-        ? search
-          ? 'No products found for your search.'
-          : 'No products found in this category.'
+        ? 'No products found in this category.'
         : 'Products fetched successfully';
 
     return res.status(200).json({
@@ -1021,196 +619,527 @@ router.get('/get-products', async (req, res) => {
   }
 });
 
-// @route GET /api/products/search-suggestions
-// @desc Get search suggestions/autocomplete for products
-// @access Public
-router.get('/search-suggestions', async (req, res) => {
-  try {
-    const { q = '', limit = 10 } = req.query;
-    
-    if (!q || q.trim().length < 1) {
-      return res.status(200).json({
-        success: true,
-        message: 'Search suggestions fetched successfully',
-        data: []
-      });
+
+// Helper function to calculate Levenshtein distance (edit distance)
+function levenshteinDistance(str1, str2) {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = [];
+
+    // Initialize matrix
+    for (let i = 0; i <= len1; i++) {
+        matrix[i] = [i];
+    }
+    for (let j = 0; j <= len2; j++) {
+        matrix[0][j] = j;
     }
 
-    const searchTerm = q.trim();
-    const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-    const buildWordPattern = (value) => {
-      const escaped = escapeRegExp(value);
-      const startsWithWord = /\w/.test(value[0] || '');
-      const endsWithWord = /\w/.test(value[value.length - 1] || '');
-      if (startsWithWord && endsWithWord) return `\\b${escaped}\\b`;
-      if (startsWithWord) return `\\b${escaped}`;
-      if (endsWithWord) return `${escaped}\\b`;
-      return escaped;
-    };
-    const buildStartsWithPattern = (value) => {
-      const escaped = escapeRegExp(value);
-      const endsWithWord = /\w/.test(value[value.length - 1] || '');
-      return endsWithWord ? `^${escaped}\\b` : `^${escaped}`;
-    };
-    const escapedSearchTerm = escapeRegExp(searchTerm.toLowerCase());
-    const searchLimit = Math.min(parseInt(limit) || 10, 20); // Max 20 suggestions
-    
-    // Extract words from brackets: (word) or {word} or [word]
-    const bracketWords = [];
-    const bracketPatterns = [
-      /\(([^)]+)\)/g,  // (word)
-      /\{([^}]+)\}/g,  // {word}
-      /\[([^\]]+)\]/g  // [word]
-    ];
-    
-    bracketPatterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.exec(searchTerm)) !== null) {
-        bracketWords.push(match[1].trim());
-      }
-    });
-    
-    // Remove bracket content from search string for normal processing
-    let searchWithoutBrackets = searchTerm
-      .replace(/\([^)]+\)/g, '')  // Remove (word)
-      .replace(/\{[^}]+\}/g, '')  // Remove {word}
-      .replace(/\[[^\]]+\]/g, ''); // Remove [word]
-    
-    // Build search query with relevance scoring
-    const searchWords = searchWithoutBrackets.toLowerCase().split(/\s+/).filter(word => word.length > 0);
-    
-    // Add bracket words to search words
-    searchWords.push(...bracketWords.map(w => w.toLowerCase()));
-    
-    // Create search patterns for better matching
-    const keywordPatterns = searchWords.map(keyword => {
-      const wordPattern = buildWordPattern(keyword);
-      return {
-        $or: [
-          { title: { $regex: wordPattern, $options: 'i' } },
-          { description: { $regex: wordPattern, $options: 'i' } }
-        ]
-      };
-    });
-
-    // Query for products that match all keywords
-    const query = {
-      stock: { $gt: 0 }, // Only show in-stock products in suggestions
-      $and: keywordPatterns.length > 0 ? keywordPatterns : []
-    };
-
-    // Use aggregation pipeline for relevance-based sorting
-    const suggestions = await Product.aggregate([
-      { $match: query },
-      {
-        $addFields: {
-          relevanceScore: {
-            $add: [
-              // Title starts with exact search phrase (highest priority)
-              {
-                $cond: [
-                  { $regexMatch: { input: { $toLower: "$title" }, regex: `^${escapedSearchTerm}` } },
-                  300, 0
-                ]
-              },
-              // Exact phrase match in title
-              {
-                $cond: [
-                  { $regexMatch: { input: { $toLower: "$title" }, regex: escapedSearchTerm } },
-                  200, 0
-                ]
-              },
-              // First word of title matches first search word
-              {
-                $cond: [
-                  searchWords.length ? { $regexMatch: { input: { $toLower: "$title" }, regex: buildStartsWithPattern(searchWords[0]) } } : false,
-                  150, 0
-                ]
-              },
-              // All keywords in title
-              {
-                $cond: [
-                  { 
-                    $and: searchWords.map(word => ({ 
-                      $regexMatch: { input: { $toLower: "$title" }, regex: buildWordPattern(word) } 
-                    }))
-                  },
-                  100, 0
-                ]
-              },
-              // Individual keyword matches in title
-              {
-                $sum: searchWords.map(word => ({
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$title" }, regex: buildWordPattern(word) } },
-                    30, 0
-                  ]
-                }))
-              },
-              // Individual keyword matches in description
-              {
-                $sum: searchWords.map(word => ({
-                  $cond: [
-                    { $regexMatch: { input: { $toLower: "$description" }, regex: buildWordPattern(word) } },
-                    10, 0
-                  ]
-                }))
-              }
-            ]
-          }
+    // Fill matrix
+    for (let i = 1; i <= len1; i++) {
+        for (let j = 1; j <= len2; j++) {
+            if (str1[i - 1] === str2[j - 1]) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,     // deletion
+                    matrix[i][j - 1] + 1,     // insertion
+                    matrix[i - 1][j - 1] + 1   // substitution
+                );
+            }
         }
-      },
-      { $sort: { relevanceScore: -1, createdAt: -1 } },
-      { $limit: searchLimit },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'category'
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          title: 1,
-          picture: 1,
-          price: 1,
-          stock: 1,
-          description: { $substr: ["$description", 0, 100] }, // Truncate description
-          category: { $arrayElemAt: ['$category', 0] } // Get first category from array
-        }
-      }
-    ]);
+    }
 
-    // Format suggestions for frontend
-    const formattedSuggestions = suggestions.map(product => ({
-      _id: product._id,
-      title: product.title,
-      image: product.picture?.secure_url || null,
-      price: product.price,
-      stock: product.stock,
-      description: product.description || '',
-      category: product.category ? {
-        _id: product.category._id,
-        name: product.category.name
-      } : null
-    }));
+    return matrix[len1][len2];
+}
 
-    return res.status(200).json({
-      success: true,
-      message: 'Search suggestions fetched successfully',
-      data: formattedSuggestions,
-      count: formattedSuggestions.length
-    });
-  } catch (error) {
-    console.error('Error fetching search suggestions:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error while fetching search suggestions',
-      error: error.message
-    });
-  }
+// Helper function to extract numbers from string
+function extractNumbers(str) {
+    return str.match(/\d+/g) || [];
+}
+
+// Helper function to calculate numeric similarity
+function numericSimilarity(num1, num2) {
+    if (num1 === num2) return 1;
+    const diff = Math.abs(num1 - num2);
+    const max = Math.max(num1, num2);
+    if (max === 0) return 1;
+    // For years, allow up to 20 years difference with decreasing similarity
+    if (diff <= 20) {
+        return 1 - (diff / 20) * 0.5; // 50% penalty max for 20 year difference
+    }
+    return 0.1; // Very low similarity for large differences
+}
+
+// Helper function to calculate fuzzy match score
+function calculateRelevanceScore(product, searchTerm) {
+    const searchLower = searchTerm.toLowerCase().trim();
+    const titleLower = (product.title || '').toLowerCase().trim();
+    const descriptionLower = (product.description || '').toLowerCase().trim();
+    
+    let score = 0;
+    const maxScore = 1000; // Increased max score for better granularity
+
+    // PRIORITY 1: Exact match in title (highest priority - 1000 points)
+    if (titleLower === searchLower) {
+        return maxScore; // Exact match gets maximum score
+    }
+
+    // PRIORITY 2: Title starts with search term (900 points)
+    if (titleLower.startsWith(searchLower)) {
+        score += 900;
+    }
+    // PRIORITY 3: Title contains search term as whole phrase (800 points)
+    else if (titleLower.includes(searchLower)) {
+        score += 800;
+    }
+    // PRIORITY 4: All search words found in title (700 points)
+    else {
+        const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
+        const titleWords = titleLower.split(/\s+/);
+        let allWordsFound = true;
+        let wordsFoundCount = 0;
+        
+        for (const searchWord of searchWords) {
+            let wordFound = false;
+            for (const titleWord of titleWords) {
+                if (titleWord === searchWord) {
+                    wordsFoundCount++;
+                    wordFound = true;
+                    break;
+                }
+            }
+            if (!wordFound) {
+                allWordsFound = false;
+            }
+        }
+        
+        if (allWordsFound && searchWords.length > 0) {
+            score += 700 + (wordsFoundCount * 10);
+        }
+    }
+
+    // Count matching words first
+    const titleWords = titleLower.split(/\s+/);
+    const searchWords = searchLower.split(/\s+/).filter(w => w.length >= 2);
+    const searchNumbers = extractNumbers(searchTerm);
+    const nonNumericSearchWords = searchWords.filter(w => !/^\d+$/.test(w));
+    
+    let matchingWordCount = 0;
+    let matchingNonNumericCount = 0;
+    
+    // PRIORITY 5: Individual word matches in title (600-650 points)
+    for (const searchWord of searchWords) {
+        let wordMatched = false;
+        for (const titleWord of titleWords) {
+            // Exact word match
+            if (titleWord === searchWord) {
+                score += 50;
+                wordMatched = true;
+                matchingWordCount++;
+                if (!/^\d+$/.test(searchWord)) {
+                    matchingNonNumericCount++;
+                }
+                break;
+            }
+            // Word starts with search term or vice versa
+            else if (titleWord.startsWith(searchWord) || searchWord.startsWith(titleWord)) {
+                score += 30;
+                wordMatched = true;
+                matchingWordCount++;
+                if (!/^\d+$/.test(searchWord)) {
+                    matchingNonNumericCount++;
+                }
+                break;
+            }
+            // Word contains search term
+            else if (titleWord.includes(searchWord) || searchWord.includes(titleWord)) {
+                score += 20;
+                wordMatched = true;
+                matchingWordCount++;
+                if (!/^\d+$/.test(searchWord)) {
+                    matchingNonNumericCount++;
+                }
+                break;
+            }
+            // Fuzzy match with typo tolerance (only for words >= 4 chars)
+            else if (searchWord.length >= 4 && titleWord.length >= 4) {
+                const distance = levenshteinDistance(searchWord, titleWord);
+                const maxLen = Math.max(searchWord.length, titleWord.length);
+                const similarity = 1 - (distance / maxLen);
+                
+                // Accept matches with up to 25% character difference
+                if (similarity >= 0.75) {
+                    score += similarity * 15;
+                    wordMatched = true;
+                    matchingWordCount++;
+                    if (!/^\d+$/.test(searchWord)) {
+                        matchingNonNumericCount++;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // PRIORITY 6: Numeric similarity for year/model numbers (400-500 points)
+    // BUT: Penalize if only numeric words match when non-numeric words are also in search
+    const titleNumbers = extractNumbers(product.title || '');
+    
+    if (searchNumbers.length > 0 && titleNumbers.length > 0) {
+        let numericMatchFound = false;
+        for (const searchNum of searchNumbers) {
+            for (const titleNum of titleNumbers) {
+                const numSimilarity = numericSimilarity(parseInt(searchNum), parseInt(titleNum));
+                if (numSimilarity > 0.1) {
+                    numericMatchFound = true;
+                    // If non-numeric words exist in search but none matched, heavily penalize
+                    if (nonNumericSearchWords.length > 0 && matchingNonNumericCount === 0) {
+                        // Only give 20 points instead of 100 for numeric-only matches
+                        score += numSimilarity * 20;
+                    } else {
+                        score += numSimilarity * 100;
+                    }
+                }
+            }
+        }
+    }
+    
+    // PENALTY: If search has multiple words but product only matches few
+    if (searchWords.length > 1) {
+        const matchRatio = matchingWordCount / searchWords.length;
+        // If less than 70% of words match, heavily penalize
+        if (matchRatio < 0.7) {
+            score = score * 0.3; // Reduce score by 70%
+        }
+        // If non-numeric words exist but none matched, heavily penalize
+        if (nonNumericSearchWords.length > 0 && matchingNonNumericCount === 0) {
+            score = score * 0.2; // Reduce score by 80%
+        }
+    }
+
+    // PRIORITY 7: Description contains search term (100-200 points)
+    if (descriptionLower.includes(searchLower)) {
+        score += 200;
+    } else {
+        // Check if any search words are in description
+        for (const searchWord of searchWords) {
+            if (descriptionLower.includes(searchWord)) {
+                score += 20;
+            }
+        }
+    }
+
+    // PRIORITY 8: Partial substring matches (50-100 points)
+    const searchWordsLower = searchLower.split(/\s+/).filter(w => w.length >= 3);
+    const combinedText = `${titleLower} ${descriptionLower}`;
+    
+    for (const word of searchWordsLower) {
+        if (combinedText.includes(word)) {
+            score += 10;
+        }
+    }
+
+    return Math.min(score, maxScore);
+}
+
+// @route GET /api/products/search
+// @desc Search products with fuzzy matching
+// @access Public
+router.get('/search', async (req, res) => {
+    try {
+        const { q, limit = 20 } = req.query;
+
+        if (!q || q.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Search query is required'
+            });
+        }
+
+        const searchTerm = q.trim();
+        const searchLimit = parseInt(limit) || 20;
+        const searchLower = searchTerm.toLowerCase();
+
+        // First, try MongoDB text search for exact/partial matches (faster and more accurate)
+        let initialProducts = [];
+        try {
+            // Use MongoDB text search if available
+            initialProducts = await Product.find(
+                { 
+                    $text: { $search: searchTerm },
+                    stock: { $gt: 0 }
+                },
+                { score: { $meta: "textScore" } }
+            )
+            .select('title picture price description stock isFeatured createdAt')
+            .populate('user', 'name')
+            .populate('category', 'name')
+            .sort({ score: { $meta: "textScore" } })
+            .limit(searchLimit * 2) // Get more for filtering
+            .lean();
+        } catch (textSearchError) {
+            // If text search fails (index might not exist), fall back to regular search
+            console.log('Text search not available, using regular search');
+        }
+
+        // If text search didn't return enough results or failed, get all active products
+        if (initialProducts.length < searchLimit) {
+            const allProducts = await Product.find({ stock: { $gt: 0 } })
+                .select('title picture price description stock isFeatured createdAt')
+                .populate('user', 'name')
+                .populate('category', 'name')
+                .lean();
+            
+            // Combine with text search results, avoiding duplicates
+            const existingIds = new Set(initialProducts.map(p => p._id.toString()));
+            const additionalProducts = allProducts.filter(p => !existingIds.has(p._id.toString()));
+            initialProducts = [...initialProducts, ...additionalProducts];
+        }
+
+        // Calculate relevance scores for each product
+        const productsWithScores = initialProducts.map(product => {
+            const score = calculateRelevanceScore(product, searchTerm);
+            return {
+                ...product,
+                relevanceScore: score,
+                image: product.picture?.secure_url || null
+            };
+        });
+
+        // Separate products into categories for better ranking
+        const exactMatches = [];      // Exact title match (100% match)
+        const startsWithMatches = []; // Title starts with search
+        const containsMatches = [];   // Title contains search
+        const wordMatches = [];      // Individual words match
+        const fuzzyMatches = [];      // Fuzzy/typo matches
+        
+        productsWithScores.forEach(product => {
+            const titleLower = (product.title || '').toLowerCase().trim();
+            const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
+            
+            // Count how many search words match in the title
+            const matchingWords = searchWords.filter(word => titleLower.includes(word));
+            const matchCount = matchingWords.length;
+            const matchRatio = searchWords.length > 0 ? matchCount / searchWords.length : 0;
+            
+            // Separate numeric and non-numeric words
+            const numericWords = searchWords.filter(w => /^\d+$/.test(w));
+            const nonNumericWords = searchWords.filter(w => !/^\d+$/.test(w));
+            
+            // Extract all numbers from title for exact numeric matching
+            const titleNumbers = (product.title || '').match(/\d+/g) || [];
+            
+            // Check exact numeric matches (years must match exactly, not just substring)
+            let allNumericMatch = true;
+            let matchingNumericCount = 0;
+            if (numericWords.length > 0) {
+                for (const numericWord of numericWords) {
+                    const numValue = parseInt(numericWord);
+                    // Check if this exact number appears in the title
+                    const exactMatch = titleNumbers.some(tn => parseInt(tn) === numValue);
+                    if (exactMatch) {
+                        matchingNumericCount++;
+                    } else {
+                        allNumericMatch = false;
+                    }
+                }
+            }
+            
+            const matchingNonNumeric = nonNumericWords.filter(w => titleLower.includes(w)).length;
+            
+            // PRIORITY 1: Exact match (100% - always show these first)
+            if (titleLower === searchLower) {
+                exactMatches.push(product);
+            }
+            // PRIORITY 2: Title starts with search term
+            else if (titleLower.startsWith(searchLower)) {
+                startsWithMatches.push(product);
+            }
+            // PRIORITY 3: Title contains the full search term
+            else if (titleLower.includes(searchLower)) {
+                containsMatches.push(product);
+            }
+            // PRIORITY 4: ALL search words are in title (100% word match) - STRICT REQUIREMENT
+            if (searchWords.length > 0 && matchCount === searchWords.length) {
+                wordMatches.push(product);
+            }
+            // PRIORITY 5: For searches with 2+ non-numeric words, ALL non-numeric words MUST match
+            else if (nonNumericWords.length >= 2) {
+                // Require ALL non-numeric words to match
+                if (matchingNonNumeric === nonNumericWords.length) {
+                    // If numeric words exist, ALL must match exactly
+                    if (numericWords.length === 0 || allNumericMatch) {
+                        wordMatches.push(product);
+                    }
+                    // Skip if numeric words don't match exactly
+                }
+                // Skip products that don't have all non-numeric words
+            }
+            // PRIORITY 6: For searches with 1 non-numeric word + numeric, both should match
+            else if (nonNumericWords.length === 1 && numericWords.length > 0) {
+                if (matchingNonNumeric === 1 && allNumericMatch) {
+                    wordMatches.push(product);
+                }
+                // Skip if non-numeric doesn't match or numeric doesn't match exactly
+            }
+            // PRIORITY 7: Most words match (at least 80% of words, minimum 2 words) - only for 3+ word searches
+            else if (searchWords.length >= 3 && matchRatio >= 0.8 && matchCount >= 2) {
+                // Require at least one non-numeric word if non-numeric words exist
+                // AND numeric words must match exactly if they exist
+                if ((nonNumericWords.length === 0 || matchingNonNumeric > 0) && 
+                    (numericWords.length === 0 || allNumericMatch)) {
+                    fuzzyMatches.push(product);
+                }
+            }
+            // PRIORITY 8: Single word searches - allow if it matches
+            else if (searchWords.length === 1 && titleLower.includes(searchWords[0])) {
+                if (product.relevanceScore > 100) {
+                    fuzzyMatches.push(product);
+                }
+            }
+        });
+
+        // Sort function for products
+        const sortProducts = (products) => {
+            return products.sort((a, b) => {
+                // First sort by relevance score (descending)
+                if (b.relevanceScore !== a.relevanceScore) {
+                    return b.relevanceScore - a.relevanceScore;
+                }
+                // If scores are equal, prioritize featured products
+                if (b.isFeatured !== a.isFeatured) {
+                    return b.isFeatured ? 1 : -1;
+                }
+                // Then by newest
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+        };
+
+        // Additional strict filtering: Remove products that don't meet minimum requirements
+        const strictFilter = (products) => {
+            return products.filter(product => {
+                const titleLower = (product.title || '').toLowerCase().trim();
+                const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
+                const numericWords = searchWords.filter(w => /^\d+$/.test(w));
+                const nonNumericWords = searchWords.filter(w => !/^\d+$/.test(w));
+                
+                // Extract all numbers from title (for year matching)
+                const titleNumbers = (product.title || '').match(/\d+/g) || [];
+                
+                // Check exact numeric word matches (years must match exactly)
+                let allNumericMatch = true;
+                if (numericWords.length > 0) {
+                    for (const numericWord of numericWords) {
+                        const numValue = parseInt(numericWord);
+                        // Check if this exact number appears in the title
+                        const exactMatch = titleNumbers.some(tn => parseInt(tn) === numValue);
+                        if (!exactMatch) {
+                            allNumericMatch = false;
+                            break;
+                        }
+                    }
+                }
+                
+                // Check non-numeric word matches
+                const matchingNonNumeric = nonNumericWords.filter(w => titleLower.includes(w)).length;
+                
+                // STRICT RULE 1: If numeric words (years) exist, ALL must match exactly
+                if (numericWords.length > 0 && !allNumericMatch) {
+                    return false; // Exclude if year doesn't match exactly
+                }
+                
+                // STRICT RULE 2: For searches with 2+ non-numeric words, ALL must match
+                if (nonNumericWords.length >= 2) {
+                    if (matchingNonNumeric < nonNumericWords.length) {
+                        return false; // Exclude if not all non-numeric words match
+                    }
+                }
+                
+                // STRICT RULE 3: For searches with 1 non-numeric word, it must match
+                if (nonNumericWords.length === 1) {
+                    if (matchingNonNumeric < 1) {
+                        return false; // Exclude if the non-numeric word doesn't match
+                    }
+                }
+                
+                // STRICT RULE 4: Require at least 70% of ALL words (numeric + non-numeric) to match
+                const allMatchingWords = (allNumericMatch ? numericWords.length : 0) + matchingNonNumeric;
+                const totalWords = searchWords.length;
+                if (totalWords >= 2) {
+                    const matchRatio = allMatchingWords / totalWords;
+                    if (matchRatio < 0.7) {
+                        return false; // Exclude if less than 70% match
+                    }
+                }
+                
+                return true;
+            });
+        };
+
+        // Apply strict filtering to each category
+        const filteredExact = strictFilter([...exactMatches]);
+        const filteredStartsWith = strictFilter([...startsWithMatches]);
+        const filteredContains = strictFilter([...containsMatches]);
+        const filteredWords = strictFilter([...wordMatches]);
+        const filteredFuzzy = strictFilter([...fuzzyMatches]);
+
+        // Sort each category
+        const sortedExact = sortProducts(filteredExact);
+        const sortedStartsWith = sortProducts(filteredStartsWith);
+        const sortedContains = sortProducts(filteredContains);
+        const sortedWords = sortProducts(filteredWords);
+        const sortedFuzzy = sortProducts(filteredFuzzy);
+
+        // GUARANTEE: ALL exact matches are ALWAYS included first (100%)
+        // If there are exact matches, show ALL of them, then fill remaining slots
+        let relevantProducts = [];
+        
+        if (sortedExact.length > 0) {
+            // Add ALL exact matches first (100% guarantee - never cut off)
+            relevantProducts = [...sortedExact];
+            
+            // Calculate remaining slots after exact matches
+            const remainingSlots = Math.max(0, searchLimit - sortedExact.length);
+            
+            // Fill remaining slots with other matches in priority order
+            if (remainingSlots > 0) {
+                const otherMatches = [
+                    ...sortedStartsWith,
+                    ...sortedContains,
+                    ...sortedWords,
+                    ...sortedFuzzy
+                ].slice(0, remainingSlots);
+                
+                relevantProducts = [...relevantProducts, ...otherMatches];
+            }
+        } else {
+            // No exact matches, use normal priority order
+            relevantProducts = [
+                ...sortedStartsWith,
+                ...sortedContains,
+                ...sortedWords,
+                ...sortedFuzzy
+            ].slice(0, searchLimit);
+        }
+        
+        // Remove relevance score from response
+        relevantProducts = relevantProducts.map(({ relevanceScore, ...product }) => product);
+
+        return res.status(200).json({
+            success: true,
+            message: relevantProducts.length > 0 
+                ? `Found ${relevantProducts.length} product(s)` 
+                : 'No products found',
+            data: relevantProducts,
+            query: searchTerm
+        });
+    } catch (error) {
+        console.error('Error while searching products:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while searching products'
+        });
+    }
 });
 
 router.get('/single-product/:id', async (req, res) => {
@@ -1230,6 +1159,7 @@ router.get('/single-product/:id', async (req, res) => {
         res.status(500).json({ success: false, message: 'Server error while fetching single category' });
     }
 });
+
 
 
 module.exports = router;

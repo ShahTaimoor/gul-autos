@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Input } from '../ui/input';
@@ -14,7 +13,6 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import LazyImage from '../ui/LazyImage';
-import SearchBar from './SearchBar';
 import Pagination from './Pagination';
 
 import {
@@ -38,7 +36,6 @@ import {
   Upload as UploadIcon
 } from 'lucide-react';
 
-import { toast } from 'sonner';
 import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 
@@ -54,22 +51,20 @@ const AllProducts = () => {
   const urlPage = searchParams.get('page');
   const initialPage = urlPage ? parseInt(urlPage, 10) : 1;
 
-  // Use the search hook to eliminate duplication
-  const search = useSearch({
-    initialCategory: 'all',
-    initialPage: initialPage,
-    initialLimit: 24,
-    initialStockFilter: 'all',
-    initialSortBy: 'az'
-  });
+  // Local state for filters
+  const [category, setCategory] = useState('all');
+  const [stockFilter, setStockFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('relevance');
+  const [limit, setLimit] = useState(24);
+  const [currentPage, setCurrentPage] = useState(initialPage);
 
-  // Use pagination hook to eliminate pagination duplication
+  // Use pagination hook
   const pagination = usePagination({
     initialPage: initialPage,
-    initialLimit: search.limit || 24,
+    initialLimit: limit,
     totalItems,
     onPageChange: (page) => {
-      search.handlePageChange(page);
+      setCurrentPage(page);
     }
   });
 
@@ -142,72 +137,20 @@ const AllProducts = () => {
     }
   }, [dispatch, debouncedEditCategorySearch, showEditModal]);
 
-  // Fetch products on component mount
+  // Fetch products when filters change
   useEffect(() => {
-    dispatch(fetchProducts({ category: 'all', searchTerm: '', page: 1, limit: 24, stockFilter: 'all' }));
-  }, [dispatch]);
-
-  // Store handleSearch in a ref to avoid dependency issues
-  const handleSearchRef = useRef(search.handleSearch);
-  handleSearchRef.current = search.handleSearch;
-  
-  // Track last search params to prevent unnecessary calls
-  const lastSearchParamsRef = useRef('');
-  const isSearchingRef = useRef(false);
-  
-  // Fetch products with debounced search using the hook
-  // NOTE: page is NOT in dependencies to prevent loops when handleSearch auto-adjusts page
-  useEffect(() => {
-    // Prevent concurrent searches
-    if (isSearchingRef.current) return;
-    
-    // Create a key from search params (excluding page to prevent loops)
-    const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.stockFilter}-${search.sortBy}-${search.limit}`;
-    
-    // Only call if search params actually changed
-    if (lastSearchParamsRef.current !== searchKey) {
-      lastSearchParamsRef.current = searchKey;
-      isSearchingRef.current = true;
-      
-      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
-      // Ensure we always have a promise to call finally on
-      Promise.resolve(result).finally(() => {
-        isSearchingRef.current = false;
-      });
-    }
-  }, [search.debouncedSearchTerm, search.category, search.stockFilter, search.sortBy]);
-  
-  // Handle page changes separately (only user-initiated via pagination)
-  const prevPageRef = useRef(search.page);
-  useEffect(() => {
-    const pageChanged = prevPageRef.current !== search.page;
-    prevPageRef.current = search.page;
-    
-    // Only trigger search if page changed (user clicked pagination)
-    // Skip if we're already searching to prevent loops
-    if (pageChanged && !isSearchingRef.current) {
-      isSearchingRef.current = true;
-      const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.stockFilter}-${search.sortBy}-${search.limit}`;
-      lastSearchParamsRef.current = searchKey;
-      
-      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
-      // Ensure we always have a promise to call finally on
-      Promise.resolve(result).finally(() => {
-        isSearchingRef.current = false;
-      });
-    }
-  }, [search.page]);
+    dispatch(fetchProducts({ category, page: currentPage, limit, stockFilter, sortBy }));
+  }, [dispatch, category, currentPage, limit, stockFilter, sortBy]);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [search.page]);
+  }, [currentPage]);
 
-  // Products are fully filtered and sorted on the backend, so we use them directly
-  // Only apply basic validation filtering (no search filtering - backend handles it)
+  // Products are fully filtered and sorted on the backend
   const sortedProducts = useMemo(() => {
-    return search.filterProducts(products, '', search.selectedProductId);
-  }, [products, search.selectedProductId, search.filterProducts]);
+    return products.filter(product => product && product._id);
+  }, [products]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -224,12 +167,10 @@ const AllProducts = () => {
       });
 
       await dispatch(AddProduct(formDataObj)).unwrap();
-      toast.success('Product added successfully!');
       setShowCreateForm(false);
 
       setFormData({ title: '', description: '', price: '', stock: '' });
     } catch (error) {
-      toast.error(error.message || 'Something went wrong!');
     } finally {
       setIsSubmitting(false);
     }
@@ -240,9 +181,7 @@ const AllProducts = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await dispatch(deleteSingleProduct(productId)).unwrap();
-        toast.success('Product deleted successfully!');
       } catch (error) {
-        toast.error(error.message || 'Something went wrong!');
       }
     }
   }, [dispatch]);
@@ -268,7 +207,6 @@ const AllProducts = () => {
         setEditPreviewImage(prod.picture?.secure_url || prod.image || '');
       }
     } catch (error) {
-      toast.error('Failed to load product details');
     }
   }, [dispatch]);
 
@@ -299,12 +237,6 @@ const AllProducts = () => {
         inputValues: formDataObj 
       })).unwrap();
       
-      if (result?.success) {
-        toast.success(result?.message || 'Product updated successfully!');
-      } else {
-        toast.success('Product updated successfully!');
-      }
-      
       setShowEditModal(false);
       setSelectedProduct(null);
       setEditFormData({
@@ -321,19 +253,17 @@ const AllProducts = () => {
       // Refresh products list
       const currentPage = pagination.currentPage;
       await dispatch(fetchProducts({ 
-        category: search.category, 
-        searchTerm: search.searchTerm, 
+        category, 
         page: currentPage, 
-        limit: search.limit || 24, 
-        stockFilter: search.stockFilter,
-        sortBy: search.sortBy
+        limit, 
+        stockFilter,
+        sortBy
       }));
     } catch (error) {
-      toast.error(error?.message || error || 'Failed to update product');
     } finally {
       setIsUpdating(false);
     }
-  }, [dispatch, editFormData, isUpdating, selectedProduct, pagination.currentPage, search]);
+  }, [dispatch, editFormData, isUpdating, selectedProduct, currentPage, category, limit, stockFilter, sortBy]);
 
   // Handle edit form change
   const handleEditChange = useCallback((e) => {
@@ -363,10 +293,7 @@ const AllProducts = () => {
         id: product._id, 
         stock: newStock 
       })).unwrap();
-      
-      toast.success(`Product ${newStock > 0 ? 'restocked' : 'marked as out of stock'}`);
     } catch (error) {
-      toast.error(error || 'Failed to update stock status');
     }
   }, [dispatch]);
 
@@ -380,21 +307,9 @@ const AllProducts = () => {
   const handleCategorySelect = useCallback((categoryId) => {
     // Clear category search
     setCategorySearch('');
-    // Clear search state before updating category
-    search.handleSearchChange('');
-    // Update category (this will trigger search with new category immediately)
-    // Don't call clearSearch as setCategory already triggers the search
-    search.setCategory(categoryId);
-  }, [search]);
-
-  // Enhanced handlers for search and interactions
-  const handleSearchChange = useCallback((value) => {
-    search.handleSearchChange(value);
-  }, [search]);
-
-  const handleSearchSubmit = useCallback((term, productId = null) => {
-    search.handleSearchWithTracking(term, productId);
-  }, [search]);
+    setCategory(categoryId);
+    setCurrentPage(1);
+  }, []);
 
 
   const handleGridTypeChange = useCallback((type) => {
@@ -429,7 +344,6 @@ const AllProducts = () => {
   // Handle bulk mark as featured
   const handleBulkMarkFeatured = useCallback(async (isFeatured) => {
     if (selectedProducts.length === 0) {
-      toast.error('Please select at least one product');
       return;
     }
 
@@ -440,31 +354,25 @@ const AllProducts = () => {
         isFeatured 
       })).unwrap();
       
-      toast.success(
-        `Successfully ${isFeatured ? 'marked' : 'unmarked'} ${selectedProducts.length} product(s) as featured`
-      );
       setSelectedProducts([]);
       
       // Refresh products list
       const currentPage = pagination.currentPage;
       await dispatch(fetchProducts({ 
-        category: search.category, 
-        searchTerm: search.searchTerm, 
+        category, 
         page: currentPage, 
-        limit: search.limit || 24, 
-        stockFilter: search.stockFilter,
-        sortBy: search.sortBy
+        limit, 
+        stockFilter, 
+        sortBy 
       }));
     } catch (error) {
-      toast.error(error?.message || 'Failed to update featured status');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, selectedProducts, pagination.currentPage, search]);
+  }, [dispatch, selectedProducts, pagination.currentPage, category, limit, stockFilter, sortBy]);
 
   const handleBulkStockUpdate = useCallback(async (stockValue) => {
     if (selectedProducts.length === 0) {
-      toast.error('Please select at least one product');
       return;
     }
 
@@ -476,28 +384,23 @@ const AllProducts = () => {
         )
       );
 
-      toast.success(
-        stockValue > 0
-          ? `Marked ${selectedProducts.length} product(s) as in stock`
-          : `Marked ${selectedProducts.length} product(s) as out of stock`
-      );
       setSelectedProducts([]);
 
       const currentPage = pagination.currentPage;
+      
+      // Refetch products
       await dispatch(fetchProducts({
-        category: search.category,
-        searchTerm: search.searchTerm,
-        page: currentPage,
-        limit: search.limit || 24,
-        stockFilter: search.stockFilter,
-        sortBy: search.sortBy
+        category,
+        page: currentPage, 
+        limit,
+        stockFilter,
+        sortBy
       }));
     } catch (error) {
-      toast.error(error?.message || error || 'Failed to update stock status');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, pagination.currentPage, search, selectedProducts]);
+  }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy]);
 
   // Handle inline price edit
   const handleStartEditPrice = useCallback((product) => {
@@ -512,7 +415,6 @@ const AllProducts = () => {
 
   const handleSavePrice = useCallback(async (productId) => {
     if (!editingPriceValue || isNaN(editingPriceValue) || parseFloat(editingPriceValue) < 0) {
-      toast.error('Please enter a valid price');
       return;
     }
 
@@ -526,26 +428,23 @@ const AllProducts = () => {
         inputValues: formDataObj 
       })).unwrap();
       
-      toast.success('Price updated successfully!');
       setEditingPriceId(null);
       setEditingPriceValue('');
       
       // Refresh products list
       const currentPage = pagination.currentPage;
       await dispatch(fetchProducts({ 
-        category: search.category, 
-        searchTerm: search.searchTerm, 
+        category, 
         page: currentPage, 
-        limit: search.limit || 24, 
-        stockFilter: search.stockFilter,
-        sortBy: search.sortBy
+        limit, 
+        stockFilter,
+        sortBy
       }));
     } catch (error) {
-      toast.error(error?.message || error || 'Failed to update price');
     } finally {
       setIsUpdatingPrice(false);
     }
-  }, [dispatch, editingPriceValue, pagination.currentPage, search]);
+  }, [dispatch, editingPriceValue, pagination.currentPage, category, limit, stockFilter, sortBy]);
 
   // Handle inline stock edit
   const handleStartEditStock = useCallback((product) => {
@@ -564,7 +463,6 @@ const AllProducts = () => {
       isNaN(editingStockValue) ||
       parseInt(editingStockValue, 10) < 0
     ) {
-      toast.error('Please enter a valid stock quantity');
       return;
     }
 
@@ -580,35 +478,31 @@ const AllProducts = () => {
         })
       ).unwrap();
 
-      toast.success('Stock updated successfully!');
       setEditingStockId(null);
       setEditingStockValue('');
 
+      // Refresh products list
       const currentPage = pagination.currentPage;
-      await dispatch(
-        fetchProducts({
-          category: search.category,
-          searchTerm: search.searchTerm,
-          page: currentPage,
-          limit: search.limit || 24,
-          stockFilter: search.stockFilter,
-          sortBy: search.sortBy,
-        })
-      );
+      await dispatch(fetchProducts({
+        category,
+        page: currentPage, 
+        limit,
+        stockFilter,
+        sortBy,
+      }));
     } catch (error) {
-      toast.error(error?.message || error || 'Failed to update stock');
     } finally {
       setIsUpdatingStock(false);
     }
-  }, [dispatch, editingStockValue, pagination.currentPage, search]);
+  }, [dispatch, editingStockValue, currentPage, category, limit, stockFilter, sortBy]);
 
   const handleLimitChange = useCallback((value) => {
     const newLimit = parseInt(value, 10);
     if (!Number.isNaN(newLimit)) {
-      pagination.setLimit(newLimit);
-      search.setLimit(newLimit);
+      setLimit(newLimit);
+      setCurrentPage(1);
     }
-  }, [pagination, search]);
+  }, []);
 
   // Only show main loader for initial loading, not for search/filter operations
   if (status === 'loading' && products.length === 0) {
@@ -694,25 +588,33 @@ const AllProducts = () => {
         {/* Professional Search and Filter Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-            {/* Enhanced Search Bar with Suggestions */}
-            <div className="flex-1 min-w-0">
-              <SearchBar
-                searchTerm={search.searchTerm}
-                onSearchChange={handleSearchChange}
-                onSearchSubmit={handleSearchSubmit}
-                gridType={gridType}
-                onGridTypeChange={handleGridTypeChange}
-                products={products}
-                searchHistory={[]}
-                popularSearches={[]}
-              />
+            {/* Search Input */}
+            
+            {/* Grid Type Toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={gridType === 'grid2' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setGridType('grid2')}
+                className="h-10"
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={gridType === 'grid3' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setGridType('grid3')}
+                className="h-10"
+              >
+                <List className="h-4 w-4" />
+              </Button>
             </div>
             
             {/* Filter Controls - Fixed Alignment */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
               {/* Category Filter */}
               <div className="flex-1 sm:min-w-[180px]">
-                <Select value={search.category} onValueChange={handleCategorySelect}>
+                <Select value={category} onValueChange={handleCategorySelect}>
                   <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
                     <div className="flex items-center gap-2 text-sm">
                       <Filter className="h-4 w-4 text-gray-500 flex-shrink-0" />
@@ -743,7 +645,7 @@ const AllProducts = () => {
               
               {/* Stock Filter */}
               <div className="flex-1 sm:min-w-[140px]">
-                <Select value={search.stockFilter} onValueChange={search.setStockFilter}>
+                <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
                   <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="h-4 w-4 text-gray-500 flex-shrink-0" />
@@ -760,7 +662,7 @@ const AllProducts = () => {
               
               {/* Sort Filter */}
               <div className="flex-1 sm:min-w-[140px]">
-                <Select value={search.sortBy} onValueChange={search.setSortBy}>
+                <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
                   <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
                     <div className="flex items-center gap-2 text-sm">
                       <SortAsc className="h-4 w-4 text-gray-500 flex-shrink-0" />
@@ -768,11 +670,15 @@ const AllProducts = () => {
                     </div>
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="relevance">Relevance</SelectItem>
                     <SelectItem value="az">Name A-Z</SelectItem>
                     <SelectItem value="za">Name Z-A</SelectItem>
                     <SelectItem value="price-low">Price Low-High</SelectItem>
                     <SelectItem value="price-high">Price High-Low</SelectItem>
-                    <SelectItem value="stock">Stock Level</SelectItem>
+                    <SelectItem value="newest">Newest First</SelectItem>
+                    <SelectItem value="oldest">Oldest First</SelectItem>
+                    <SelectItem value="stock-high">Stock High-Low</SelectItem>
+                    <SelectItem value="stock-low">Stock Low-High</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -783,6 +689,7 @@ const AllProducts = () => {
       
         {/* Professional Products Grid */}
         <div className="space-y-6">
+          
           {/* Results Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-4">
@@ -807,14 +714,9 @@ const AllProducts = () => {
                   </Badge>
                 )}
               </div>
-              {search.searchTerm && (
-                <Badge variant="secondary" className="px-2.5 py-0.5 bg-gray-100 text-gray-700 border border-gray-200">
-                  Search: "{search.searchTerm}"
-                </Badge>
-              )}
-              {search.stockFilter !== 'all' && (
+              {stockFilter !== 'all' && (
                 <Badge variant="outline" className="px-2.5 py-0.5">
-                  {search.stockFilter === 'active' ? 'In Stock' : 'Out of Stock'}
+                  {stockFilter === 'active' ? 'In Stock' : 'Out of Stock'}
                 </Badge>
               )}
             </div>
@@ -1146,7 +1048,7 @@ const AllProducts = () => {
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>Rows:</span>
-                <Select value={String(search.limit)} onValueChange={handleLimitChange}>
+                <Select value={String(limit)} onValueChange={handleLimitChange}>
                   <SelectTrigger className="w-[100px] h-9 border-gray-200 rounded-lg">
                     <SelectValue placeholder="24 items" />
                   </SelectTrigger>
@@ -1178,27 +1080,27 @@ const AllProducts = () => {
               </div>
               
               <h3 className="text-xl font-bold text-gray-900 mb-2">
-                {search.searchTerm || search.stockFilter !== 'all' 
+                {stockFilter !== 'all' 
                   ? 'No matching products' 
                   : 'No products found'
                 }
               </h3>
               
               <p className="text-gray-500 mb-8">
-                {search.searchTerm || search.stockFilter !== 'all'
-                  ? 'Try adjusting your search terms or filters.'
+                {stockFilter !== 'all'
+                  ? 'Try adjusting your filters.'
                   : 'Get started by creating your first product.'
                 }
               </p>
               
               <div className="flex justify-center gap-3">
-                {search.searchTerm || search.stockFilter !== 'all' ? (
+                {stockFilter !== 'all' ? (
                   <>
                     <Button
                       variant="outline"
                       onClick={() => {
-                        search.clearSearch();
-                        search.setStockFilter('all');
+                        setStockFilter('all');
+                        setCurrentPage(1);
                       }}
                       className="px-6 border-gray-200 hover:bg-gray-50"
                     >

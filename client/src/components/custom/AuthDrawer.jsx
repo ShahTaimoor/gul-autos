@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import OneLoader from '@/components/ui/OneLoader';
 import { Eye, EyeOff, X } from 'lucide-react';
-import { toast } from 'sonner';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupOrLogin } from '@/redux/slices/auth/authSlice';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
@@ -31,7 +30,8 @@ const AuthDrawer = () => {
     password: '',
     phone: '',
     address: '',
-    city: ''
+    city: '',
+    username: ''
   });
 
   // Check if user is logged in, close drawer
@@ -44,7 +44,7 @@ const AuthDrawer = () => {
   // Reset form when drawer opens/closes
   useEffect(() => {
     if (!open) {
-      setInputValues({ shopName: '', password: '', phone: '', address: '', city: '' });
+      setInputValues({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
       setErrorMsg({ shopName: '', password: '' });
       setShowPassword(false);
     }
@@ -95,19 +95,14 @@ const AuthDrawer = () => {
         phone: inputValue.phone.trim() || undefined,
         address: inputValue.address.trim() || undefined,
         city: inputValue.city.trim() || undefined,
+        username: inputValue.username.trim() || undefined,
       })).unwrap();
       
       if (response?.success && response?.user) {
-        if (response.isNewUser) {
-          toast.success('Account created successfully!');
-        } else {
-          toast.success('Logged in successfully!');
-        }
-        setInputValues({ shopName: '', password: '', phone: '', address: '', city: '' });
+        setInputValues({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
         setOpen(false);
       } else {
         setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
-        toast.error('Authentication failed');
       }
     } catch (error) {
       let errorMessage = error || 'Invalid shop name or password';
@@ -115,9 +110,6 @@ const AuthDrawer = () => {
       // Check if it's an admin login error
       if (errorMessage.includes('admin login') || errorMessage.includes('Admin accounts')) {
         errorMessage = 'Admin accounts must use the admin login page';
-        toast.error(errorMessage, { duration: 5000 });
-      } else {
-        toast.error(errorMessage);
       }
       
       setErrorMsg({ shopName: errorMessage, password: errorMessage });
@@ -219,6 +211,24 @@ const AuthDrawer = () => {
               <p className="text-xs text-gray-500 mb-4 italic">
                 Optional fields (fill these only when creating a new account)
               </p>
+
+              {/* Username Field - Optional */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="username" className="text-sm font-semibold text-gray-900">
+                  Username
+                </Label>
+                <Input
+                  id="username"
+                  type="text"
+                  name="username"
+                  placeholder="Enter your username (optional)"
+                  value={inputValue.username}
+                  onChange={handleChange}
+                  disabled={loading}
+                  autoComplete="username"
+                  className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
               {/* Phone Field - Optional */}
               <div className="space-y-2 mb-4">

@@ -11,7 +11,6 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import OneLoader from '../ui/OneLoader';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -110,7 +109,6 @@ const CreateProducts = () => {
         setUploadedMedia(response.data.data);
       } else {
         console.error('Media fetch failed:', response.data.message);
-        toast.error('Failed to fetch media: ' + response.data.message);
       }
     } catch (error) {
       console.error('Error fetching media:', error);
@@ -120,7 +118,6 @@ const CreateProducts = () => {
         status: error.response?.status,
         statusText: error.response?.statusText
       });
-      toast.error('Failed to fetch media: ' + (error.response?.data?.message || error.message));
     } finally {
       setMediaLoading(false);
     }
@@ -133,7 +130,6 @@ const CreateProducts = () => {
 
     // Check if it's a supported image format
     if (!file.type.match(/^image\/(jpeg|jpg|png|webp)$/)) {
-      toast.error('Please select a JPEG, PNG, or WebP image file');
       return;
     }
 
@@ -167,10 +163,6 @@ const CreateProducts = () => {
           },
           compression: compressionRatio
         });
-
-        toast.success(`Image optimized! Size reduced by ${compressionRatio}%`);
-      } else {
-        toast.info('Image is already in WebP format');
       }
 
       // Create preview URL
@@ -188,7 +180,6 @@ const CreateProducts = () => {
 
     } catch (error) {
       console.error('Image conversion error:', error);
-      toast.error(`Image conversion failed: ${error.message}`);
     } finally {
       setIsConverting(false);
     }
@@ -200,7 +191,6 @@ const CreateProducts = () => {
   const handleExcelImport = async (e) => {
     e.preventDefault();
     if (!excelFile) {
-      toast.error('Please select an Excel file');
       return;
     }
 
@@ -209,16 +199,12 @@ const CreateProducts = () => {
       const result = await dispatch(importProductsFromExcel(excelFile)).unwrap();
       
       if (result.success) {
-        toast.success(result.message);
         setExcelFile(null);
         // Reset file input
         const fileInput = document.getElementById('excelFile');
         if (fileInput) fileInput.value = '';
-      } else {
-        toast.error(result.message || 'Import failed');
       }
     } catch (error) {
-      toast.error(error || 'Import failed');
     } finally {
       setImportLoading(false);
     }
@@ -256,16 +242,12 @@ const CreateProducts = () => {
       .unwrap()
       .then((response) => {
         if (response?.success) {
-          toast.success(response?.message);
           setInputValues(initialValues);
-        } else {
-          toast.error(response?.message || 'Failed to add product');
         }
         setLoading(false);
       })
       .catch((error) => {
         console.error('Product creation error:', error);
-        toast.error(error || 'Failed to add product');
         setLoading(false);
       });
   };
@@ -398,8 +380,6 @@ const CreateProducts = () => {
             },
             compression: compressionRatio
           });
-
-          toast.success(`Image optimized! Size reduced by ${compressionRatio}%`);
         }
 
         // Create preview URL
@@ -414,7 +394,6 @@ const CreateProducts = () => {
         
       } catch (error) {
         console.error('Error processing selected image:', error);
-        toast.error('Failed to process selected image');
       } finally {
         setIsConverting(false);
       }

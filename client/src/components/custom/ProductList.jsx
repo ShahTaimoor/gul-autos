@@ -4,15 +4,13 @@ import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/ca
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { toast } from 'sonner';
 import CategorySwiper from './CategorySwiper';
-import SearchBar from './SearchBar';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
-import { useSearch } from '@/hooks/use-search';
 import { usePagination } from '@/hooks/use-pagination';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, ArrowUpDown, SortAsc, Grid3X3, List } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   Sheet,
   SheetTrigger,
@@ -49,7 +47,6 @@ const CartProduct = ({ product, quantity }) => {
   const handleRemove = (e) => {
     e.stopPropagation();
     dispatch(removeFromCart(_id));
-    toast.success('Product removed from cart');
   };
 
   const handleDecrease = (e) => {
@@ -119,14 +116,13 @@ const ProductList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Read initial values from URL params
-  const urlSearch = searchParams.get('q') || '';
   const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
   
   // Redux selectors - get categories first
   const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
   
-  // Convert category slug to ID for the search hook (if needed)
+  // Convert category slug to ID
   // Find category by slug from Redux state
   const categoryBySlug = useMemo(() => {
     if (urlCategorySlug === 'all') return 'all';
@@ -135,22 +131,19 @@ const ProductList = () => {
     return found?._id || 'all';
   }, [urlCategorySlug, categories]);
 
-  // Use the search hook to eliminate duplication
-  const search = useSearch({
-    initialCategory: categoryBySlug,
-    initialPage: urlPage,
-    initialLimit: 24,
-    initialStockFilter: 'active',
-    initialSortBy: 'az'
-  });
+  // Local state for filters
+  const [category, setCategory] = useState(categoryBySlug);
+  const [page, setPage] = useState(urlPage);
+  const [limit] = useState(24);
+  const [stockFilter] = useState('active');
+  const [sortBy, setSortBy] = useState('relevance');
 
-  // Initialize search term from URL if present (only on mount or when URL changes)
+  // Update category when URL changes
   useEffect(() => {
-    if (urlSearch && urlSearch !== search.activeSearchTerm) {
-      search.handleSearchChange(urlSearch);
-      search.handleSearchSubmit(urlSearch);
+    if (categoryBySlug !== category) {
+      setCategory(categoryBySlug);
     }
-  }, [location.search]); // Only run when URL search params change
+  }, [categoryBySlug]);
 
   // Local state for UI-specific functionality
   const [quantities, setQuantities] = useState({});
@@ -164,7 +157,7 @@ const ProductList = () => {
   const dispatch = useDispatch();
   const { openDrawer } = useAuthDrawer();
   
-  // Update URL params when search or category changes
+  // Update URL params when category changes
   const updateURLParams = useCallback((updates) => {
     const newParams = new URLSearchParams(searchParams);
     
@@ -176,8 +169,8 @@ const ProductList = () => {
       }
     });
     
-    // Reset page to 1 when search or category changes (unless explicitly set)
-    if (updates.q !== undefined || updates.category !== undefined) {
+    // Reset page to 1 when category changes (unless explicitly set)
+    if (updates.category !== undefined) {
       if (updates.page === undefined) {
         newParams.set('page', '1');
       }
@@ -188,24 +181,18 @@ const ProductList = () => {
   
   // Find category slug from ID (outside useEffect)
   const categorySlug = useMemo(() => {
-    if (search.category === 'all') return 'all';
-    const found = categories?.find(cat => cat._id === search.category);
+    if (category === 'all') return 'all';
+    const found = categories?.find(cat => cat._id === category);
     return found?.slug || 'all';
-  }, [search.category, categories]);
+  }, [category, categories]);
 
-  // Sync URL params with search state (but avoid loops)
+  // Sync URL params with state (but avoid loops)
   useEffect(() => {
-    const currentSearch = searchParams.get('q') || '';
     const currentCategorySlug = searchParams.get('category') || 'all';
     const currentPage = searchParams.get('page') || '1';
     
     const updates = {};
     let hasUpdates = false;
-    
-    if (search.activeSearchTerm !== currentSearch) {
-      updates.q = search.activeSearchTerm || null;
-      hasUpdates = true;
-    }
     
     // Compare slug instead of ID
     if (categorySlug !== currentCategorySlug) {
@@ -213,10 +200,10 @@ const ProductList = () => {
       hasUpdates = true;
     }
     
-    if (search.page.toString() !== currentPage && search.page > 1) {
-      updates.page = search.page.toString();
+    if (page.toString() !== currentPage && page > 1) {
+      updates.page = page.toString();
       hasUpdates = true;
-    } else if (search.page === 1 && currentPage !== '1') {
+    } else if (page === 1 && currentPage !== '1') {
       updates.page = null;
       hasUpdates = true;
     }
@@ -224,10 +211,10 @@ const ProductList = () => {
     if (hasUpdates) {
       updateURLParams(updates);
     }
-  }, [search.activeSearchTerm, search.category, search.page, categorySlug, updateURLParams, searchParams]);
+  }, [category, page, categorySlug, updateURLParams, searchParams]);
 
   // Categories already fetched above
-  const { products: productList = [], status, totalItems } = useSelector((s) => s.products);
+  const { products: productList = [], status, totalItems, currentPage, totalPages } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
   
@@ -242,8 +229,8 @@ const ProductList = () => {
     initialPage: 1,
     initialLimit: 24,
     totalItems,
-    onPageChange: (page) => {
-      search.handlePageChange(page);
+    onPageChange: (newPage) => {
+      setPage(newPage);
     }
   });
 
@@ -274,58 +261,24 @@ const ProductList = () => {
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [search.page]);
+  }, [page]);
 
-  // Store handleSearch in a ref to avoid dependency issues
-  const handleSearchRef = useRef(search.handleSearch);
-  handleSearchRef.current = search.handleSearch;
-  
-  // Track last search params to prevent unnecessary calls
-  const lastSearchParamsRef = useRef('');
-  const isSearchingRef = useRef(false);
-  
-  // Fetch products with debounced search using the hook
-  // NOTE: page is NOT in dependencies to prevent loops when handleSearch auto-adjusts page
+  // Fetch products when filters change
   useEffect(() => {
-    // Prevent concurrent searches
-    if (isSearchingRef.current) return;
-    
-    // Create a key from search params (excluding page to prevent loops)
-    const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.sortBy}-${JSON.stringify(search.enterSuggestionIds || [])}`;
-    
-    // Only call if search params actually changed
-    if (lastSearchParamsRef.current !== searchKey) {
-      lastSearchParamsRef.current = searchKey;
-      isSearchingRef.current = true;
-      
-      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
-      // Ensure we always have a promise to call finally on
-      Promise.resolve(result).finally(() => {
-        isSearchingRef.current = false;
-      });
+    const params = {
+      page,
+      limit,
+      stockFilter,
+      sortBy
+    };
+
+    // Add category if not 'all'
+    if (category && category !== 'all') {
+      params.category = category;
     }
-  }, [search.debouncedSearchTerm, search.category, search.sortBy, search.enterSuggestionIds]);
-  
-  // Handle page changes separately (only user-initiated via pagination)
-  const prevPageRef = useRef(search.page);
-  useEffect(() => {
-    const pageChanged = prevPageRef.current !== search.page;
-    prevPageRef.current = search.page;
-    
-    // Only trigger search if page changed (user clicked pagination)
-    // Skip if we're already searching to prevent loops
-    if (pageChanged && !isSearchingRef.current) {
-      isSearchingRef.current = true;
-      const searchKey = `${search.debouncedSearchTerm || ''}-${search.category}-${search.sortBy}-${JSON.stringify(search.enterSuggestionIds || [])}`;
-      lastSearchParamsRef.current = searchKey;
-      
-      const result = handleSearchRef.current?.(search.debouncedSearchTerm);
-      // Ensure we always have a promise to call finally on
-      Promise.resolve(result).finally(() => {
-        isSearchingRef.current = false;
-      });
-    }
-  }, [search.page]);
+
+    dispatch(fetchProducts(params));
+  }, [dispatch, page, limit, stockFilter, sortBy, category]);
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
@@ -381,14 +334,12 @@ const ProductList = () => {
 
   const handleAddToCart = useCallback((product) => {
     if (!user) {
-      toast.warning('You must login first');
       openDrawer('login');
       return;
     }
 
     const qty = parseInt(quantities[product._id]);
     if (!qty || qty <= 0) {
-      toast.warning('Please select at least 1 item');
       return;
     }
 
@@ -397,15 +348,10 @@ const ProductList = () => {
       productId: product._id,
       quantity: qty
     })).then(() => {
-      toast.success('Product added to cart');
       // Keep the selected quantity instead of resetting to 1
     }).catch((error) => {
       // If user is authenticated but getting error, it might be a cookie issue
-      // Show a helpful message instead of opening drawer
-      if (user) {
-        toast.error('Failed to add to cart. Please try again.');
-      } else {
-        toast.warning('You must login first');
+      if (!user) {
         openDrawer('login');
       }
     }).finally(() => setAddingProductId(null));
@@ -417,40 +363,27 @@ const ProductList = () => {
     const categorySlug = categoryId === 'all' ? 'all' : 
       (categories?.find(cat => cat._id === categoryId)?.slug || 'all');
     
-    // Clear selected product first
-    search.setSelectedProductId(null);
-    // Clear suggestion IDs
-    search.setEnterSuggestionIds([]);
-    // Clear search term and active search term BEFORE updating category
-    search.handleSearchChange('');
-    // Update category (this will trigger search with new category immediately)
-    // Don't call handleSearchSubmit as setCategory already triggers the search
-    search.setCategory(categoryId);
+    // Update category
+    setCategory(categoryId);
+    setPage(1);
     // Update URL params with slug instead of ID
     updateURLParams({
       category: categorySlug === 'all' ? null : categorySlug,
-      q: null,
       page: null
     });
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [search, updateURLParams, categories]);
-
-  // Add function to clear selected product and return to normal view
-  const handleClearSelectedProduct = useCallback(() => {
-    search.setSelectedProductId(null);
-    search.clearSearch();
-  }, [search]);
+  }, [updateURLParams, categories]);
 
   const handleGridTypeChange = useCallback((type) => {
     setGridType(type);
   }, []);
 
   const handleSortChange = useCallback((order) => {
-    search.setSortBy(order);
-  }, [search]);
+    setSortBy(order);
+  }, []);
 
   const handlePageChange = useCallback((newPage) => {
     pagination.setCurrentPage(newPage);
@@ -468,7 +401,6 @@ const ProductList = () => {
       return;
     }
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty.');
       return;
     }
     setOpenCheckoutDialog(true);
@@ -498,37 +430,14 @@ const ProductList = () => {
         </div>
       )}
       
-      {/* Fixed Search and Categories Container */}
-      <div className={`fixed ${isMobile && isScrolled ? 'top-0' : isMobile ? 'top-14' : 'top-0'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md pb-2 search-categories-container transition-all duration-300 ${isScrolled && !isMobile ? 'scrolled-up' : ''}`}>
-        {/* Search and Sort Bar */}
-        <div className={`max-w-7xl lg:mx-auto lg:px-4 pt-4 transition-all duration-300 ${isScrolled && !isMobile ? 'lg:mt-2' : 'lg:mt-14'}`}>
-          <SearchBar
-            searchTerm={search.searchTerm}
-            onSearchChange={search.handleSearchChange}
-            onSearchSubmit={(term, productId, suggestionIds) => {
-              search.handleSearchWithTracking(term, productId, suggestionIds);
-              // Navigate to search page with params when search is submitted
-              if (term && term.trim()) {
-                navigate(`/?q=${encodeURIComponent(term.trim())}&page=1`, { replace: false });
-              } else {
-                navigate('/', { replace: false });
-              }
-            }}
-            gridType={gridType}
-            onGridTypeChange={handleGridTypeChange}
-            searchHistory={search.searchHistory}
-            popularSearches={search.popularSearches}
-            products={search.allProducts}
-            isRedBackground={isMobile && !isScrolled}
-          />
-        </div>
-      
-        {/* Category Swiper - Always visible, even during search */}
-        <div className="max-w-7xl lg:mx-auto lg:px-4">
+      {/* Fixed Categories Container */}
+      <div className={`fixed ${isMobile && isScrolled ? 'top-0' : isMobile ? 'top-14' : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md pb-2 transition-all duration-300`}>
+        {/* Category Swiper */}
+        <div className="max-w-7xl lg:mx-auto">
           {combinedCategories && combinedCategories.length > 0 ? (
             <CategorySwiper
               categories={combinedCategories}
-              selectedCategory={search.category}
+              selectedCategory={category}
               onCategorySelect={handleCategorySelect}
             />
           ) : (
@@ -548,9 +457,7 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className="h-64 lg:h-52"></div>
-
-     
+      <div className="h-50 lg:h-40"></div>
 
       {/* Product Grid */}
       <ProductGrid
@@ -563,7 +470,6 @@ const ProductList = () => {
         addingProductId={addingProductId}
         cartItems={cartItems}
         onPreviewImage={handlePreviewImage}
-        searchTerm={search.searchTerm}
       />
 
       {/* Pagination */}

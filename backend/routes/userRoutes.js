@@ -69,7 +69,7 @@ const generateAndSetTokens = (user, res, rememberMe = false, isNewUser = false) 
 // Unified Signup or Login Endpoint
 // If shop exists → login, if not → signup + auto-login
 router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
-  const { shopName, password, phone, address, city, rememberMe } = req.body;
+  const { shopName, password, phone, address, city, username, rememberMe } = req.body;
 
   try {
     // Validate required fields
@@ -134,6 +134,9 @@ router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
       if (city && city.trim()) {
         userData.city = city.trim();
       }
+      if (username && username.trim()) {
+        userData.username = username.trim();
+      }
       
       // Create new user
       const newUser = await User.create(userData);
@@ -161,7 +164,7 @@ router.post('/auth/signup-or-login', authLimiter, async (req, res) => {
 
 // Signup - with rate limiting
 router.post('/signup', authLimiter, async (req, res) => {
-  const { name, password, phone, address, city } = req.body;
+  const { name, password, phone, address, city, username } = req.body;
 
   try {
     // Validate required fields
@@ -209,6 +212,9 @@ router.post('/signup', authLimiter, async (req, res) => {
     }
     if (city && city.trim()) {
       userData.city = city.trim();
+    }
+    if (username && username.trim()) {
+      userData.username = username.trim();
     }
     
     const user = await User.create(userData);
@@ -600,7 +606,7 @@ router.get('/all-users', isAuthorized, isAdminOrSuperAdmin, async (req, res) => 
 router.put('/update-profile', isAuthorized, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, phone, address, city } = req.body;
+    const { name, phone, address, city, username } = req.body;
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
@@ -609,6 +615,7 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
     user.phone = phone || user.phone;
     user.address = address || user.address;
     user.city = city || user.city;
+    if (username !== undefined) user.username = username || undefined;
 
     const updatedUser = await user.save();
 
@@ -621,6 +628,7 @@ router.put('/update-profile', isAuthorized, async (req, res) => {
         phone: updatedUser.phone,
         address: updatedUser.address,
         city: updatedUser.city,
+        username: updatedUser.username,
       },
     });
   } catch (error) {
@@ -790,6 +798,7 @@ router.put('/update-username', isAuthorized, async (req, res) => {
         phone: user.phone,
         address: user.address,
         city: user.city,
+        username: user.username,
       }
     });
   } catch (error) {

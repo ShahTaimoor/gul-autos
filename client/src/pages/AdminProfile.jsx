@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 import { changePassword, updateUsername } from '@/redux/slices/auth/authSlice';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -63,23 +62,19 @@ const AdminProfile = () => {
 
   const handleUsernameSubmit = () => {
     if (!usernameData.newUsername.trim()) {
-      toast.error('Username is required');
       return;
     }
 
     if (usernameData.newUsername === user?.name) {
-      toast.error('New username must be different from current username');
       return;
     }
 
     dispatch(updateUsername({ newUsername: usernameData.newUsername }))
       .unwrap()
       .then(() => {
-        toast.success('Username updated successfully');
       })
       .catch((err) => {
         console.error(err);
-        toast.error(err || 'Failed to update username');
       });
   };
 
@@ -87,29 +82,24 @@ const AdminProfile = () => {
     const { oldPassword, newPassword, confirmPassword } = passwordData;
 
     if (!oldPassword || !newPassword || !confirmPassword) {
-      toast.error('All password fields are required');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error('New password and confirm password do not match');
       return;
     }
 
     if (newPassword.length < 6) {
-      toast.error('New password must be at least 6 characters long');
       return;
     }
 
     if (oldPassword === newPassword) {
-      toast.error('New password must be different from old password');
       return;
     }
 
     dispatch(changePassword(passwordData))
       .unwrap()
       .then(() => {
-        toast.success('Password changed successfully');
         setPasswordData({
           oldPassword: '',
           newPassword: '',
@@ -118,7 +108,6 @@ const AdminProfile = () => {
       })
       .catch((err) => {
         console.error(err);
-        toast.error(err || 'Failed to change password');
       });
   };
 

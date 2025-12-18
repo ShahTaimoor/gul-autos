@@ -9,7 +9,7 @@ const router = express.Router();
 
 // Secure signup with validation
 router.post('/signup', userValidation.register, async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password, phone, username, address, city } = req.body;
 
   try {
     // Check if user already exists
@@ -29,7 +29,10 @@ router.post('/signup', userValidation.register, async (req, res) => {
       name, 
       email, 
       password: hashedPassword,
-      phone: phone || undefined
+      phone: phone || undefined,
+      username: username || undefined,
+      address: address || undefined,
+      city: city || undefined
     });
 
     // Generate JWT token
@@ -113,7 +116,10 @@ router.post('/login', userValidation.login, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        phone: user.phone
+        phone: user.phone,
+        username: user.username,
+        address: user.address,
+        city: user.city
       }
     });
   } catch (error) {
@@ -127,7 +133,7 @@ router.post('/login', userValidation.login, async (req, res) => {
 
 // Secure profile update with validation
 router.put('/profile', isAuthorized, userValidation.updateProfile, async (req, res) => {
-  const { name, phone } = req.body;
+  const { name, phone, username, address, city } = req.body;
   const userId = req.user.userId;
 
   try {
@@ -142,6 +148,9 @@ router.put('/profile', isAuthorized, userValidation.updateProfile, async (req, r
     // Update user
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    if (username !== undefined) user.username = username || undefined;
+    if (address !== undefined) user.address = address || undefined;
+    if (city !== undefined) user.city = city || undefined;
     
     await user.save();
 
@@ -153,7 +162,10 @@ router.put('/profile', isAuthorized, userValidation.updateProfile, async (req, r
         name: user.name,
         email: user.email,
         role: user.role,
-        phone: user.phone
+        phone: user.phone,
+        username: user.username,
+        address: user.address,
+        city: user.city
       }
     });
   } catch (error) {
@@ -198,6 +210,9 @@ router.get('/profile', isAuthorized, async (req, res) => {
         email: user.email,
         role: user.role,
         phone: user.phone,
+        username: user.username,
+        address: user.address,
+        city: user.city,
         createdAt: user.createdAt
       }
     });

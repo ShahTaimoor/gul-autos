@@ -224,7 +224,7 @@ router.get('/get-metrics', isAuthorized, isAdminOrSuperAdmin, async (req, res) =
     const ordersInRange = await Order.find({ createdAt: { $gte: start, $lte: end } });
     const totalSales = ordersInRange.reduce((acc, order) => acc + Number(order.amount), 0);
 
-    // Calculate sales grouped by Pakistan date for frontend filtering
+    // Calculate sales grouped by Pakistan date for filtering
     const salesByDateMap = {};
     ordersInRange.forEach(order => {
       const date = toPakistanDateISOString(order.createdAt);

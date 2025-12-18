@@ -1,6 +1,5 @@
 import { setUserLogout } from "@/redux/slices/authSlice"
 import { useDispatch } from "react-redux"
-import { toast } from "sonner"
 
 const useErrorLogout = () => {
 
@@ -11,8 +10,6 @@ const useErrorLogout = () => {
             dispatch(setUserLogout())
             // No toast notification - rely on automatic redirect
             // The ProtectedRoute component will handle the redirect to login page
-        } else {
-            toast(otherTitle)
         }
     }
 

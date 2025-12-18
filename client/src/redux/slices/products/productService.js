@@ -19,12 +19,12 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', searchTerm = '', page = 1, limit = 2000, stockFilter = 'active', sortBy = 'az', productIds) => {
+const allProduct = async (category = 'all', page = 1, limit = 2000, stockFilter = 'active', sortBy = 'relevance') => {
     try {
       const response = await axiosInstance.get(
         '/get-products',
         {
-          params: { category, search: searchTerm, page, limit, stockFilter: stockFilter || 'active', sortBy, productIds },
+          params: { category, page, limit, stockFilter: stockFilter || 'active', sortBy },
           headers: { 'Content-Type': 'application/json' },
         }
       );
@@ -145,11 +145,11 @@ const bulkUpdateFeatured = async ({ productIds, isFeatured }) => {
     }
 };
 
-// search suggestions/autocomplete
-const getSearchSuggestions = async (query, limit = 10) => {
+// search products with fuzzy matching
+const searchProducts = async (query, limit = 20) => {
     try {
         const response = await axiosInstance.get(
-            '/search-suggestions',
+            '/search',
             {
                 params: { q: query, limit },
                 headers: { 'Content-Type': 'application/json' },
@@ -163,6 +163,17 @@ const getSearchSuggestions = async (query, limit = 10) => {
     }
 };
 
-const productService = { createProduct, allProduct, getSingleProd, updateProd, deleteProduct, importProductsFromExcel, updateProductStock, bulkUpdateFeatured, getSearchSuggestions };
+
+const productService = { 
+    createProduct, 
+    allProduct, 
+    getSingleProd, 
+    updateProd, 
+    deleteProduct, 
+    importProductsFromExcel, 
+    updateProductStock, 
+    bulkUpdateFeatured,
+    searchProducts
+};
 
 export default productService;

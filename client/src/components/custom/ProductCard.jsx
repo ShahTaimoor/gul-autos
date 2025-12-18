@@ -2,7 +2,6 @@ import React, { useRef, useCallback, useEffect } from 'react';
 import OneLoader from '../ui/OneLoader';
 import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
-import { highlightSearchTerm, truncateAndHighlight } from '@/utils/searchHighlight.jsx';
 
 const ProductCard = React.memo(({
   product,
@@ -13,10 +12,10 @@ const ProductCard = React.memo(({
   isInCart,
   gridType,
   setPreviewImage,
-  searchTerm = ''
 }) => {
   const imgRef = useRef(null);
   const clickAudioRef = useRef(null);
+  const quantityInputRef = useRef(null);
 
   // Initialize audio only once
   useEffect(() => {
@@ -67,15 +66,33 @@ const ProductCard = React.memo(({
   const handleDecrease = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation?.();
+    // Prevent focus on input and scroll
+    if (e.target) {
+      e.target.blur();
+    }
+    if (quantityInputRef.current) {
+      quantityInputRef.current.blur();
+    }
     const newValue = Math.max((parseInt(quantity) || 1) - 1, 1);
     onQuantityChange(product._id, newValue, product.stock);
+    return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation?.();
+    // Prevent focus on input and scroll
+    if (e.target) {
+      e.target.blur();
+    }
+    if (quantityInputRef.current) {
+      quantityInputRef.current.blur();
+    }
     const newValue = Math.min((parseInt(quantity) || 1) + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
+    return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleImageClick = useCallback(() => {
@@ -159,17 +176,9 @@ const ProductCard = React.memo(({
         <h3 className={`font-medium line-clamp-2 leading-tight ${
           gridType === 'grid3' ? 'text-sm' : 'text-xs'
         }`}>
-          {searchTerm ? 
-            highlightSearchTerm(
-              product.title.split(' ').map(word =>
-                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-              ).join(' '), 
-              searchTerm
-            ) : 
-            product.title.split(' ').map(word =>
-              word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-            ).join(' ')
-          }
+          {product.title.split(' ').map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          ).join(' ')}
         </h3>
         
         
@@ -180,22 +189,40 @@ const ProductCard = React.memo(({
         }`}>
           {/* Quantity Controls - 55% mobile, 50% desktop */}
           <div className="flex items-center justify-center w-[55%] md:w-1/2">
-            <div className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+            <div 
+              className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden"
+              onTouchStart={(e) => {
+                // Prevent scroll when touching the quantity control area
+                if (e.target.tagName === 'BUTTON') {
+                  e.stopPropagation();
+                }
+              }}
+            >
               <button
                 type="button"
                 onClick={handleDecrease}
-                onTouchStart={handleTouchStart}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault(); // Prevent click event from firing after touch
+                  e.preventDefault(); // Prevent click event and scroll
+                  e.stopImmediatePropagation?.();
                   handleDecrease(e);
+                }}
+                onMouseDown={(e) => {
+                  // Prevent focus on mobile to avoid scroll
+                  if (window.innerWidth < 1024) {
+                    e.preventDefault();
+                  }
                 }}
                 className="w-9 h-9 sm:w-8 sm:h-8 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
                   WebkitUserSelect: 'none',
-                  userSelect: 'none'
+                  userSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent'
                 }}
                 disabled={currentQuantity <= 1}
                 aria-label="Decrease quantity"
@@ -204,29 +231,47 @@ const ProductCard = React.memo(({
               </button>
 
               <input
+                ref={quantityInputRef}
                 type="number"
                 max={product.stock}
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
+                onTouchStart={(e) => {
+                  // Allow normal input behavior
+                  e.stopPropagation();
+                }}
                 className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full"
+                style={{
+                  touchAction: 'manipulation'
+                }}
               />
 
               <button
                 type="button"
                 onClick={handleIncrease}
-                onTouchStart={handleTouchStart}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault(); // Prevent click event from firing after touch
+                  e.preventDefault(); // Prevent click event and scroll
+                  e.stopImmediatePropagation?.();
                   handleIncrease(e);
+                }}
+                onMouseDown={(e) => {
+                  // Prevent focus on mobile to avoid scroll
+                  if (window.innerWidth < 1024) {
+                    e.preventDefault();
+                  }
                 }}
                 className="w-9 h-9 sm:w-8 sm:h-8 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
                   WebkitUserSelect: 'none',
-                  userSelect: 'none'
+                  userSelect: 'none',
+                  WebkitTapHighlightColor: 'transparent'
                 }}
                 disabled={currentQuantity >= product.stock}
                 aria-label="Increase quantity"

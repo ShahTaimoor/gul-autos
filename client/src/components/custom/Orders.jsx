@@ -21,7 +21,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { toast } from 'sonner';
 import OrderData from './OrderData';
 import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount, deleteOrder, bulkDeleteOrders } from '@/redux/slices/order/orderSlice';
 import { Badge } from '../ui/badge';
@@ -143,7 +142,6 @@ const Orders = () => {
     if (newStatus === 'Completed') {
       const packer = packerNames[orderId];
       if (!packer) {
-        toast.error('Please enter packer name first');
         return;
       }
     }
@@ -157,8 +155,6 @@ const Orders = () => {
         })
       ).unwrap();
       
-      toast.success(`Order marked as ${newStatus}`);
-      
       setLocalOrders((prev) =>
         prev.map((order) =>
           order._id === orderId ? result.data : order
@@ -167,14 +163,12 @@ const Orders = () => {
   
       dispatch(fetchPendingOrderCount());
     } catch (error) {
-      toast.error(error?.message || 'Failed to update order status');
     }
   };
 
   const handleDeleteOrder = async (orderId) => {
     try {
       await dispatch(deleteOrder(orderId)).unwrap();
-      toast.success('Order deleted successfully and stock restored');
       
       // Update local orders state
       setLocalOrders((prev) => prev.filter(order => order._id !== orderId));
@@ -182,7 +176,6 @@ const Orders = () => {
       // Refresh pending order count
       dispatch(fetchPendingOrderCount());
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete order');
     }
   };
 
@@ -190,7 +183,6 @@ const Orders = () => {
     try {
       const allOrderIds = filteredOrders.map(order => order._id);
       await dispatch(bulkDeleteOrders(allOrderIds)).unwrap();
-      toast.success(`All ${allOrderIds.length} orders deleted successfully and stock restored`);
       
       // Clear local orders state
       setLocalOrders([]);
@@ -198,7 +190,6 @@ const Orders = () => {
       // Refresh pending order count
       dispatch(fetchPendingOrderCount());
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete all orders');
     }
   };
 
@@ -244,7 +235,6 @@ const Orders = () => {
     }
 
     if (status === 'failed') {
-      toast.error(error || 'Failed to fetch orders');
     }
   }, [status, error, orders]);
 
@@ -303,7 +293,6 @@ Phone: ${order.phone}
           });
         } else {
           navigator.clipboard.writeText(details);
-          toast.success('Order details copied to clipboard!');
         }
       }
     } else if (navigator.share) {
@@ -313,7 +302,6 @@ Phone: ${order.phone}
       });
     } else {
       navigator.clipboard.writeText(details);
-      toast.success('Order details copied to clipboard!');
     }
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(details)}`;

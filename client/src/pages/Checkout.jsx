@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { addOrder } from '@/redux/slices/order/orderSlice';
 import { emptyCart } from '@/redux/slices/cart/cartSlice';
 import { updateProfile } from '@/redux/slices/auth/authSlice';
@@ -56,10 +55,8 @@ const Checkout = ({ closeModal }) => {
   const handleProfileUpdate = async () => {
     try {
       await dispatch(updateProfile(formData)).unwrap();
-      toast.success('Profile updated successfully');
       setShowForm(false);
     } catch (err) {
-      toast.error(err?.message || 'Failed to update profile');
     }
   };
 
@@ -67,14 +64,14 @@ const Checkout = ({ closeModal }) => {
   const handleCheckout = async () => {
     const { address, phone, city } = formData;
     if (!address.trim() || !phone.trim() || !city.trim()) {
-      return toast('Please fill out all fields');
+      return;
     }
 
     // Filter out items with null/deleted products
     const validCartItems = cartItems.filter((item) => item.product && item.product._id);
 
     if (validCartItems.length === 0) {
-      return toast.error('Your cart is empty or contains invalid items');
+      return;
     }
 
     const totalPrice = validCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
@@ -104,13 +101,9 @@ const Checkout = ({ closeModal }) => {
         
         // Navigate to success page
         navigate('/success');
-        toast.success('Order placed successfully!');
-      } else {
-        toast.error('Failed to place order');
       }
     } catch (err) {
       setError(err?.message || 'Something went wrong!');
-      toast.error('Something went wrong!');
     } finally {
       setLoading(false);
     }
@@ -143,6 +136,9 @@ const Checkout = ({ closeModal }) => {
                         <Check className="w-4 h-4 text-green-500" />
                       </div>
                       <p className="text-sm text-gray-600"><span>Shop Name: </span>{user?.name}</p>
+                      {user?.username && (
+                        <p className="text-sm text-gray-600"><span>Username: </span>{user?.username}</p>
+                      )}
                       <p className="text-sm text-gray-600"><span>Contact No: </span>{user?.phone}</p>
                       <p className="text-sm text-gray-600"><span>Address: </span>{user?.address}</p>
                       <p className="text-sm text-gray-600"><span>City: </span>{user?.city}</p>

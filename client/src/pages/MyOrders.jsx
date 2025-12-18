@@ -4,7 +4,6 @@ import OneLoader from '@/components/ui/OneLoader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import OrderData from '@/components/custom/OrderData';
 import { fetchOrders, deleteOrder } from '@/redux/slices/order/orderSlice';
-import { toast } from 'sonner';
 
 // Helper to get today date in 'yyyy-mm-dd' format for Pakistan timezone
 const getPakistaniDate = () => {
@@ -26,9 +25,7 @@ const MyOrders = () => {
   const handleDeleteOrder = async (orderId) => {
     try {
       await dispatch(deleteOrder(orderId)).unwrap();
-      toast.success('Order deleted successfully and stock restored');
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete order');
     }
   };
 

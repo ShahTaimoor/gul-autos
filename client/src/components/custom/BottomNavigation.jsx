@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus, Search } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -19,12 +19,12 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
 import { logout } from "../../redux/slices/auth/authSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
+import SearchModal from "./SearchModal";
 
 // Cart Product Component (simplified version for mobile)
 const CartProduct = ({ product, quantity, onValidationChange }) => {
@@ -43,7 +43,6 @@ const CartProduct = ({ product, quantity, onValidationChange }) => {
   const handleRemove = (e) => {
     e.stopPropagation();
     dispatch(removeFromCart(_id));
-    toast.success('Product removed from cart');
   };
 
   const handleDecrease = (e) => {
@@ -116,6 +115,7 @@ const BottomNavigation = () => {
   const navigate = useNavigate();
   
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+  const [openSearchModal, setOpenSearchModal] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const { openDrawer } = useAuthDrawer();
@@ -132,7 +132,6 @@ const BottomNavigation = () => {
       return;
     }
     if (cartItems.length === 0) {
-      toast.error('Your cart is empty.');
       return;
     }
     setOpenCheckoutDialog(true);
@@ -180,15 +179,11 @@ const BottomNavigation = () => {
       if (outcome === 'accepted') {
         setShowInstallPrompt(false);
         setDeferredPrompt(null);
-        toast.success('App installed successfully!');
       } else {
         // User dismissed the install prompt, remember this choice
         localStorage.setItem('pwa-install-dismissed', 'true');
         setShowInstallPrompt(false);
       }
-    } else {
-      // Fallback for browsers that don't support beforeinstallprompt
-      toast.info('To install this app, use your browser\'s menu and select "Add to Home Screen"');
     }
   };
 
@@ -234,14 +229,12 @@ const BottomNavigation = () => {
       .then((response) => {
         // Clear cookies again after server response
         clearCookies();
-        toast.success('Logged out successfully');
         navigate('/');
       })
       .catch((error) => {
         // Clear cookies again even if API fails
         clearCookies();
         // Even if API fails, user is already logged out locally
-        toast.success('Logged out successfully');
         navigate('/');
       });
   };
@@ -252,7 +245,7 @@ const BottomNavigation = () => {
   // Always render but use responsive classes for visibility
   // if (!isMobile) return null;
 
-  // Navigation items matching the design: Install, My Orders, Home (center/active), Cart, Profile
+  // Navigation items matching the design: Install, My Orders, Home (center/active), Cart, Profile, Search
   const navItems = [
     {
       path: "/",
@@ -262,7 +255,15 @@ const BottomNavigation = () => {
       isCenter: true, // This is the center/active item
       isHome: true
     },
-   
+    {
+      path: "/",
+      icon: Search,
+      label: "Search",
+      show: true,
+      isCenter: false,
+      onClick: () => setOpenSearchModal(true),
+      isAction: true
+    },
     {
       path: "/orders",
       icon: Package,
@@ -501,6 +502,9 @@ const BottomNavigation = () => {
           <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
         </DialogContent>
       </Dialog>
+
+      {/* Search Modal */}
+      <SearchModal open={openSearchModal} onOpenChange={setOpenSearchModal} />
     </nav>
     </>
   );
