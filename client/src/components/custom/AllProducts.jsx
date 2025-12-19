@@ -33,10 +33,11 @@ import {
   BarChart3,
   CheckSquare,
   Square,
-  Upload as UploadIcon
+  Upload as UploadIcon,
+  Loader2
 } from 'lucide-react';
 
-import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,7 +45,7 @@ const AllProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { products, status, totalItems } = useSelector((state) => state.products);
+  const { products, status, totalItems, searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
   const toast = useToast();
 
@@ -100,6 +101,8 @@ const AllProducts = () => {
   const [editingStockValue, setEditingStockValue] = useState('');
   const [isUpdatingStock, setIsUpdatingStock] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
@@ -150,9 +153,30 @@ const AllProducts = () => {
   }, [currentPage]);
 
   // Products are fully filtered and sorted on the backend
+  // Show search results if searching, otherwise show regular products
   const sortedProducts = useMemo(() => {
-    return products.filter(product => product && product._id);
-  }, [products]);
+    let productList = [];
+    
+    if (hasSearched && searchResults && searchResults.length > 0) {
+      productList = searchResults.filter(product => product && product._id);
+    } else {
+      productList = products.filter(product => product && product._id);
+    }
+    
+    // Remove duplicates by _id to prevent React key warnings
+    const uniqueProducts = [];
+    const seenIds = new Set();
+    
+    for (const product of productList) {
+      const productId = product._id?.toString();
+      if (productId && !seenIds.has(productId)) {
+        seenIds.add(productId);
+        uniqueProducts.push(product);
+      }
+    }
+    
+    return uniqueProducts;
+  }, [products, searchResults, hasSearched]);
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
@@ -514,6 +538,28 @@ const AllProducts = () => {
     }
   }, []);
 
+  // Search handlers
+  const handleSearch = useCallback(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length === 0) {
+      setHasSearched(false);
+      return;
+    }
+    setHasSearched(true);
+    dispatch(searchProducts({ query: trimmedQuery, limit: 100 }));
+  }, [searchQuery, dispatch]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }, [handleSearch]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setHasSearched(false);
+  }, []);
+
   // Only show main loader for initial loading, not for search/filter operations
   if (status === 'loading' && products.length === 0) {
     return (
@@ -599,6 +645,54 @@ const AllProducts = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
             {/* Search Input */}
+            <div className="relative flex-1">
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <Input
+                    type="text"
+                    placeholder="Search products... (e.g., Spoiler 2002)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="pl-10 pr-10 h-10 text-base"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  disabled={searchStatus === 'loading' || !searchQuery.trim()}
+                  className="h-10 px-6 bg-primary hover:bg-primary/90"
+                >
+                  {searchStatus === 'loading' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
+              </div>
+              {hasSearched && searchQuery && (
+                <div className="mt-2 text-sm text-gray-600">
+                  {searchStatus === 'loading' ? (
+                    'Searching...'
+                  ) : searchResults && searchResults.length > 0 ? (
+                    `Found ${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
+                  ) : (
+                    `No results found for "${searchQuery}"`
+                  )}
+                </div>
+              )}
+            </div>
             
             {/* Grid Type Toggle */}
             <div className="flex items-center gap-2">
@@ -789,9 +883,9 @@ const AllProducts = () => {
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
               : 'grid-cols-1'
           }`}>
-            {sortedProducts.map((product) => (
+            {sortedProducts.map((product, index) => (
               <Card 
-                key={product._id} 
+                key={product._id || `product-${index}`} 
                 className={`group relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 ${
                   selectedProducts.includes(product._id) ? 'ring-2 ring-blue-500 ring-offset-1' : ''
                 } ${

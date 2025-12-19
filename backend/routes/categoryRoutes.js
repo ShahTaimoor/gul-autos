@@ -184,7 +184,19 @@ router.delete('/delete-category/:slug', isAuthorized, isAdminOrSuperAdmin, async
 // Get all categori
 router.get('/all-category', async (req, res) => {
     try {
-        const categories = await Category.find({}).sort({ position: 1, createdAt: -1 });
+        const { search } = req.query;
+        
+        // Build query with optional search filter
+        const query = {};
+        if (search && search.trim()) {
+            const searchRegex = new RegExp(search.trim(), 'i'); // Case-insensitive search
+            query.$or = [
+                { name: searchRegex },
+                { slug: searchRegex }
+            ];
+        }
+        
+        const categories = await Category.find(query).sort({ position: 1, createdAt: -1 });
         const newCategoryArray = categories.map((category) => {
             const categoryObj = category.toObject();
             categoryObj.image = categoryObj.picture?.secure_url || null;

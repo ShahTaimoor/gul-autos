@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProducts } from '@/redux/slices/products/productSlice';
+import { fetchProducts, searchProducts } from '@/redux/slices/products/productSlice';
 import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
 import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search } from 'lucide-react';
+import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search, Loader2 } from 'lucide-react';
 import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
 const Media = () => {
   const dispatch = useDispatch();
-  const { products, status, totalItems } = useSelector((state) => state.products);
+  const { products, status, totalItems, searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
   
   // Local state for filters
   const [category, setCategory] = useState('all');
@@ -49,6 +50,8 @@ const Media = () => {
   // Separate state for uploaded media display in Upload tab
   const [filteredUploadedMedia, setFilteredUploadedMedia] = useState([]);
   const [uploadSearchTerm, setUploadSearchTerm] = useState(''); // Search term for uploaded media
+  const [searchQuery, setSearchQuery] = useState(''); // Search term for gallery products
+  const [hasSearched, setHasSearched] = useState(false);
   
   // Pagination state for Upload tab
   const [uploadCurrentPage, setUploadCurrentPage] = useState(1);
@@ -94,15 +97,31 @@ const Media = () => {
   // Filter products to show only those with images (backend handles all search filtering)
   useEffect(() => {
     // For Gallery tab: Show only product images (no uploaded media)
-    // Backend already handles all search, so we just filter for products with images
-    let filtered = products.filter(product => 
+    // Use search results if searching, otherwise use regular products
+    const productsToFilter = hasSearched && searchResults && searchResults.length > 0 
+      ? searchResults 
+      : products;
+    
+    let filtered = productsToFilter.filter(product => 
       product && 
       product._id && 
       (product.picture?.secure_url || product.image)
     );
 
-    setFilteredProducts(filtered);
-  }, [products]);
+    // Remove duplicates by _id to prevent React key warnings
+    const uniqueProducts = [];
+    const seenIds = new Set();
+    
+    for (const product of filtered) {
+      const productId = product._id?.toString();
+      if (productId && !seenIds.has(productId)) {
+        seenIds.add(productId);
+        uniqueProducts.push(product);
+      }
+    }
+
+    setFilteredProducts(uniqueProducts);
+  }, [products, searchResults, hasSearched]);
 
   // Filter uploaded media for Upload tab with pagination and search
   useEffect(() => {
@@ -118,19 +137,31 @@ const Media = () => {
       );
     }
     
+    // Remove duplicates by _id to prevent React key warnings
+    const uniqueMedia = [];
+    const seenIds = new Set();
+    
+    for (const media of searchFiltered) {
+      const mediaId = media._id?.toString();
+      if (mediaId && !seenIds.has(mediaId)) {
+        seenIds.add(mediaId);
+        uniqueMedia.push(media);
+      }
+    }
+    
     if (showAllImages) {
       // Show all filtered images without pagination
-      setFilteredUploadedMedia(searchFiltered);
+      setFilteredUploadedMedia(uniqueMedia);
       setUploadTotalPages(1);
     } else {
       // Calculate pagination
-      const totalPages = Math.ceil(searchFiltered.length / uploadPageSize);
+      const totalPages = Math.ceil(uniqueMedia.length / uploadPageSize);
       setUploadTotalPages(totalPages);
       
       // Get current page items
       const startIndex = (uploadCurrentPage - 1) * uploadPageSize;
       const endIndex = startIndex + uploadPageSize;
-      const paginatedMedia = searchFiltered.slice(startIndex, endIndex);
+      const paginatedMedia = uniqueMedia.slice(startIndex, endIndex);
       
       setFilteredUploadedMedia(paginatedMedia);
     }
@@ -138,6 +169,28 @@ const Media = () => {
 
   const handlePreviewImage = useCallback((imageUrl) => {
     setPreviewImage(imageUrl);
+  }, []);
+
+  // Search handlers for gallery
+  const handleSearch = useCallback(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length === 0) {
+      setHasSearched(false);
+      return;
+    }
+    setHasSearched(true);
+    dispatch(searchProducts({ query: trimmedQuery, limit: 100 }));
+  }, [searchQuery, dispatch]);
+
+  const handleKeyPress = useCallback((e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  }, [handleSearch]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setHasSearched(false);
   }, []);
 
   const handleDownloadImage = useCallback(async (imageUrl, productTitle) => {
@@ -574,6 +627,56 @@ const Media = () => {
           {/* Enhanced Search Bar */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex flex-col lg:flex-row gap-4 items-center">
+              {/* Search Input */}
+              <div className="relative flex-1 w-full">
+                <div className="relative flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <Input
+                      type="text"
+                      placeholder="Search products... (e.g., Spoiler 2002)"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="pl-10 pr-10 h-10 text-base"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={handleClearSearch}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleSearch}
+                    disabled={searchStatus === 'loading' || !searchQuery.trim()}
+                    className="h-10 px-6 bg-primary hover:bg-primary/90"
+                  >
+                    {searchStatus === 'loading' ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      'Search'
+                    )}
+                  </Button>
+                </div>
+                {hasSearched && searchQuery && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    {searchStatus === 'loading' ? (
+                      'Searching...'
+                    ) : searchResults && searchResults.length > 0 ? (
+                      `Found ${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
+                    ) : (
+                      `No results found for "${searchQuery}"`
+                    )}
+                  </div>
+                )}
+              </div>
+              
               {/* Gallery Actions - Export Button */}
               <div className="flex gap-2">
                 <Button
@@ -609,9 +712,9 @@ const Media = () => {
           {/* Media Grid - Image Only */}
           {filteredProducts.length > 0 ? (
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product, index) => (
                 <div 
-                  key={product._id} 
+                  key={product._id || `product-${index}`} 
                   className="relative group transition-all duration-300 hover:scale-105"
                 >
 
@@ -835,8 +938,8 @@ const Media = () => {
                   </div>
                 </div>
                 <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                  {filteredUploadedMedia.map((media) => (
-                    <div key={media._id} className="relative group">
+                  {filteredUploadedMedia.map((media, index) => (
+                    <div key={media._id || `media-${index}`} className="relative group">
                       {/* Selection Checkbox */}
                       {deleteMode && (
                         <div className="absolute top-2 right-2 z-10">
