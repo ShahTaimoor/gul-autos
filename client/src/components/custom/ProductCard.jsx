@@ -48,7 +48,10 @@ const ProductCard = React.memo(({
 
   const handleTouchEnd = useCallback((e) => {
     e.stopPropagation();
-    e.preventDefault(); // Prevent click event from firing after touch
+    // Only prevent default if the event is cancelable (not during scroll)
+    if (e.cancelable) {
+      e.preventDefault(); // Prevent click event from firing after touch
+    }
     handleAddClick(e);
   }, [handleAddClick]);
 
@@ -206,7 +209,10 @@ const ProductCard = React.memo(({
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault(); // Prevent click event and scroll
+                  // Only prevent default if the event is cancelable (not during scroll)
+                  if (e.cancelable) {
+                    e.preventDefault(); // Prevent click event and scroll
+                  }
                   e.stopImmediatePropagation?.();
                   handleDecrease(e);
                 }}
@@ -255,7 +261,10 @@ const ProductCard = React.memo(({
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
-                  e.preventDefault(); // Prevent click event and scroll
+                  // Only prevent default if the event is cancelable (not during scroll)
+                  if (e.cancelable) {
+                    e.preventDefault(); // Prevent click event and scroll
+                  }
                   e.stopImmediatePropagation?.();
                   handleIncrease(e);
                 }}
