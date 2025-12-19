@@ -292,16 +292,19 @@ const ProductList = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Clear search results when search is removed from URL
+  // Clear search results when search is removed from URL (only on products page)
   useEffect(() => {
     const hasSearchInUrl = urlSearchQuery && urlSearchQuery.trim().length > 0;
     const hasSearchResults = searchResults && searchResults.length > 0;
     
-    // If there's no search in URL but we have search results, clear them
-    if (!hasSearchInUrl && hasSearchResults) {
+    // Only clear search results if we're on the products page and search was removed from URL
+    // Don't clear on home page to allow search suggestions to work
+    const isOnProductsPage = location.pathname === '/products';
+    
+    if (isOnProductsPage && !hasSearchInUrl && hasSearchResults) {
       dispatch(clearSearchResults());
     }
-  }, [urlSearchQuery, searchResults, dispatch]);
+  }, [urlSearchQuery, searchResults, dispatch, location.pathname]);
 
   // Fetch products when filters change or perform search
   useEffect(() => {

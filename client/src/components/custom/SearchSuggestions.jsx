@@ -55,18 +55,24 @@ const SearchSuggestions = ({
 
   const { searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
   
-  // Debounce search query
-  const debouncedQuery = useDebounce(searchQuery, 300);
+  // Debounce search query for API calls (reduced delay for faster response)
+  const debouncedQuery = useDebounce(searchQuery, 150);
 
   // Fetch suggestions when debounced query changes
   useEffect(() => {
-    if (debouncedQuery.trim().length >= 2) {
+    if (debouncedQuery.trim().length >= 1) {
       dispatch(searchProducts({ query: debouncedQuery, limit: 8 }));
+    }
+  }, [debouncedQuery, dispatch]);
+
+  // Show suggestions immediately when user types (not debounced)
+  useEffect(() => {
+    if (searchQuery.trim().length >= 1) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-  }, [debouncedQuery, dispatch]);
+  }, [searchQuery]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -93,7 +99,8 @@ const SearchSuggestions = ({
       setInternalSearchQuery(newValue);
     }
     setSelectedIndex(-1);
-    if (newValue.trim().length >= 2) {
+    // Show suggestions immediately when typing
+    if (newValue.trim().length >= 1) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -197,9 +204,9 @@ const SearchSuggestions = ({
     }
   }, [selectedIndex]);
 
-  const isLoading = searchStatus === 'loading' && debouncedQuery.trim().length >= 2;
+  const isLoading = searchStatus === 'loading' && searchQuery.trim().length >= 1;
   const hasResults = searchResults && searchResults.length > 0;
-  const showDropdown = showSuggestions && debouncedQuery.trim().length >= 2;
+  const showDropdown = showSuggestions && searchQuery.trim().length >= 1;
 
   return (
     <div className={`relative ${className}`} ref={searchContainerRef}>
@@ -213,7 +220,7 @@ const SearchSuggestions = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (debouncedQuery.trim().length >= 2 && hasResults) {
+              if (searchQuery.trim().length >= 1) {
                 setShowSuggestions(true);
               }
             }}
@@ -249,7 +256,7 @@ const SearchSuggestions = ({
 
       {/* Suggestions Dropdown */}
       {showDropdown && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {isLoading ? (
             <div className="flex items-center justify-center p-4">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -288,21 +295,6 @@ const SearchSuggestions = ({
                         {product.title}
                       </h4>
                     </div>
-                    
-                    {/* Stock Indicator */}
-                    {product.stock !== undefined && (
-                      <div className="flex-shrink-0">
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            product.stock > 0
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 );
               })}
