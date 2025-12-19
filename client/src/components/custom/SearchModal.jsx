@@ -246,14 +246,28 @@ const SearchModal = ({ open, onOpenChange }) => {
                           {product.title}
                         </h3>
                         {/* Quantity Controls and Add/Update Cart - Side by Side */}
-                        <div className="flex flex-row gap-2">
+                        <div 
+                          className="flex flex-row gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
                           {/* Quantity Controls - Left Side (55% mobile, 50% desktop) */}
                           {product.stock > 0 ? (
-                            <div className="flex items-center justify-center w-[55%] md:w-1/2">
-                              <div className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden">
+                            <div 
+                              className="flex items-center justify-center w-[55%] md:w-1/2"
+                              onClick={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => e.stopPropagation()}
+                            >
+                              <div 
+                                className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden"
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                              >
                                 <button
                                   type="button"
                                   onClick={(e) => handleDecrease(e, product._id)}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   className="w-9 h-9 sm:w-8 sm:h-8 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={(quantities[product._id] || 1) <= 1}
                                 >
@@ -264,12 +278,19 @@ const SearchModal = ({ open, onOpenChange }) => {
                                   max={product.stock}
                                   value={quantities[product._id] || 1}
                                   onChange={(e) => handleQuantityChange(product._id, e.target.value, product.stock)}
-                                  onFocus={(e) => e.target.select()}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onFocus={(e) => {
+                                    e.target.select();
+                                    e.stopPropagation();
+                                  }}
+                                  onTouchStart={(e) => e.stopPropagation()}
                                   className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full"
                                 />
                                 <button
                                   type="button"
                                   onClick={(e) => handleIncrease(e, product._id, product.stock)}
+                                  onMouseDown={(e) => e.stopPropagation()}
                                   className="w-9 h-9 sm:w-8 sm:h-8 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
                                   disabled={(quantities[product._id] || 1) >= product.stock}
                                 >
@@ -292,6 +313,7 @@ const SearchModal = ({ open, onOpenChange }) => {
                                   ? 'bg-black hover:bg-gray-800 text-white'
                                   : 'bg-primary hover:bg-primary/90 hover:shadow-2xl text-white'
                             }`}
+                            onMouseDown={(e) => e.stopPropagation()}
                           >
                             {product.stock <= 0 ? (
                               'Out of Stock'
