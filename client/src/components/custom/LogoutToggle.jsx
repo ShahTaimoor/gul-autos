@@ -3,11 +3,13 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-
+import { useState } from "react";
+import { Home, LayoutDashboard, User, ShoppingBag, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import axios from "axios";
 import { logout } from "../../redux/slices/auth/authSlice";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +18,7 @@ const ToggleLogout = ({ user }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const toast = useToast();
+    const [isOpen, setIsOpen] = useState(false);
 
     const clearCookies = () => {
         const cookies = ['accessToken', 'refreshToken'];
@@ -68,6 +71,8 @@ const ToggleLogout = ({ user }) => {
             });
     };
 
+    const isAdmin = user?.role === 1 || user?.role === 2;
+
     return (
         <div>
         {/* Mobile: Avatar dropdown */}
@@ -80,64 +85,81 @@ const ToggleLogout = ({ user }) => {
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>
-                {(user?.role === 1 || user?.role === 2) ? (
-                  <Link to="/admin/dashboard">Admin Dashboard</Link>
-                ) : (
-                  <Link to="/profile">Profile</Link>
-                )}
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/')}>
+                <Home className="h-4 w-4 mr-2" />
+                Home
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Link to="/orders">My Orders</Link>
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate(isAdmin ? '/admin/profile' : '/profile')}>
+                <User className="h-4 w-4 mr-2" />
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/orders')}>
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                My Orders
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
   
-        {/* Desktop: Horizontal menu */}
-        <div className="hidden md:flex items-center gap-2 mr-18">
-             {/* Home*/}
-  <Link
-    to="/"
-    className="px-4 py-2 rounded-lg bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 transition"
-  >
-    Home
-  </Link>
-  {/* Dashboard / Profile */}
-  {(user?.role === 1 || user?.role === 2) ? (
-    <Link
-      to="/admin/dashboard"
-      className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
-    >
-      Admin Dashboard
-    </Link>
-  ) : (
-    <Link
-      to="/profile"
-      className="px-4 py-2 rounded-lg bg-gray-100 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
-    >
-      Profile
-    </Link>
-  )}
-
-  {/* Orders */}
-  <Link
-    to="/orders"
-    className="px-4 py-2 rounded-lg bg-blue-50 text-sm font-medium text-blue-700 hover:bg-blue-100 transition"
-  >
-    My Orders
-  </Link>
-
-  {/* Logout */}
-  <button
-    onClick={handleLogout}
-    className="px-4 py-2 rounded-lg bg-red-50 text-sm font-medium text-red-600 hover:bg-red-100 transition"
-  >
-    Logout
-  </button>
-</div>
+        {/* Desktop: Dropdown menu */}
+        <div className="hidden md:block">
+          <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                <User className="h-4 w-4 mr-2" />
+                {user?.name || 'Menu'}
+                {isOpen ? (
+                  <ChevronUp className="h-4 w-4 ml-2" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate('/')}>
+                <Home className="h-4 w-4 mr-2" />
+                Home
+              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate(isAdmin ? '/admin/profile' : '/profile')}>
+                <User className="h-4 w-4 mr-2" />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/orders')}>
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                My Orders
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
       </div>
     );

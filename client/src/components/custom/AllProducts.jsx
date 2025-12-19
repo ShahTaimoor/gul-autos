@@ -40,6 +40,7 @@ import {
 import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useToast } from '@/hooks/use-toast';
+import SearchSuggestions from './SearchSuggestions';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
@@ -539,26 +540,31 @@ const AllProducts = () => {
   }, []);
 
   // Search handlers
-  const handleSearch = useCallback(() => {
-    const trimmedQuery = searchQuery.trim();
+  const handleSearch = useCallback((query) => {
+    const trimmedQuery = query ? query.trim() : searchQuery.trim();
     if (trimmedQuery.length === 0) {
       setHasSearched(false);
       return;
     }
+    setSearchQuery(trimmedQuery);
     setHasSearched(true);
     dispatch(searchProducts({ query: trimmedQuery, limit: 100 }));
   }, [searchQuery, dispatch]);
 
-  const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  }, [handleSearch]);
+  const handleSearchSelect = useCallback((product) => {
+    setSearchQuery(product.title);
+    setHasSearched(true);
+    dispatch(searchProducts({ query: product.title, limit: 100 }));
+  }, [dispatch]);
 
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    setHasSearched(false);
+  const handleSearchChange = useCallback((value) => {
+    setSearchQuery(value);
   }, []);
+
+  const handleSearchTrigger = useCallback((query) => {
+    setHasSearched(true);
+    dispatch(searchProducts({ query, limit: 100 }));
+  }, [dispatch]);
 
   // Only show main loader for initial loading, not for search/filter operations
   if (status === 'loading' && products.length === 0) {
@@ -644,43 +650,19 @@ const AllProducts = () => {
         {/* Professional Search and Filter Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-            {/* Search Input */}
+            {/* Search Input with Suggestions */}
             <div className="relative flex-1">
-              <div className="relative flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <Input
-                    type="text"
-                    placeholder="Search products... (e.g., Spoiler 2002)"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="pl-10 pr-10 h-10 text-base"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={handleClearSearch}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-                <Button
-                  onClick={handleSearch}
-                  disabled={searchStatus === 'loading' || !searchQuery.trim()}
-                  className="h-10 px-6 bg-primary hover:bg-primary/90"
-                >
-                  {searchStatus === 'loading' ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    'Search'
-                  )}
-                </Button>
-              </div>
+              <SearchSuggestions
+                placeholder="Search products... (e.g., Spoiler 2002)"
+                onSelectProduct={handleSearchSelect}
+                onSearch={handleSearchTrigger}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                showButton={true}
+                buttonText="Search"
+                inputClassName="h-10 text-base"
+                className="w-full"
+              />
               {hasSearched && searchQuery && (
                 <div className="mt-2 text-sm text-gray-600">
                   {searchStatus === 'loading' ? (
@@ -963,7 +945,7 @@ const AllProducts = () => {
                 {/* Product Info */}
                 <div className={`${gridType === 'grid3' ? 'flex-1 space-y-2' : 'p-5 space-y-4'}`}>
                   <div className="space-y-1.5">
-                    <h3 className="font-semibold text-base text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors duration-200">
+                    <h3 className="font-semibold text-base text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
                       {product.title}
                     </h3>
                     

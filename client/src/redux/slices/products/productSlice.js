@@ -15,7 +15,7 @@ export const AddProduct = createAsyncThunk(
 
 export const fetchProducts = createAsyncThunk(
     "products/fetchAll",
-    async ({ category, page = 1, limit = 24, stockFilter, sortBy = 'relevance' }, thunkAPI) => {
+    async ({ category, page = 1, limit = 24, stockFilter, sortBy = 'az' }, thunkAPI) => {
         try {
             const res = await productService.allProduct(category, page, limit, stockFilter, sortBy);
             return res;
@@ -128,7 +128,13 @@ const initialState = {
 export const productsSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {},
+    reducers: {
+        clearSearchResults: (state) => {
+            state.searchResults = [];
+            state.searchQuery = '';
+            state.searchStatus = 'idle';
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(AddProduct.pending, (state) => {
@@ -291,4 +297,5 @@ export const productsSlice = createSlice({
     }
 });
 
+export const { clearSearchResults } = productsSlice.actions;
 export default productsSlice.reducer;

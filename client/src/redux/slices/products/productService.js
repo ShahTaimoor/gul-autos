@@ -19,7 +19,7 @@ const createProduct = async (inputValues) => {
 };
 
 // all product
-const allProduct = async (category = 'all', page = 1, limit = 2000, stockFilter = 'active', sortBy = 'relevance') => {
+const allProduct = async (category = 'all', page = 1, limit = 2000, stockFilter = 'active', sortBy = 'az') => {
     try {
       const response = await axiosInstance.get(
         '/get-products',

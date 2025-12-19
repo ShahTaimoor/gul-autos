@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/cart/cartSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts } from '@/redux/slices/products/productSlice';
+import { fetchProducts, searchProducts, clearSearchResults } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import CategorySwiper from './CategorySwiper';
 import ProductGrid from './ProductGrid';
@@ -119,6 +119,7 @@ const ProductList = () => {
   // Read initial values from URL params
   const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
+  const urlSearchQuery = searchParams.get('search') || '';
   
   // Redux selectors - get categories first
   const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
@@ -137,7 +138,7 @@ const ProductList = () => {
   const [page, setPage] = useState(urlPage);
   const [limit] = useState(24);
   const [stockFilter] = useState('active');
-  const [sortBy, setSortBy] = useState('relevance');
+  const [sortBy, setSortBy] = useState('az'); // Default to alphabetical (A-Z) sorting
 
   // Update category when URL changes
   useEffect(() => {
@@ -154,6 +155,7 @@ const ProductList = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
+  const isCategoryChangingRef = useRef(false);
   
   const dispatch = useDispatch();
   const { openDrawer } = useAuthDrawer();
@@ -190,6 +192,12 @@ const ProductList = () => {
 
   // Sync URL params with state (but avoid loops)
   useEffect(() => {
+    // Skip sync if we're manually changing category
+    if (isCategoryChangingRef.current) {
+      isCategoryChangingRef.current = false;
+      return;
+    }
+    
     const currentCategorySlug = searchParams.get('category') || 'all';
     const currentPage = searchParams.get('page') || '1';
     
@@ -216,9 +224,12 @@ const ProductList = () => {
   }, [category, page, categorySlug, updateURLParams, searchParams]);
 
   // Categories already fetched above
-  const { products: productList = [], status, totalItems, currentPage, totalPages } = useSelector((s) => s.products);
+  const { products: productList = [], status, totalItems, currentPage, totalPages, searchResults, searchStatus } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
+  
+  // Check if we're in search mode
+  const isSearchMode = urlSearchQuery && urlSearchQuery.trim().length > 0;
   
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -255,32 +266,65 @@ const ProductList = () => {
   }, [categories]);
 
   // Products are now sorted on the backend, so we use them directly
+  // Use search results if in search mode, otherwise use regular products
   const sortedProducts = useMemo(() => {
+    // If in search mode, always use search results (even if empty array)
+    if (isSearchMode) {
+      const results = (searchResults || []).filter((product) => product && product._id);
+      // Remove duplicates by _id
+      const uniqueResults = [];
+      const seenIds = new Set();
+      for (const product of results) {
+        const productId = product._id?.toString();
+        if (productId && !seenIds.has(productId)) {
+          seenIds.add(productId);
+          uniqueResults.push(product);
+        }
+      }
+      return uniqueResults;
+    }
     // The backend already handles filtering, so we just need to ensure products exist and are valid
     return productList.filter((product) => product && product._id);
-  }, [productList]);
+  }, [productList, searchResults, isSearchMode]);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Fetch products when filters change
+  // Clear search results when search is removed from URL
   useEffect(() => {
-    const params = {
-      page,
-      limit,
-      stockFilter,
-      sortBy
-    };
-
-    // Add category if not 'all'
-    if (category && category !== 'all') {
-      params.category = category;
+    const hasSearchInUrl = urlSearchQuery && urlSearchQuery.trim().length > 0;
+    const hasSearchResults = searchResults && searchResults.length > 0;
+    
+    // If there's no search in URL but we have search results, clear them
+    if (!hasSearchInUrl && hasSearchResults) {
+      dispatch(clearSearchResults());
     }
+  }, [urlSearchQuery, searchResults, dispatch]);
 
-    dispatch(fetchProducts(params));
-  }, [dispatch, page, limit, stockFilter, sortBy, category]);
+  // Fetch products when filters change or perform search
+  useEffect(() => {
+    // If search query exists in URL, perform search
+    if (isSearchMode && urlSearchQuery.trim()) {
+      dispatch(searchProducts({ query: urlSearchQuery.trim(), limit: 100 }));
+    } else {
+      // Otherwise fetch regular products
+      const params = {
+        page,
+        limit,
+        stockFilter,
+        sortBy
+      };
+
+      // Add category if not 'all'
+      if (category && category !== 'all') {
+        params.category = category;
+      }
+
+      dispatch(fetchProducts(params));
+    }
+  }, [dispatch, page, limit, stockFilter, sortBy, category, isSearchMode, urlSearchQuery]);
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
@@ -294,16 +338,29 @@ const ProductList = () => {
     }
   }, [dispatch, categories, categoriesStatus]);
 
-  // Initialize quantities when products change
+  // Initialize quantities when products change (both regular products and search results)
   useEffect(() => {
-    if (productList.length > 0) {
-      const initialQuantities = {};
-      productList.filter(product => product && product._id).forEach((product) => {
-        initialQuantities[product._id] = product.stock > 0 ? 1 : 0;
+    // Use sortedProducts which handles both regular products and search results
+    const productsToInitialize = isSearchMode ? searchResults : productList;
+    
+    if (productsToInitialize && productsToInitialize.length > 0) {
+      setQuantities((prev) => {
+        const updatedQuantities = { ...prev };
+        let hasChanges = false;
+        
+        productsToInitialize.filter(product => product && product._id).forEach((product) => {
+          // Only initialize if not already set (preserve user input)
+          if (updatedQuantities[product._id] === undefined) {
+            updatedQuantities[product._id] = product.stock > 0 ? 1 : 0;
+            hasChanges = true;
+          }
+        });
+        
+        // Only update state if there are new products to initialize
+        return hasChanges ? updatedQuantities : prev;
       });
-      setQuantities(initialQuantities);
     }
-  }, [productList]);
+  }, [productList, searchResults, isSearchMode]);
 
   // Scroll detection for both desktop and mobile
   useEffect(() => {
@@ -340,8 +397,12 @@ const ProductList = () => {
       return;
     }
 
-    const qty = parseInt(quantities[product._id]);
-    if (!qty || qty <= 0) {
+    // Get quantity from state, or default to 1 if not set (handles search results)
+    const qty = parseInt(quantities[product._id]) || 1;
+    
+    // Ensure quantity is valid and within stock limits
+    if (qty <= 0 || qty > product.stock) {
+      toast.error(`Invalid quantity. Available stock: ${product.stock}`);
       return;
     }
 
@@ -363,23 +424,42 @@ const ProductList = () => {
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {
+    // Set flag to prevent sync useEffect from interfering
+    isCategoryChangingRef.current = true;
+    
     // Find category slug from ID
     const categorySlug = categoryId === 'all' ? 'all' : 
       (categories?.find(cat => cat._id === categoryId)?.slug || 'all');
     
-    // Update category
+    // Clear search results from Redux immediately when category changes
+    dispatch(clearSearchResults());
+    
+    // Update category and page
     setCategory(categoryId);
     setPage(1);
-    // Update URL params with slug instead of ID
-    updateURLParams({
-      category: categorySlug === 'all' ? null : categorySlug,
-      page: null
-    });
+    
+    // Create new URL params from current URL and explicitly remove search
+    const currentParams = new URLSearchParams(window.location.search);
+    currentParams.delete('search'); // Explicitly remove search parameter
+    if (categorySlug === 'all') {
+      currentParams.delete('category'); // Remove category param for 'all'
+    } else {
+      currentParams.set('category', categorySlug);
+    }
+    currentParams.delete('page'); // Remove page to reset to 1
+    
+    // Build new URL
+    const newSearch = currentParams.toString();
+    const newUrl = newSearch ? `/products?${newSearch}` : '/products';
+    
+    // Update URL using navigate to ensure it updates properly
+    navigate(newUrl, { replace: true });
+    
     // Scroll to top when selecting a category
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-  }, [updateURLParams, categories]);
+  }, [categories, dispatch, navigate]);
 
   const handleGridTypeChange = useCallback((type) => {
     setGridType(type);
@@ -410,7 +490,7 @@ const ProductList = () => {
     setOpenCheckoutDialog(true);
   }, [user, cartItems.length, navigate]);
   
-  const loadingProducts = status === 'loading';
+  const loadingProducts = (isSearchMode ? searchStatus === 'loading' : status === 'loading');
   
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
@@ -461,29 +541,73 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className="h-50 lg:h-40"></div>
+      <div className="h-44 lg:h-34"></div>
+
+      {/* Search Results Header */}
+      {isSearchMode && urlSearchQuery && (
+        <div className="mt-6 mb-2 px-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Search Results <span className="text-sm text-gray-600 mt-0.5 whitespace-nowrap" > {searchStatus === 'loading' ? (
+                    'Searching...'
+                  ) : searchStatus === 'succeeded' && searchResults ? (
+                    searchResults.length > 0 ? (
+                      `Found ${searchResults.length} product${searchResults.length !== 1 ? 's' : ''} for "${urlSearchQuery}"`
+                    ) : (
+                      `No products found for "${urlSearchQuery}"`
+                    )
+                  ) : (
+                    'Searching...'
+                  )}</span>
+                </h2>
+                <p className="text-sm text-gray-600 mt-0.5 whitespace-nowrap">
+                 
+                </p>
+              </div>
+              {urlSearchQuery && (
+                <button
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.delete('search');
+                    setSearchParams(newParams, { replace: true });
+                  }}
+                  className="text-sm text-primary hover:text-primary/80 font-medium px-3 py-1 hover:bg-primary/5 rounded-md transition-colors"
+                >
+                  Clear Search
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Product Grid */}
-      <ProductGrid
-        products={sortedProducts}
-        loading={loadingProducts}
-        gridType={gridType}
-        quantities={quantities}
-        onQuantityChange={handleQuantityChange}
-        onAddToCart={handleAddToCart}
-        addingProductId={addingProductId}
-        cartItems={cartItems}
-        onPreviewImage={handlePreviewImage}
-      />
-
-      {/* Pagination */}
-      <div className="px-2 sm:px-0 mt-6 mb-4">
-        <Pagination
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={handlePageChange}
+      <div className="mt-6">
+        <ProductGrid
+          products={sortedProducts}
+          loading={loadingProducts}
+          gridType={gridType}
+          quantities={quantities}
+          onQuantityChange={handleQuantityChange}
+          onAddToCart={handleAddToCart}
+          addingProductId={addingProductId}
+          cartItems={cartItems}
+          onPreviewImage={handlePreviewImage}
         />
       </div>
+
+      {/* Pagination - Only show if not in search mode (search shows all results) */}
+      {!isSearchMode && (
+        <div className="px-2 sm:px-0 mt-6 mb-4">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Image Preview Modal */}
       {previewImage && (

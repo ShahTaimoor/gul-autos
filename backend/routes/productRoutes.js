@@ -479,7 +479,7 @@ router.delete('/delete-product/:id', isAuthorized, isAdminOrSuperAdmin,  async (
 // @access Public
 router.get('/get-products', async (req, res) => {
   try {
-    let { category, page = 1, limit = 24, stockFilter = 'active', sortBy = 'relevance' } = req.query;
+    let { category, page = 1, limit = 24, stockFilter = 'active', sortBy = 'az' } = req.query;
 
     if (limit === 'all') {
       limit = 0; 
@@ -999,19 +999,17 @@ router.get('/search', async (req, res) => {
             }
         });
 
-        // Sort function for products
+        // Sort function for products - alphabetical by title (A-Z)
         const sortProducts = (products) => {
             return products.sort((a, b) => {
-                // First sort by relevance score (descending)
-                if (b.relevanceScore !== a.relevanceScore) {
-                    return b.relevanceScore - a.relevanceScore;
-                }
-                // If scores are equal, prioritize featured products
+                // First, prioritize featured products
                 if (b.isFeatured !== a.isFeatured) {
                     return b.isFeatured ? 1 : -1;
                 }
-                // Then by newest
-                return new Date(b.createdAt) - new Date(a.createdAt);
+                // Then sort alphabetically by title (A-Z)
+                const titleA = (a.title || '').toLowerCase().trim();
+                const titleB = (b.title || '').toLowerCase().trim();
+                return titleA.localeCompare(titleB);
             });
         };
 
@@ -1090,8 +1088,8 @@ router.get('/search', async (req, res) => {
         const sortedWords = sortProducts(filteredWords);
         const sortedFuzzy = sortProducts(filteredFuzzy);
 
-        // GUARANTEE: ALL exact matches are ALWAYS included first (100%)
-        // If there are exact matches, show ALL of them, then fill remaining slots
+        // Combine all relevant products (relevance filtering already done)
+        // Then sort alphabetically by title (A-Z) while maintaining relevance-based inclusion
         let relevantProducts = [];
         
         if (sortedExact.length > 0) {
@@ -1121,6 +1119,19 @@ router.get('/search', async (req, res) => {
                 ...sortedFuzzy
             ].slice(0, searchLimit);
         }
+        
+        // Final alphabetical sort: Sort all relevant products alphabetically by title (A-Z)
+        // Featured products will still appear first within alphabetical groups
+        relevantProducts.sort((a, b) => {
+            // First, prioritize featured products
+            if (b.isFeatured !== a.isFeatured) {
+                return b.isFeatured ? 1 : -1;
+            }
+            // Then sort alphabetically by title (A-Z)
+            const titleA = (a.title || '').toLowerCase().trim();
+            const titleB = (b.title || '').toLowerCase().trim();
+            return titleA.localeCompare(titleB);
+        });
         
         // Remove relevance score from response
         relevantProducts = relevantProducts.map(({ relevanceScore, ...product }) => product);

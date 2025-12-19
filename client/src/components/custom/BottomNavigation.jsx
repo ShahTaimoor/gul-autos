@@ -24,7 +24,7 @@ import { logout } from "../../redux/slices/auth/authSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
-import SearchModal from "./SearchModal";
+import { searchProducts } from "../../redux/slices/products/productSlice";
 
 // Cart Product Component (simplified version for mobile)
 const CartProduct = ({ product, quantity, onValidationChange }) => {
@@ -115,7 +115,6 @@ const BottomNavigation = () => {
   const navigate = useNavigate();
   
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
-  const [openSearchModal, setOpenSearchModal] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const { openDrawer } = useAuthDrawer();
@@ -261,7 +260,10 @@ const BottomNavigation = () => {
       label: "Search",
       show: true,
       isCenter: false,
-      onClick: () => setOpenSearchModal(true),
+      onClick: () => {
+        navigate('/products');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
       isAction: true
     },
     {
@@ -502,9 +504,6 @@ const BottomNavigation = () => {
           <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
         </DialogContent>
       </Dialog>
-
-      {/* Search Modal */}
-      <SearchModal open={openSearchModal} onOpenChange={setOpenSearchModal} />
     </nav>
     </>
   );

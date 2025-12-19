@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { User, Download, Smartphone, ShoppingCart, Search } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import LogoutToggle from "./LogoutToggle";
 import { useSelector } from "react-redux";
 import { useRef, useState, useEffect, useMemo } from "react";
@@ -22,7 +22,7 @@ import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cart
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
-import SearchModal from "./SearchModal";
+import SearchSuggestions from "./SearchSuggestions";
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -113,7 +113,6 @@ const Navbar = () => {
   
   // Add debugging to check mobile detection
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
-  const [openSearchModal, setOpenSearchModal] = useState(false);
   const { openDrawer } = useAuthDrawer();
 
   // Calculate total quantity
@@ -197,15 +196,15 @@ const Navbar = () => {
     <>
     <nav className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm hidden lg:block`}>
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16 gap-4">
           {/* Left side: Logo + Brand */}
-          <div className="flex items-center">
+          <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2">
               <div className="flex-shrink-0">
                 <img
                   src="/logo.jpeg"
                   alt="GULTRADERS Logo"
-                  className="h-8 w-auto object-contain"
+                  className="h-10 w-auto object-contain"
                 />
               </div>
               <div className="hidden sm:block">
@@ -215,40 +214,23 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Center: Contact Info */}
-          <div className="hidden md:flex items-center space-x-6">
-            <div className="flex items-center space-x-1.5">
-              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Online Store</span>
-            </div>
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Contact:</span>
-              <span className="ml-1 text-primary font-semibold">+92 311 4000096</span>
-            </div>
+          {/* Center: Search Input with Suggestions */}
+          <div className="flex-1 max-w-2xl mx-4">
+            <SearchSuggestions
+              placeholder="Search products..."
+              inputClassName="h-10 w-full text-base border-gray-300 focus:border-primary focus:ring-primary"
+            />
           </div>
 
-          {/* Right side: Actions */}
-          <div className="flex items-center space-x-3">
-            {/* Search Button */}
-            <button
-              onClick={() => setOpenSearchModal(true)}
-              className="p-2 bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 hover:scale-110"
-              title="Search Products"
-            >
-              <Search size={20} className="text-gray-700" />
-            </button>
-
-            {/* PWA Install Button for Desktop */}
-            {!isMobile && showInstallButton && (
-              <button
-                onClick={handleInstallClick}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-                title="Install App"
-              >
-                <Download size={16} className="mr-2" />
-                Install App
-              </button>
-            )}
+          {/* Right side: Contact, Cart, Auth */}
+          <div className="flex items-center space-x-4 flex-shrink-0">
+            {/* Contact Number */}
+            <div className="hidden md:flex items-center">
+              <div className="text-sm text-gray-700">
+                <span className="font-medium text-gray-600">Contact:</span>
+                <span className="ml-2 text-primary font-semibold text-base">+92 311 4000096</span>
+              </div>
+            </div>
 
             {/* Cart */}
             <Sheet>
@@ -327,9 +309,6 @@ const Navbar = () => {
         <Checkout closeModal={() => setOpenCheckoutDialog(false)} />
       </DialogContent>
     </Dialog>
-
-    {/* Search Modal */}
-    <SearchModal open={openSearchModal} onOpenChange={setOpenSearchModal} />
     </>
   );
 };
