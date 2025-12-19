@@ -55,6 +55,18 @@ export const updateCartQuantity = createAsyncThunk(
   }
 );
 
+// Check stock availability for products
+export const checkStock = createAsyncThunk(
+  'cart/checkStock',
+  async (products, thunkAPI) => {
+    try {
+      return await cartService.checkStock(products);
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data || { message: err.message });
+    }
+  }
+);
+
 const cartSlice = createSlice({
   name: 'cart',
   initialState,

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus, Search } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -244,7 +244,7 @@ const BottomNavigation = () => {
   // Always render but use responsive classes for visibility
   // if (!isMobile) return null;
 
-  // Navigation items matching the design: Install, My Orders, Home (center/active), Cart, Profile, Search
+  // Navigation items matching the design: Install, My Orders, Home (center/active), Cart, Profile
   const navItems = [
     {
       path: "/",
@@ -253,18 +253,6 @@ const BottomNavigation = () => {
       show: true,
       isCenter: true, // This is the center/active item
       isHome: true
-    },
-    {
-      path: "/",
-      icon: Search,
-      label: "Search",
-      show: true,
-      isCenter: false,
-      onClick: () => {
-        navigate('/products');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      },
-      isAction: true
     },
     {
       path: "/orders",

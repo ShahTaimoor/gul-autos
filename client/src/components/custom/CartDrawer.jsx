@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Trash2, Loader2 } from 'lucide-react';
+import { ShoppingCart, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import {
   removeFromCart,
   updateCartQuantity,
@@ -36,6 +36,8 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const updateTimeoutRef = useRef(null);
   const { _id, title, stock } = product;
   const image = product.image || product.picture?.secure_url;
+  const isOutOfStock = product.isOutOfStock || stock <= 0;
+  const availableStock = product.availableStock !== undefined ? product.availableStock : stock;
 
   // Sync input with prop changes
   useEffect(() => {
@@ -44,16 +46,16 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
 
   // Validation effect
   useEffect(() => {
-    const isValid = inputQty > 0 && inputQty <= stock && typeof inputQty === 'number';
+    const isValid = !isOutOfStock && inputQty > 0 && inputQty <= availableStock && typeof inputQty === 'number';
     if (prevIsValid.current !== isValid) {
       prevIsValid.current = isValid;
       onValidationChange(_id, isValid);
     }
-  }, [inputQty, stock, _id, onValidationChange]);
+  }, [inputQty, availableStock, isOutOfStock, _id, onValidationChange]);
 
   // Immediate quantity update with optimistic UI
   const updateQuantity = useCallback((newQty) => {
-    if (newQty !== quantity && newQty > 0 && newQty <= stock) {
+    if (!isOutOfStock && newQty !== quantity && newQty > 0 && newQty <= availableStock) {
       // Immediate UI update
       setInputQty(newQty);
       // API call with shorter debounce for better responsiveness
@@ -65,7 +67,7 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
         dispatch(updateCartQuantity({ productId: _id, quantity: newQty }));
       }, 150); // Reduced to 150ms for faster response
     }
-  }, [dispatch, _id, quantity, stock]);
+  }, [dispatch, _id, quantity, availableStock, isOutOfStock]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -77,11 +79,11 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   }, []);
 
   const handleBuyNow = useCallback(() => {
-    if (inputQty > stock || inputQty <= 0) {
+    if (isOutOfStock || inputQty > availableStock || inputQty <= 0) {
       return;
     }
     navigate('/');
-  }, [inputQty, stock, navigate]);
+  }, [inputQty, availableStock, isOutOfStock, navigate]);
 
   const handleRemove = useCallback(async (e) => {
     e.stopPropagation();
@@ -97,43 +99,49 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   }, [dispatch, _id, toast]);
 
   const handleQuantityChange = useCallback((newQty) => {
+    if (isOutOfStock) return;
     if (newQty === '' || isNaN(newQty)) {
       setInputQty('');
       return;
     }
-    const val = Math.max(1, Math.min(parseInt(newQty), stock));
+    const val = Math.max(1, Math.min(parseInt(newQty), availableStock));
     updateQuantity(val);
-  }, [stock, updateQuantity]);
+  }, [availableStock, isOutOfStock, updateQuantity]);
 
   const handleInputChange = useCallback((e) => {
+    if (isOutOfStock) return;
     const val = e.target.value;
     if (val === '') {
       setInputQty('');
     } else {
       const parsed = parseInt(val);
       if (!isNaN(parsed)) {
-        if (parsed <= stock) {
+        if (parsed <= availableStock) {
           setInputQty(parsed);
         } else {
-          setInputQty(stock);
+          setInputQty(availableStock);
         }
       }
     }
-  }, [stock]);
+  }, [availableStock, isOutOfStock]);
 
   const handleInputBlur = useCallback(() => {
+    if (isOutOfStock) {
+      setInputQty(0);
+      return;
+    }
     if (inputQty === '' || isNaN(inputQty) || inputQty <= 0) {
       setInputQty(quantity);
       return;
     }
-    if (inputQty > stock) {
-      setInputQty(stock);
+    if (inputQty > availableStock) {
+      setInputQty(availableStock);
       return;
     }
     if (inputQty !== quantity) {
       dispatch(updateCartQuantity({ productId: _id, quantity: inputQty }));
     }
-  }, [inputQty, quantity, stock, dispatch, _id]);
+  }, [inputQty, quantity, availableStock, isOutOfStock, dispatch, _id]);
 
   const handleDecrease = useCallback((e) => {
     e.preventDefault();
@@ -146,10 +154,10 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const handleIncrease = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (inputQty < stock) {
+    if (!isOutOfStock && inputQty < availableStock) {
       updateQuantity(inputQty + 1);
     }
-  }, [inputQty, stock, updateQuantity]);
+  }, [inputQty, availableStock, isOutOfStock, updateQuantity]);
 
   return (
     <>
@@ -164,56 +172,84 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
         }
       `}</style>
       <div
-        className="flex justify-between items-center gap-4 p-3 border-b hover:bg-gray-50 cursor-pointer transition"
-        onClick={handleBuyNow}
+        className={`flex justify-between items-center gap-4 p-3 border-b transition ${
+          isOutOfStock 
+            ? 'bg-red-50 hover:bg-red-100 opacity-75' 
+            : 'hover:bg-gray-50 cursor-pointer'
+        }`}
+        onClick={!isOutOfStock ? handleBuyNow : undefined}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-1">
           <CartImage
             src={image}
             alt={title}
-            className="w-28 h-20 rounded-lg border object-cover object-center"
+            className={`w-28 h-20 rounded-lg border object-cover object-center ${
+              isOutOfStock ? 'opacity-50' : ''
+            }`}
             fallback="/fallback.jpg"
             quality={80}
           />
-          <div className="max-w-[200px]">
-            <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">{title}</h4>
+          <div className="max-w-[200px] flex-1">
+            <h4 className={`font-semibold text-sm line-clamp-2 ${
+              isOutOfStock ? 'text-gray-500' : 'text-gray-900'
+            }`}>
+              {title}
+            </h4>
+            {isOutOfStock && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                <AlertCircle className="w-3 h-3" />
+                <span>Out of Stock</span>
+              </div>
+            )}
+            {!isOutOfStock && product.quantityAdjusted && (
+              <div className="flex items-center gap-1 mt-1 text-xs text-orange-600">
+                <AlertCircle className="w-3 h-3" />
+                <span>Quantity adjusted to {availableStock}</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <div className="flex items-center gap-1 border rounded-full shadow-sm border-gray-300">
-            <button
-              type="button"
-              onClick={handleDecrease}
-              className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
-              disabled={inputQty <= 1}
-            >
-              −
-            </button>
-            <input
-              type="number"
-              value={inputQty === '' ? '' : inputQty}
-              onChange={(e) => {
-                e.stopPropagation();
-                handleInputChange(e);
-              }}
-              onBlur={(e) => {
-                e.stopPropagation();
-                handleInputBlur();
-              }}
-              onClick={(e) => e.stopPropagation()}
-              max={stock}
-              min={1}
-              className="w-10 text-center text-sm focus:outline-none bg-transparent appearance-none font-medium"
-            />
-            <button
-              type="button"
-              onClick={handleIncrease}
-              className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
-              disabled={inputQty >= stock}
-            >
-              +
-            </button>
-          </div>
+          {isOutOfStock ? (
+            <div className="text-xs text-red-600 font-medium px-2 py-1 bg-red-100 rounded">
+              Unavailable
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 border rounded-full shadow-sm border-gray-300">
+              <button
+                type="button"
+                onClick={handleDecrease}
+                className="w-7 h-7 rounded-l-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
+                disabled={inputQty <= 1}
+              >
+                −
+              </button>
+              <input
+                type="number"
+                value={inputQty === '' ? '' : inputQty}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleInputChange(e);
+                }}
+                onBlur={(e) => {
+                  e.stopPropagation();
+                  handleInputBlur();
+                }}
+                onClick={(e) => e.stopPropagation()}
+                max={availableStock}
+                min={1}
+                className="w-10 text-center text-sm focus:outline-none bg-transparent appearance-none font-medium"
+              />
+              <button
+                type="button"
+                onClick={handleIncrease}
+                className="w-7 h-7 rounded-r-full flex items-center justify-center text-sm font-bold hover:bg-gray-200 active:bg-gray-300 transition-all duration-150 select-none"
+                disabled={inputQty >= availableStock}
+              >
+                +
+              </button>
+            </div>
+          )}
           <button
             onClick={handleRemove}
             disabled={isRemoving}
@@ -344,11 +380,14 @@ const CartDrawer = () => {
                 onClick={handleBuyNow}
                 disabled={
                   cartItems.length === 0 ||
-                  Object.values(validationMap).includes(false)
+                  Object.values(validationMap).includes(false) ||
+                  memoizedCartItems.some(item => item.product.isOutOfStock || (item.product.stock || 0) <= 0)
                 }
                 className="w-full"
               >
-                Checkout
+                {memoizedCartItems.some(item => item.product.isOutOfStock || (item.product.stock || 0) <= 0)
+                  ? 'Remove Out of Stock Items'
+                  : 'Checkout'}
               </Button>
             </SheetClose>
           </SheetFooter>

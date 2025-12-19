@@ -49,3 +49,13 @@ export const updateCartQuantity = async ({ productId, quantity }) => {
   });
   return res.data;
 };
+
+// Check stock availability for multiple products (before checkout)
+export const checkStock = async (products) => {
+  const res = await axiosInstance.post('/check-stock', { products }, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  return res.data;
+};

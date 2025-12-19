@@ -8,7 +8,7 @@ import CategorySwiper from './CategorySwiper';
 import ProductGrid from './ProductGrid';
 import Pagination from './Pagination';
 import { usePagination } from '@/hooks/use-pagination';
-import { ShoppingCart, ArrowUpDown, SortAsc, Grid3X3, List } from 'lucide-react';
+import { ShoppingCart, ArrowUpDown, SortAsc, Grid3X3, List, AlertCircle, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
@@ -27,6 +27,7 @@ import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 import { useToast } from '@/hooks/use-toast';
+import SearchSuggestions from './SearchSuggestions';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -37,9 +38,11 @@ const CartProduct = ({ product, quantity }) => {
   const [inputQty, setInputQty] = useState(quantity);
   const { _id, title, price, stock } = product;
   const image = product.image || product.picture?.secure_url;
+  const isOutOfStock = product.isOutOfStock || stock <= 0;
+  const availableStock = product.availableStock !== undefined ? product.availableStock : stock;
 
   const updateQuantity = (newQty) => {
-    if (newQty !== quantity && newQty > 0 && newQty <= stock) {
+    if (!isOutOfStock && newQty !== quantity && newQty > 0 && newQty <= availableStock) {
       setInputQty(newQty);
       dispatch(updateCartQuantity({ productId: _id, quantity: newQty }));
     }
@@ -61,50 +64,82 @@ const CartProduct = ({ product, quantity }) => {
   const handleIncrease = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (inputQty < stock) {
+    if (!isOutOfStock && inputQty < availableStock) {
       updateQuantity(inputQty + 1);
     }
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
-      <div className="flex items-center space-x-3">
+    <div className={`flex items-center justify-between p-4 border-b transition-colors ${
+      isOutOfStock 
+        ? 'bg-red-50 hover:bg-red-100 opacity-75 border-red-200' 
+        : 'border-gray-100 hover:bg-gray-50'
+    }`}>
+      <div className="flex items-center space-x-3 flex-1">
         <CartImage
           src={image}
           alt={title}
-          className="w-12 h-12 rounded-md border border-gray-200 object-cover"
+          className={`w-12 h-12 rounded-md border object-cover ${
+            isOutOfStock 
+              ? 'border-red-200 opacity-50' 
+              : 'border-gray-200'
+          }`}
           fallback="/fallback.jpg"
           quality={80}
         />
         <div className="min-w-0 flex-1">
-          <h4 className="font-medium text-sm text-gray-900 line-clamp-2">{title}</h4>
+          <h4 className={`font-medium text-sm line-clamp-2 ${
+            isOutOfStock ? 'text-gray-500' : 'text-gray-900'
+          }`}>
+            {title}
+          </h4>
+          {isOutOfStock && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+              <AlertCircle className="w-3 h-3" />
+              <span>Out of Stock</span>
+            </div>
+          )}
+          {!isOutOfStock && product.quantityAdjusted && (
+            <div className="flex items-center gap-1 mt-1 text-xs text-orange-600">
+              <AlertCircle className="w-3 h-3" />
+              <span>Quantity adjusted to {availableStock}</span>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex items-center space-x-3">
-        <div className="flex items-center border border-gray-200 rounded-md">
-          <button
-            type="button"
-            onClick={handleDecrease}
-            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={inputQty <= 1}
-          >
-            −
-          </button>
-          <span className="w-8 text-center text-sm font-medium text-gray-900">{inputQty}</span>
-          <button
-            type="button"
-            onClick={handleIncrease}
-            className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={inputQty >= stock}
-          >
-            +
-          </button>
-        </div>
+        {isOutOfStock ? (
+          <div className="text-xs text-red-600 font-medium px-2 py-1 bg-red-100 rounded">
+            Unavailable
+          </div>
+        ) : (
+          <div className="flex items-center border border-gray-200 rounded-md">
+            <button
+              type="button"
+              onClick={handleDecrease}
+              className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={inputQty <= 1}
+            >
+              −
+            </button>
+            <span className="w-8 text-center text-sm font-medium text-gray-900">{inputQty}</span>
+            <button
+              type="button"
+              onClick={handleIncrease}
+              className="w-8 h-8 flex items-center justify-center text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={inputQty >= availableStock}
+            >
+              +
+            </button>
+          </div>
+        )}
         <button
           onClick={handleRemove}
-          className="text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-2 py-1 rounded-md transition-colors"
+          className="text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-2 py-1 rounded-md transition-colors flex items-center gap-1"
+          title="Remove from cart"
         >
-          Remove
+          <Trash2 size={16} />
+          <span className="hidden sm:inline">Remove</span>
         </button>
       </div>
     </div>
@@ -497,28 +532,43 @@ const ProductList = () => {
   
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
-      {/* Mobile Header with Logo and Name - Only visible on mobile */}
+      {/* Mobile Header - Only visible on mobile */}
       {isMobile && (
-        <div className={`fixed top-0 left-0 right-0 z-50 ${isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20'} shadow-sm lg:hidden transition-all duration-300 ease-in-out ${isScrolled ? '-translate-y-full' : 'translate-y-0'}`}>
-          <div className="flex items-center justify-center px-4 py-3">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="flex-shrink-0">
-                <img
-                  src="/logo.jpeg"
-                  alt="GULTRADERS Logo"
-                  className="h-8 w-auto object-contain"
-                />
+        <>
+          {/* Logo Section - Hides on scroll */}
+          <div className={`fixed top-0 left-0 right-0 z-50 ${isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20'} shadow-sm lg:hidden transition-all duration-300 ease-in-out ${isScrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-center">
+                <Link to="/" className="flex items-center space-x-2">
+                  <div className="flex-shrink-0">
+                    <img
+                      src="/logo.jpeg"
+                      alt="GULTRADERS Logo"
+                      className="h-8 w-auto object-contain"
+                    />
+                  </div>
+                  <div>
+                    <div className="text-base font-semibold text-primary">GULTRADERS</div>
+                  </div>
+                </Link>
               </div>
-              <div>
-                <div className={`text-base font-semibold ${isScrolled ? 'text-gray-900' : 'text-primary'}`}>GULTRADERS</div>
-              </div>
-            </Link>
+            </div>
           </div>
-        </div>
+
+          {/* Search Input - Always visible */}
+          <div className={`fixed ${isScrolled ? 'top-0' : 'top-14'} left-0 right-0 z-50 bg-white lg:hidden transition-all duration-300`}>
+            <div className={`px-4 pt-3 ${isScrolled ? 'pb-0' : 'pb-2'}`}>
+              <SearchSuggestions
+                placeholder="Search products..."
+                inputClassName="h-10 w-full text-sm border-gray-300 focus:border-primary focus:ring-primary bg-white"
+              />
+            </div>
+          </div>
+        </>
       )}
       
       {/* Fixed Categories Container */}
-      <div className={`fixed ${isMobile && isScrolled ? 'top-0' : isMobile ? 'top-14' : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md pb-2 transition-all duration-300`}>
+      <div className={`fixed ${isMobile ? (isScrolled ? 'top-[52px]' : 'top-[112px]') : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white' : 'bg-primary/10') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md pb-2 transition-all duration-300`}>
         {/* Category Swiper */}
         <div className="max-w-7xl lg:mx-auto">
           {combinedCategories && combinedCategories.length > 0 ? (
@@ -544,11 +594,11 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className="h-44 lg:h-34"></div>
+      <div className={isMobile ? (isScrolled ? 'h-[140px]' : 'h-[240px]') : 'h-44 lg:h-34'}></div>
 
-      {/* Search Results Header */}
+      {/* Search Results Header - Hidden on mobile */}
       {isSearchMode && urlSearchQuery && (
-        <div className="mt-6 mb-2 px-2">
+        <div className="hidden lg:block mt-6 mb-2 px-2">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
@@ -587,7 +637,7 @@ const ProductList = () => {
       )}
 
       {/* Product Grid */}
-      <div className="mt-6">
+      <div className={isMobile ? "mt-4" : "mt-6"}>
         <ProductGrid
           products={sortedProducts}
           loading={loadingProducts}
@@ -716,9 +766,9 @@ const ProductList = () => {
         </Link>
       </div>
 
-      {/* Checkout Dialog */}
+      {/* Checkout Dialog - Professional Design */}
       <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
-        <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">
+        <DialogContent className="w-[95vw] max-w-full sm:w-[92vw] md:w-[88vw] lg:w-[92vw] lg:max-w-7xl xl:max-w-[90vw] h-[90vh] sm:h-[88vh] md:h-[85vh] lg:h-[90vh] overflow-hidden p-0 bg-transparent border-0 shadow-2xl flex flex-col m-2 sm:m-4">
           <DialogHeader className="sr-only">
             <DialogTitle>Checkout</DialogTitle>
             <DialogDescription>Complete your order</DialogDescription>
