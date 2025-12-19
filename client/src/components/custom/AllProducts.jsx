@@ -58,7 +58,7 @@ const AllProducts = () => {
   // Local state for filters
   const [category, setCategory] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('relevance');
+  const [sortBy, setSortBy] = useState('az'); // Default to alphabetical (A-Z) sorting, same as user side
   const [limit, setLimit] = useState(24);
   const [currentPage, setCurrentPage] = useState(initialPage);
 
@@ -763,7 +763,6 @@ const AllProducts = () => {
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="relevance">Relevance</SelectItem>
                     <SelectItem value="az">Name A-Z</SelectItem>
                     <SelectItem value="za">Name Z-A</SelectItem>
                     <SelectItem value="price-low">Price Low-High</SelectItem>
