@@ -37,7 +37,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts, clearSearchResults } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useToast } from '@/hooks/use-toast';
 import SearchSuggestions from './SearchSuggestions';
@@ -338,9 +338,16 @@ const AllProducts = () => {
   const handleCategorySelect = useCallback((categoryId) => {
     // Clear category search
     setCategorySearch('');
+    
+    // Clear search results and search query when category changes
+    dispatch(clearSearchResults());
+    setSearchQuery('');
+    setHasSearched(false);
+    
+    // Update category and reset page
     setCategory(categoryId);
     setCurrentPage(1);
-  }, []);
+  }, [dispatch]);
 
 
   const handleGridTypeChange = useCallback((type) => {
