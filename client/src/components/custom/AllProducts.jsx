@@ -179,6 +179,24 @@ const AllProducts = () => {
     return uniqueProducts;
   }, [products, searchResults, hasSearched]);
 
+  // Get deduplicated search results count for accurate display
+  const uniqueSearchResultsCount = useMemo(() => {
+    if (!hasSearched || !searchResults || searchResults.length === 0) return 0;
+    
+    const seenIds = new Set();
+    let count = 0;
+    
+    for (const product of searchResults) {
+      const productId = product._id?.toString();
+      if (productId && !seenIds.has(productId)) {
+        seenIds.add(productId);
+        count++;
+      }
+    }
+    
+    return count;
+  }, [searchResults, hasSearched]);
+
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
@@ -674,8 +692,8 @@ const AllProducts = () => {
                 <div className="mt-2 text-sm text-gray-600">
                   {searchStatus === 'loading' ? (
                     'Searching...'
-                  ) : searchResults && searchResults.length > 0 ? (
-                    `Found ${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
+                  ) : uniqueSearchResultsCount > 0 ? (
+                    `Found ${uniqueSearchResultsCount} result${uniqueSearchResultsCount !== 1 ? 's' : ''} for "${searchQuery}"`
                   ) : (
                     `No results found for "${searchQuery}"`
                   )}

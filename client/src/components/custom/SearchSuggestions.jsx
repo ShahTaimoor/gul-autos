@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -54,6 +54,24 @@ const SearchSuggestions = ({
   const searchQuery = value !== undefined ? value : internalSearchQuery;
 
   const { searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
+  
+  // Filter out duplicate products by _id
+  const uniqueSearchResults = useMemo(() => {
+    if (!searchResults || searchResults.length === 0) return [];
+    
+    const uniqueResults = [];
+    const seenIds = new Set();
+    
+    for (const product of searchResults) {
+      const productId = product._id?.toString();
+      if (productId && !seenIds.has(productId)) {
+        seenIds.add(productId);
+        uniqueResults.push(product);
+      }
+    }
+    
+    return uniqueResults;
+  }, [searchResults]);
   
   // Debounce search query for API calls (reduced delay for faster response)
   const debouncedQuery = useDebounce(searchQuery, 150);
@@ -143,7 +161,7 @@ const SearchSuggestions = ({
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
-    if (!showSuggestions || !searchResults || searchResults.length === 0) {
+    if (!showSuggestions || !uniqueSearchResults || uniqueSearchResults.length === 0) {
       if (e.key === 'Enter' && searchQuery.trim()) {
         handleSearch();
       }
@@ -154,7 +172,7 @@ const SearchSuggestions = ({
       case 'ArrowDown':
         e.preventDefault();
         setSelectedIndex((prev) => 
-          prev < searchResults.length - 1 ? prev + 1 : prev
+          prev < uniqueSearchResults.length - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -163,8 +181,8 @@ const SearchSuggestions = ({
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && searchResults[selectedIndex]) {
-          handleSelectProduct(searchResults[selectedIndex]);
+        if (selectedIndex >= 0 && uniqueSearchResults[selectedIndex]) {
+          handleSelectProduct(uniqueSearchResults[selectedIndex]);
         } else if (searchQuery.trim()) {
           handleSearch();
         }
@@ -205,7 +223,7 @@ const SearchSuggestions = ({
   }, [selectedIndex]);
 
   const isLoading = searchStatus === 'loading' && searchQuery.trim().length >= 1;
-  const hasResults = searchResults && searchResults.length > 0;
+  const hasResults = uniqueSearchResults && uniqueSearchResults.length > 0;
   const showDropdown = showSuggestions && searchQuery.trim().length >= 1;
 
   return (
@@ -264,7 +282,7 @@ const SearchSuggestions = ({
             </div>
           ) : hasResults ? (
             <div ref={suggestionsRef} className="py-1">
-              {searchResults.map((product, index) => {
+              {uniqueSearchResults.map((product, index) => {
                 const productImage = product.image || product.picture?.secure_url || '/logo.jpeg';
                 const isSelected = index === selectedIndex;
                 
