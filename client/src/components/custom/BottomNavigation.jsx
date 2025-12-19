@@ -239,8 +239,6 @@ const BottomNavigation = () => {
   };
 
   // Don't render on desktop - but ensure it shows on mobile
-  // Add debugging to check mobile detection
-  
   // Always render but use responsive classes for visibility
   // if (!isMobile) return null;
 

@@ -111,7 +111,6 @@ const Navbar = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  // Add debugging to check mobile detection
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const { openDrawer } = useAuthDrawer();
 

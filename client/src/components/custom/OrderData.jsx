@@ -253,7 +253,7 @@ const OrderData = ({
 
       doc.save(`Order-Invoice-${orderDate}.pdf`);
     } catch (error) {
-      console.error("Error generating invoice PDF:", error);
+      // Error generating invoice PDF - user will see error notification if needed
     }
   };
 

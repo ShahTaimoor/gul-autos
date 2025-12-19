@@ -110,16 +110,10 @@ const CreateProducts = () => {
       if (response.data.success) {
         setUploadedMedia(response.data.data);
       } else {
-        console.error('Media fetch failed:', response.data.message);
+        // Media fetch failed - error handled silently as it's not critical for UI
       }
     } catch (error) {
-      console.error('Error fetching media:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
+      // Error fetching media - handled silently to avoid disrupting user experience
     } finally {
       setMediaLoading(false);
     }
@@ -181,7 +175,7 @@ const CreateProducts = () => {
       }));
 
     } catch (error) {
-      console.error('Image conversion error:', error);
+      // Image conversion error - handled silently, user can retry
     } finally {
       setIsConverting(false);
     }
@@ -252,7 +246,6 @@ const CreateProducts = () => {
         setLoading(false);
       })
       .catch((error) => {
-        console.error('Product creation error:', error);
         toast.error(error || 'Failed to create product. Please try again.');
         setLoading(false);
       });
@@ -399,7 +392,7 @@ const CreateProducts = () => {
         setInputValues(prev => ({ ...prev, picture: processedFile }));
         
       } catch (error) {
-        console.error('Error processing selected image:', error);
+        // Error processing selected image - handled silently, user can retry
       } finally {
         setIsConverting(false);
       }

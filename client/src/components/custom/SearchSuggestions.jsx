@@ -85,7 +85,8 @@ const SearchSuggestions = ({
 
   // Show suggestions immediately when user types (not debounced)
   useEffect(() => {
-    if (searchQuery.trim().length >= 1) {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length >= 1) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -110,6 +111,8 @@ const SearchSuggestions = ({
   // Handle input change
   const handleInputChange = (e) => {
     const newValue = e.target.value;
+    const trimmedValue = newValue.trim();
+    
     // If onChange is provided, it expects the value directly, not an event
     if (onChange && typeof onChange === 'function') {
       onChange(newValue);
@@ -117,8 +120,10 @@ const SearchSuggestions = ({
       setInternalSearchQuery(newValue);
     }
     setSelectedIndex(-1);
-    // Show suggestions immediately when typing
-    if (newValue.trim().length >= 1) {
+    
+    // Show suggestions immediately when typing or backspacing (if still has text)
+    // Set this immediately based on the new value, not waiting for state to update
+    if (trimmedValue.length >= 1) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -238,7 +243,8 @@ const SearchSuggestions = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (searchQuery.trim().length >= 1) {
+              const trimmedQuery = searchQuery.trim();
+              if (trimmedQuery.length >= 1) {
                 setShowSuggestions(true);
               }
             }}

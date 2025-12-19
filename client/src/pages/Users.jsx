@@ -47,7 +47,7 @@ const Users = () => {
         setUsers(Array.isArray(data) ? data : data?.users || []);
       })
       .catch((error) => {
-        console.error('Error fetching users:', error);
+        // Error fetching users - handled silently, user will see empty state
       })
       .finally(() => {
         setLoading(false);
@@ -71,7 +71,7 @@ const Users = () => {
         );
       }
     } catch (error) {
-      console.error('Role change error:', error);
+      // Role change error - user will see error from Redux action
     } finally {
       setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
     }

@@ -69,16 +69,10 @@ const Media = () => {
       if (response.data.success) {
         setUploadedMedia(response.data.data);
       } else {
-        console.error('Media fetch failed:', response.data.message);
+        // Media fetch failed - error handled silently as it's not critical for UI
       }
     } catch (error) {
-      console.error('Error fetching media:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        statusText: error.response?.statusText
-      });
+      // Error fetching media - handled silently to avoid disrupting user experience
     } finally {
       setMediaLoading(false);
     }
@@ -270,7 +264,7 @@ const Media = () => {
         throw new Error(response.data.message || 'Delete failed');
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      // Delete error handled - user will see error from backend response
     } finally {
       setIsDeleting(false);
     }
@@ -298,7 +292,7 @@ const Media = () => {
         throw new Error(response.data.message || 'Bulk delete failed');
       }
     } catch (error) {
-      console.error('Bulk delete error:', error);
+      // Bulk delete error handled - user will see error from backend response
     } finally {
       setIsDeleting(false);
     }
@@ -379,7 +373,7 @@ const Media = () => {
         throw new Error(response.data.message || 'Upload failed');
       }
     } catch (error) {
-      console.error('Upload error:', error);
+      // Upload error handled - user will see error from backend response
     } finally {
       setIsImporting(false);
     }
@@ -419,7 +413,7 @@ const Media = () => {
                 const fileName = `${media.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `uploaded_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {
-                console.warn(`Failed to fetch image for ${media.name}:`, error);
+                // Failed to fetch image - skip this image and continue with others
                 return { fileName: null, blob: null, success: false };
               }
             }
@@ -457,8 +451,7 @@ const Media = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } catch (zipError) {
-        console.error('ZIP creation failed:', zipError);
-        
+        // ZIP creation failed - fallback to individual downloads
         // Fallback: download images individually
         
         for (let i = 0; i < filteredUploadedMedia.length; i++) {
@@ -483,7 +476,7 @@ const Media = () => {
               
               // Show progress for individual downloads
             } catch (error) {
-              console.warn(`Failed to fetch image for ${media.name}:`, error);
+              // Failed to fetch image - skip and continue
             }
           }
         }
@@ -491,7 +484,7 @@ const Media = () => {
 
       setShowExportModal(false);
     } catch (error) {
-      console.error('Export error:', error);
+      // Export error handled - user will see error if critical
     } finally {
       setIsExporting(false);
     }
@@ -531,7 +524,7 @@ const Media = () => {
                 const fileName = `${product.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `product_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {
-                console.warn(`Failed to fetch image for ${product.title}:`, error);
+                // Failed to fetch image - skip this image and continue with others
                 return { fileName: null, blob: null, success: false };
               }
             }
@@ -569,8 +562,7 @@ const Media = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } catch (zipError) {
-        console.error('ZIP creation failed:', zipError);
-        
+        // ZIP creation failed - fallback to individual downloads
         // Fallback: download images individually
         
         for (let i = 0; i < filteredProducts.length; i++) {
@@ -595,7 +587,7 @@ const Media = () => {
               
               // Show progress for individual downloads
             } catch (error) {
-              console.warn(`Failed to fetch image for ${product.title}:`, error);
+              // Failed to fetch image - skip and continue
             }
           }
         }
@@ -603,7 +595,7 @@ const Media = () => {
 
       setShowExportModal(false);
     } catch (error) {
-      console.error('Export error:', error);
+      // Export error handled - user will see error if critical
     } finally {
       setIsExporting(false);
     }

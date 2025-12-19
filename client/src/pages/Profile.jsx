@@ -50,7 +50,6 @@ const Profile = () => {
         toast.success('Profile updated successfully!');
       })
       .catch((err) => {
-        console.error(err);
         toast.error(err || 'Failed to update profile. Please try again.');
       });
   };

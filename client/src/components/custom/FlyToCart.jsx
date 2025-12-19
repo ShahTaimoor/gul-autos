@@ -1,6 +1,6 @@
 export function flyToCart(imgRef, cartRef) {
   if (!imgRef?.current || !cartRef?.current) {
-    console.error("Missing refs for flyToCart animation");
+    // Missing refs for flyToCart animation - silently return
     return;
   }
 

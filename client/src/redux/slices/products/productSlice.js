@@ -193,6 +193,12 @@ export const productsSlice = createSlice({
   if (index !== -1) {
     state.products[index] = transformedProduct;
   }
+
+  // Also update the product in search results if it exists there
+  const searchIndex = state.searchResults.findIndex(p => p._id === updatedProduct._id);
+  if (searchIndex !== -1) {
+    state.searchResults[searchIndex] = transformedProduct;
+  }
 })
             .addCase(updateSingleProduct.rejected, (state, action) => {
                 state.status = 'failed';
@@ -251,6 +257,15 @@ export const productsSlice = createSlice({
                         stock: updatedProduct.stock
                     };
                 }
+
+                // Also update the product in search results if it exists there
+                const searchIndex = state.searchResults.findIndex(p => p._id === updatedProduct._id);
+                if (searchIndex !== -1) {
+                    state.searchResults[searchIndex] = {
+                        ...state.searchResults[searchIndex],
+                        stock: updatedProduct.stock
+                    };
+                }
             })
             .addCase(updateProductStock.rejected, (state, action) => {
                 state.status = 'failed';
@@ -266,6 +281,17 @@ export const productsSlice = createSlice({
                 
                 // Update all selected products in the current list
                 state.products = state.products.map(product => {
+                    if (productIds.includes(product._id)) {
+                        return {
+                            ...product,
+                            isFeatured: isFeatured
+                        };
+                    }
+                    return product;
+                });
+
+                // Also update products in search results
+                state.searchResults = state.searchResults.map(product => {
                     if (productIds.includes(product._id)) {
                         return {
                             ...product,

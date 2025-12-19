@@ -213,61 +213,6 @@ const Success = () => {
         </div>
       </div>
 
-      {/* Floating Cart Icon - Desktop Only */}
-      {!isMobile && isScrolled && (
-        <div className="fixed top-20 right-4 z-50 cart-floating">
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="relative p-3 bg-white rounded-full shadow-lg hover:shadow-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 hover:scale-110">
-                <ShoppingCart size={24} className="text-gray-700" />
-                {totalQuantity > 0 && (
-                  <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 bg-primary text-white border-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full animate-pulse">
-                    {totalQuantity}
-                  </Badge>
-                )}
-              </button>
-            </SheetTrigger>
-            <SheetContent className="w-full sm:w-[400px]">
-              <SheetHeader>
-                <SheetTitle className="text-lg font-semibold text-gray-900">Shopping Cart</SheetTitle>
-                <SheetDescription className="text-gray-600">
-                  {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} in your cart
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 max-h-[60vh] overflow-y-auto">
-                {cartItems.length > 0 ? (
-                  cartItems
-                    .filter((item) => item.product && item.product._id)
-                    .map((item) => (
-                      <CartProduct
-                        key={item.product._id}
-                        product={item.product}
-                        quantity={item.quantity}
-                      />
-                    ))
-                ) : (
-                  <div className="text-center py-8">
-                    <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500">Your cart is empty</p>
-                  </div>
-                )}
-              </div>
-              <SheetFooter className="mt-6">
-                <SheetClose asChild>
-                  <Button
-                    onClick={handleBuyNow}
-                    disabled={cartItems.length === 0}
-                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2.5"
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </SheetClose>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
-        </div>
-      )}
-
       {/* Checkout Dialog */}
       <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>
         <DialogContent className="w-full lg:max-w-6xl h-[62vh] sm:h-[70vh] sm:w-[60vw] overflow-hidden p-0 bg-white rounded-xl shadow-xl flex flex-col">

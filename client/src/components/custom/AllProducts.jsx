@@ -306,11 +306,16 @@ const AllProducts = () => {
         stockFilter,
         sortBy
       }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
     } catch (error) {
     } finally {
       setIsUpdating(false);
     }
-  }, [dispatch, editFormData, isUpdating, selectedProduct, currentPage, category, limit, stockFilter, sortBy]);
+  }, [dispatch, editFormData, isUpdating, selectedProduct, currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery]);
 
   // Handle edit form change
   const handleEditChange = useCallback((e) => {
@@ -421,13 +426,19 @@ const AllProducts = () => {
         stockFilter, 
         sortBy 
       }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
+
       toast.success(`${selectedProducts.length} product(s) ${isFeatured ? 'marked as featured' : 'unmarked as featured'} successfully!`);
     } catch (error) {
       toast.error(error || 'Failed to update products');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, selectedProducts, pagination.currentPage, category, limit, stockFilter, sortBy, toast]);
+  }, [dispatch, selectedProducts, pagination.currentPage, category, limit, stockFilter, sortBy, toast, hasSearched, searchQuery]);
 
   const handleBulkStockUpdate = useCallback(async (stockValue) => {
     if (selectedProducts.length === 0) {
@@ -454,13 +465,19 @@ const AllProducts = () => {
         stockFilter,
         sortBy
       }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
+
       toast.success(`Stock updated for ${selectedProducts.length} product(s)!`);
     } catch (error) {
       toast.error(error || 'Failed to update stock');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy, toast]);
+  }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy, toast, hasSearched, searchQuery]);
 
   // Handle inline price edit
   const handleStartEditPrice = useCallback((product) => {
@@ -500,11 +517,16 @@ const AllProducts = () => {
         stockFilter,
         sortBy
       }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
     } catch (error) {
     } finally {
       setIsUpdatingPrice(false);
     }
-  }, [dispatch, editingPriceValue, pagination.currentPage, category, limit, stockFilter, sortBy]);
+  }, [dispatch, editingPriceValue, pagination.currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery]);
 
   // Handle inline stock edit
   const handleStartEditStock = useCallback((product) => {
@@ -550,11 +572,16 @@ const AllProducts = () => {
         stockFilter,
         sortBy,
       }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
     } catch (error) {
     } finally {
       setIsUpdatingStock(false);
     }
-  }, [dispatch, editingStockValue, currentPage, category, limit, stockFilter, sortBy]);
+  }, [dispatch, editingStockValue, currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery]);
 
   const handleLimitChange = useCallback((value) => {
     const newLimit = parseInt(value, 10);

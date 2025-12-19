@@ -83,7 +83,6 @@ const ImageConverterDemo = () => {
       setPreviewUrl(newPreviewUrl);
 
     } catch (error) {
-      console.error('Conversion error:', error);
       alert(`Conversion failed: ${error.message}`);
     } finally {
       setIsConverting(false);

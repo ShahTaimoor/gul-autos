@@ -187,8 +187,7 @@ export const batchConvertToWebP = async (files, options = {}) => {
       const webpFile = await convertToWebP(file, options);
       results.push(webpFile);
     } catch (error) {
-      console.error(`Failed to convert ${file.name}:`, error);
-      // Keep original file if conversion fails
+      // Failed to convert - keep original file if conversion fails
       results.push(file);
     }
   }
