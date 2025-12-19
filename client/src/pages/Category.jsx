@@ -80,9 +80,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const Category = () => {
   const dispatch = useDispatch();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [inputValues, setInputValues] = useState({ name: '', picture: null });
   const [editingCategory, setEditingCategory] = useState(null);
@@ -144,9 +146,11 @@ const Category = () => {
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
           dispatch(AllCategory(''));
+          toast.success('Category added successfully!');
         }
       })
       .catch((error) => {
+        toast.error(error || 'Failed to add category. Please try again.');
       })
       .finally(() => {
         setLoading(false);
@@ -184,9 +188,11 @@ const Category = () => {
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
           dispatch(AllCategory(''));
+          toast.success('Category updated successfully!');
         }
       })
       .catch((error) => {
+        toast.error(error || 'Failed to update category. Please try again.');
       })
       .finally(() => {
         setLoading(false);
@@ -206,9 +212,11 @@ const Category = () => {
       .then((response) => {
         if (response?.success) {
           dispatch(AllCategory(''));
+          toast.success('Category deleted successfully!');
         }
       })
       .catch((error) => {
+        toast.error(error || 'Failed to delete category. Please try again.');
       })
       .finally(() => {
         setLoading(false);
@@ -223,9 +231,11 @@ const Category = () => {
       .then((response) => {
         if (response?.success) {
           dispatch(AllCategory(''));
+          toast.success(`Category ${category.active ? 'deactivated' : 'activated'} successfully!`);
         }
       })
       .catch((error) => {
+        toast.error(error || 'Failed to toggle category status. Please try again.');
       })
       .finally(() => {
         setLoading(false);

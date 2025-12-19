@@ -8,10 +8,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import OneLoader from '@/components/ui/OneLoader';
+import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { user, status } = useSelector((state) => state.auth);
+  const toast = useToast();
 
   // Local state for form inputs
   const [formData, setFormData] = useState({
@@ -45,9 +47,11 @@ const Profile = () => {
       .unwrap()
       .then(() => {
         setShowForm(false);
+        toast.success('Profile updated successfully!');
       })
       .catch((err) => {
         console.error(err);
+        toast.error(err || 'Failed to update profile. Please try again.');
       });
   };
 

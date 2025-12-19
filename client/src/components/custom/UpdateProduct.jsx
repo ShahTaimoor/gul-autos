@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
@@ -38,6 +39,7 @@ const UpdateProduct = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const toast = useToast();
   
   // Get page number from URL params to return to the same page after update
   const searchParams = new URLSearchParams(location.search);
@@ -129,10 +131,12 @@ const UpdateProduct = () => {
             isFeatured: false,
           });
           setPreviewImage('');
+          toast.success('Product updated successfully!');
           navigate(`/admin/dashboard/all-products?page=${returnPage}`);
         }
       })
       .catch((error) => {
+        toast.error(error || 'Failed to update product. Please try again.');
       })
       .finally(() => setLoading(false));
   };

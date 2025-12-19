@@ -10,10 +10,12 @@ import { useDispatch } from "react-redux";
 
 import axios from "axios";
 import { logout } from "../../redux/slices/auth/authSlice";
+import { useToast } from "@/hooks/use-toast";
 
 const ToggleLogout = ({ user }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const toast = useToast();
 
     const clearCookies = () => {
         const cookies = ['accessToken', 'refreshToken'];
@@ -52,12 +54,14 @@ const ToggleLogout = ({ user }) => {
             .then((response) => {
                 // Clear cookies again after server response
                 clearCookies();
+                toast.success('Logged out successfully');
                 // Stay on home page
                 navigate('/');
             })
             .catch((error) => {
                 // Clear cookies again even if API fails
                 clearCookies();
+                toast.success('Logged out successfully');
                 // Even if API fails, user is already logged out locally
                 // Stay on home page
                 navigate('/');

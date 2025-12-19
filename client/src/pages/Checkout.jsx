@@ -21,6 +21,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 
 const Checkout = ({ closeModal }) => {
   const { items: cartItems = [] } = useSelector((state) => state.cart);
@@ -38,6 +39,7 @@ const Checkout = ({ closeModal }) => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     setFormData({
@@ -56,7 +58,9 @@ const Checkout = ({ closeModal }) => {
     try {
       await dispatch(updateProfile(formData)).unwrap();
       setShowForm(false);
+      toast.success('Profile updated successfully!');
     } catch (err) {
+      toast.error(err || 'Failed to update profile');
     }
   };
 
@@ -98,12 +102,14 @@ const Checkout = ({ closeModal }) => {
       if (res.success) {
         dispatch(emptyCart());
         closeModal && closeModal();
-        
+        toast.success('Order placed successfully!');
         // Navigate to success page
         navigate('/success');
       }
     } catch (err) {
-      setError(err?.message || 'Something went wrong!');
+      const errorMessage = err?.message || 'Something went wrong!';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

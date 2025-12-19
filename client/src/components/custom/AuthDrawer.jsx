@@ -7,6 +7,7 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { signupOrLogin } from '@/redux/slices/auth/authSlice';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
+import { useToast } from '@/hooks/use-toast';
 import {
   Drawer,
   DrawerClose,
@@ -21,6 +22,7 @@ const AuthDrawer = () => {
   const { open, setOpen } = useAuthDrawer();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const toast = useToast();
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState({ shopName: '', password: '' });
@@ -101,8 +103,16 @@ const AuthDrawer = () => {
       if (response?.success && response?.user) {
         setInputValues({ shopName: '', password: '', phone: '', address: '', city: '', username: '' });
         setOpen(false);
+        // Determine if it's login or signup based on whether user already exists
+        const isLogin = !inputValue.phone && !inputValue.address && !inputValue.city && !inputValue.username;
+        if (isLogin) {
+          toast.success('Login successful!');
+        } else {
+          toast.success('Account created successfully!');
+        }
       } else {
         setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
+        toast.error('Authentication failed. Please try again.');
       }
     } catch (error) {
       let errorMessage = error || 'Invalid shop name or password';
@@ -113,6 +123,7 @@ const AuthDrawer = () => {
       }
       
       setErrorMsg({ shopName: errorMessage, password: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

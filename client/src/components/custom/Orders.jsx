@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import OrderData from './OrderData';
 import { fetchOrdersAdmin, updateOrderStatus, fetchPendingOrderCount, deleteOrder, bulkDeleteOrders } from '@/redux/slices/order/orderSlice';
+import { useToast } from '@/hooks/use-toast';
 import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
@@ -84,6 +85,7 @@ const Orders = () => {
   const dispatch = useDispatch();
   const { orders, status, error } = useSelector((state) => state.orders);
   const { user } = useSelector((state) => state.auth);
+  const toast = useToast();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getPakistaniDate());
   const [showAll, setShowAll] = useState(false);
@@ -160,9 +162,11 @@ const Orders = () => {
           order._id === orderId ? result.data : order
         )
       );
-  
+
       dispatch(fetchPendingOrderCount());
+      toast.success(`Order status updated to ${newStatus}`);
     } catch (error) {
+      toast.error(error || 'Failed to update order status');
     }
   };
 
@@ -175,7 +179,9 @@ const Orders = () => {
       
       // Refresh pending order count
       dispatch(fetchPendingOrderCount());
+      toast.success('Order deleted successfully!');
     } catch (error) {
+      toast.error(error || 'Failed to delete order');
     }
   };
 
@@ -189,7 +195,9 @@ const Orders = () => {
       
       // Refresh pending order count
       dispatch(fetchPendingOrderCount());
+      toast.success(`Successfully deleted ${allOrderIds.length} order(s)!`);
     } catch (error) {
+      toast.error(error || 'Failed to delete orders');
     }
   };
 

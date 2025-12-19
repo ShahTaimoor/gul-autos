@@ -10,11 +10,13 @@ import LazyImage from '../ui/LazyImage';
 import { Badge } from '../ui/badge';
 import { addToCart, updateCartQuantity } from '../../redux/slices/cart/cartSlice';
 import { useAuthDrawer } from '../../contexts/AuthDrawerContext';
+import { useToast } from '@/hooks/use-toast';
 
 const SearchModal = ({ open, onOpenChange }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useAuthDrawer();
+  const toast = useToast();
   const user = useSelector((state) => state.auth.user);
   const { searchResults, searchStatus, searchQuery } = useSelector((state) => state.products);
   const { items: cartItems } = useSelector((state) => state.cart);
@@ -121,9 +123,20 @@ const SearchModal = ({ open, onOpenChange }) => {
       ? dispatch(updateCartQuantity({ productId: product._id, quantity: qty }))
       : dispatch(addToCart({ productId: product._id, quantity: qty }));
     
-    action.finally(() => {
-      setAddingProductId(null);
-    });
+    action
+      .then(() => {
+        if (inCart) {
+          toast.success(`Cart quantity updated to ${qty}!`);
+        } else {
+          toast.success(`${qty} ${qty === 1 ? 'item' : 'items'} added to cart!`);
+        }
+      })
+      .catch((error) => {
+        toast.error(error || 'Failed to update cart. Please try again.');
+      })
+      .finally(() => {
+        setAddingProductId(null);
+      });
   };
 
   const isInCart = (productId) => {

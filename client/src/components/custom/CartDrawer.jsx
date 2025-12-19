@@ -23,11 +23,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import CartImage from '../ui/CartImage';
 import Checkout from '@/pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
+import { useToast } from '@/hooks/use-toast';
 
 // Optimized CartProduct component with memoization
 const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const toast = useToast();
   const [inputQty, setInputQty] = useState(quantity);
   const [isRemoving, setIsRemoving] = useState(false);
   const prevIsValid = useRef(true);
@@ -86,11 +88,13 @@ const CartProduct = React.memo(({ product, quantity, onValidationChange }) => {
     setIsRemoving(true);
     try {
       await dispatch(removeFromCart(_id)).unwrap();
+      toast.success('Item removed from cart');
     } catch (error) {
+      toast.error(error || 'Failed to remove item from cart');
     } finally {
       setIsRemoving(false);
     }
-  }, [dispatch, _id]);
+  }, [dispatch, _id, toast]);
 
   const handleQuantityChange = useCallback((newQty) => {
     if (newQty === '' || isNaN(newQty)) {
@@ -236,6 +240,7 @@ const CartDrawer = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { openDrawer } = useAuthDrawer();
+  const toast = useToast();
   
   // Memoized total quantity calculation
   const totalQuantity = useMemo(() => 
@@ -256,9 +261,13 @@ const CartDrawer = () => {
   const handleRemove = useCallback((productId) => {
     dispatch(removeFromCart(productId))
       .unwrap()
-      .then(() => {})
-      .catch((err) => {});
-  }, [dispatch]);
+      .then(() => {
+        toast.success('Item removed from cart');
+      })
+      .catch((err) => {
+        toast.error(err || 'Failed to remove item from cart');
+      });
+  }, [dispatch, toast]);
 
   const handleBuyNow = useCallback(() => {
     if (!user) {

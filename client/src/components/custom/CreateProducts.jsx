@@ -44,12 +44,14 @@ import LazyImage from '../ui/LazyImage';
 import Pagination from '../custom/Pagination';
 import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl, isWebPSupported } from '@/utils/imageConverter';
 import axiosInstance from '@/redux/slices/auth/axiosInstance';
+import { useToast } from '@/hooks/use-toast';
 
 const CreateProducts = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { categories } = useSelector((state) => state.categories);
   const { products } = useSelector((state) => state.products);
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [excelFile, setExcelFile] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -203,8 +205,10 @@ const CreateProducts = () => {
         // Reset file input
         const fileInput = document.getElementById('excelFile');
         if (fileInput) fileInput.value = '';
+        toast.success(`Successfully imported ${result.count || 0} products from Excel`);
       }
     } catch (error) {
+      toast.error(error || 'Failed to import products from Excel');
     } finally {
       setImportLoading(false);
     }
@@ -243,11 +247,13 @@ const CreateProducts = () => {
       .then((response) => {
         if (response?.success) {
           setInputValues(initialValues);
+          toast.success('Product created successfully!');
         }
         setLoading(false);
       })
       .catch((error) => {
         console.error('Product creation error:', error);
+        toast.error(error || 'Failed to create product. Please try again.');
         setLoading(false);
       });
   };

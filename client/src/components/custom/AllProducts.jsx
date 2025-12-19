@@ -38,6 +38,7 @@ import {
 
 import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
+import { useToast } from '@/hooks/use-toast';
 
 const AllProducts = () => {
   const dispatch = useDispatch();
@@ -45,6 +46,7 @@ const AllProducts = () => {
   const location = useLocation();
   const { products, status, totalItems } = useSelector((state) => state.products);
   const { categories } = useSelector((state) => state.categories);
+  const toast = useToast();
 
   // Get page number from URL params if available
   const searchParams = new URLSearchParams(location.search);
@@ -181,10 +183,12 @@ const AllProducts = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await dispatch(deleteSingleProduct(productId)).unwrap();
+        toast.success('Product deleted successfully!');
       } catch (error) {
+        toast.error(error || 'Failed to delete product. Please try again.');
       }
     }
-  }, [dispatch]);
+  }, [dispatch, toast]);
 
   // Handle edit product - open modal instead of navigating
   const handleEdit = useCallback(async (product) => {
@@ -293,9 +297,11 @@ const AllProducts = () => {
         id: product._id, 
         stock: newStock 
       })).unwrap();
+      toast.success(`Product stock updated to ${newStock}`);
     } catch (error) {
+      toast.error(error || 'Failed to update product stock');
     }
-  }, [dispatch]);
+  }, [dispatch, toast]);
 
 
   // Handle page change using pagination hook
@@ -365,11 +371,13 @@ const AllProducts = () => {
         stockFilter, 
         sortBy 
       }));
+      toast.success(`${selectedProducts.length} product(s) ${isFeatured ? 'marked as featured' : 'unmarked as featured'} successfully!`);
     } catch (error) {
+      toast.error(error || 'Failed to update products');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, selectedProducts, pagination.currentPage, category, limit, stockFilter, sortBy]);
+  }, [dispatch, selectedProducts, pagination.currentPage, category, limit, stockFilter, sortBy, toast]);
 
   const handleBulkStockUpdate = useCallback(async (stockValue) => {
     if (selectedProducts.length === 0) {
@@ -396,11 +404,13 @@ const AllProducts = () => {
         stockFilter,
         sortBy
       }));
+      toast.success(`Stock updated for ${selectedProducts.length} product(s)!`);
     } catch (error) {
+      toast.error(error || 'Failed to update stock');
     } finally {
       setIsBulkUpdating(false);
     }
-  }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy]);
+  }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy, toast]);
 
   // Handle inline price edit
   const handleStartEditPrice = useCallback((product) => {

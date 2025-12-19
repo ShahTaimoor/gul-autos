@@ -26,6 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
+import { useToast } from '@/hooks/use-toast';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -156,6 +157,7 @@ const ProductList = () => {
   
   const dispatch = useDispatch();
   const { openDrawer } = useAuthDrawer();
+  const toast = useToast();
   
   // Update URL params when category changes
   const updateURLParams = useCallback((updates) => {
@@ -348,14 +350,16 @@ const ProductList = () => {
       productId: product._id,
       quantity: qty
     })).then(() => {
-      // Keep the selected quantity instead of resetting to 1
+      toast.success(`${qty} ${qty === 1 ? 'item' : 'items'} added to cart!`);
     }).catch((error) => {
       // If user is authenticated but getting error, it might be a cookie issue
       if (!user) {
         openDrawer('login');
+      } else {
+        toast.error(error || 'Failed to add item to cart');
       }
     }).finally(() => setAddingProductId(null));
-      }, [dispatch, navigate, quantities, user, openDrawer]);
+      }, [dispatch, navigate, quantities, user, openDrawer, toast]);
 
   // Memoized handlers for child components
   const handleCategorySelect = useCallback((categoryId) => {

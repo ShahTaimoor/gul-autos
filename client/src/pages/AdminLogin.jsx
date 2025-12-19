@@ -7,11 +7,13 @@ import OneLoader from '@/components/ui/OneLoader';
 import { Eye, EyeOff, ArrowLeft, Shield } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { adminLogin } from '@/redux/slices/auth/authSlice';
+import { useToast } from '@/hooks/use-toast';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const toast = useToast();
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState({ shopName: '', password: '' });
@@ -74,6 +76,7 @@ const AdminLogin = () => {
       
       if (response?.success && response?.user) {
         setInputValues({ shopName: '', password: '' });
+        toast.success('Admin login successful!');
         // Wait for Redux state to update, then navigate
         // The useEffect will handle navigation when isAuthenticated becomes true
         // But also navigate directly as fallback
@@ -82,10 +85,12 @@ const AdminLogin = () => {
         }, 200);
       } else {
         setErrorMsg({ shopName: 'Authentication failed', password: 'Authentication failed' });
+        toast.error('Authentication failed. Please try again.');
       }
     } catch (error) {
       const errorMessage = error || 'Invalid shop name or password';
       setErrorMsg({ shopName: errorMessage, password: errorMessage });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
