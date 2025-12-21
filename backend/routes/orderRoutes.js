@@ -18,7 +18,7 @@ router.post('/order', isAuthorized, async (req, res) => {
       return res.status(400).json({ success: false, message: 'No products provided' });
     }
 
-    // Check if stock is sufficient for each product
+    // Check if products exist and deduct stock (allow negative stock)
     for (const item of products) {
       const product = await Product.findById(item.id);
 
@@ -26,11 +26,8 @@ router.post('/order', isAuthorized, async (req, res) => {
         return res.status(404).json({ success: false, message: `Product not found: ${item.id}` });
       }
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ success: false, message: `Not enough stock for product: ${product.title}` });
-      }
-
-      product.stock -= item.quantity;  // Deduct the stock
+      // Allow orders even if stock would go negative
+      product.stock -= item.quantity;  // Deduct the stock (can go negative)
       await product.save();
     }
 

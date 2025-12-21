@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { logout } from "../../redux/slices/auth/authSlice";
 import { fetchOrdersAdmin, fetchPendingOrderCount, updateOrderStatus } from "@/redux/slices/order/orderSlice";
+import { fetchLowStockCount } from "@/redux/slices/products/productSlice";
 import {
   FilePlus2Icon,
   ChartBarStacked,
@@ -17,6 +18,7 @@ import {
   Settings,
   Bell,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Sidebar,
@@ -65,10 +67,20 @@ const items = [
     category: "main"
   },
   { 
+    title: "Low Stock", 
+    url: "/admin/dashboard/low-stock", 
+    icon: AlertTriangle, 
+    showBadge: true,
+    badgeKey: "lowStock",
+    description: "Low Stock Products",
+    category: "main"
+  },
+  { 
     title: "Orders", 
     url: "/admin/dashboard/orders", 
     icon: PackageSearch, 
     showBadge: true, 
+    badgeKey: "pendingOrders",
     description: "Order Management",
     category: "orders"
   },
@@ -97,12 +109,14 @@ export function AppSidebar() {
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);  // Loading state
   const pendingOrderCount = useSelector((state) => state.orders.pendingOrderCount);
+  const lowStockCount = useSelector((state) => state.products.lowStockCount);
 
-  // Fetch orders after login
+  // Fetch orders and low stock count after login
   useEffect(() => {
     if (user) {
       dispatch(fetchOrdersAdmin());
       dispatch(fetchPendingOrderCount());
+      dispatch(fetchLowStockCount());
     }
   }, [dispatch, user]);
 
@@ -221,6 +235,13 @@ export function AppSidebar() {
                           isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
                         }`} />
                         <span className="text-sm font-medium">{item.title}</span>
+                        
+                        {/* Badge for Low Stock in main navigation */}
+                        {item.showBadge && item.badgeKey === "lowStock" && lowStockCount > 0 && (
+                          <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
+                            {lowStockCount}
+                          </Badge>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -253,10 +274,17 @@ export function AppSidebar() {
                         }`} />
                         <span className="text-sm font-medium">{item.title}</span>
                         
-                        {/* Enhanced Badge for Orders */}
-                        {item.showBadge && pendingOrderCount > 0 && (
+                        {/* Badge for Orders */}
+                        {item.showBadge && item.badgeKey === "pendingOrders" && pendingOrderCount > 0 && (
                           <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
                             {pendingOrderCount}
+                          </Badge>
+                        )}
+                        
+                        {/* Badge for Low Stock */}
+                        {item.showBadge && item.badgeKey === "lowStock" && lowStockCount > 0 && (
+                          <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
+                            {lowStockCount}
                           </Badge>
                         )}
                       </Link>

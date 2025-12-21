@@ -30,7 +30,10 @@ const ProductCard = React.memo(({
 
   const handleAddClick = useCallback((e) => {
     // Prevent default behavior and stop propagation for iPhone compatibility
-    e.preventDefault();
+    // Only prevent default if the event is cancelable
+    if (e.cancelable !== false) {
+      e.preventDefault();
+    }
     e.stopPropagation();
     
     if (clickAudioRef.current) {
@@ -61,7 +64,7 @@ const ProductCard = React.memo(({
       return;
     }
     const parsed = parseInt(value);
-    if (!isNaN(parsed)) {
+    if (!isNaN(parsed) && parsed >= 0) {
       onQuantityChange(product._id, parsed, product.stock);
     }
   }, [onQuantityChange, product._id, product.stock]);
@@ -77,7 +80,8 @@ const ProductCard = React.memo(({
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
     }
-    const newValue = Math.max((parseInt(quantity) || 1) - 1, 1);
+    const currentQty = parseInt(quantity) || 0;
+    const newValue = Math.max(currentQty - 1, 0);
     onQuantityChange(product._id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
@@ -93,7 +97,8 @@ const ProductCard = React.memo(({
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
     }
-    const newValue = Math.min((parseInt(quantity) || 1) + 1, product.stock);
+    const currentQty = parseInt(quantity) || 0;
+    const newValue = Math.min(currentQty + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
     return false;
   }, [quantity, onQuantityChange, product._id, product.stock]);
@@ -106,7 +111,7 @@ const ProductCard = React.memo(({
     e.currentTarget.src = '/logo.jpeg';
   }, []);
 
-  const currentQuantity = parseInt(quantity) || 1;
+  const currentQuantity = parseInt(quantity) || 0;
   const isDisabled = currentQuantity <= 0 || isAddingToCart;
 
   return (
@@ -176,12 +181,13 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
-        <h3 className={`font-medium line-clamp-2 leading-tight ${
+        <h3 className={`font-medium line-clamp-3 leading-tight ${
           gridType === 'grid3' ? 'text-sm' : 'text-xs'
         }`}>
-          {product.title.split(' ').map(word =>
+          {product.title.split(' ').slice(0, 10).map(word =>
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
           ).join(' ')}
+          {product.title.split(' ').length > 10 ? '...' : ''}
         </h3>
         
         
@@ -190,10 +196,10 @@ const ProductCard = React.memo(({
         <div className={`flex flex-row gap-2 ${
           gridType === 'grid3' ? 'mt-3' : 'mt-2'
         }`}>
-          {/* Quantity Controls - 55% mobile, 50% desktop */}
-          <div className="flex items-center justify-center w-[55%] md:w-1/2">
+          {/* Quantity Controls - 63% mobile, 50% desktop (same width as button) */}
+          <div className="flex items-center justify-center w-[63%] lg:w-1/2">
             <div 
-              className="flex w-full items-stretch h-9 sm:h-8 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden"
+              className="flex w-full items-stretch h-10 sm:h-9 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden"
               onTouchStart={(e) => {
                 // Prevent scroll when touching the quantity control area
                 if (e.target.tagName === 'BUTTON') {
@@ -222,7 +228,7 @@ const ProductCard = React.memo(({
                     e.preventDefault();
                   }
                 }}
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-l-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -230,7 +236,7 @@ const ProductCard = React.memo(({
                   userSelect: 'none',
                   WebkitTapHighlightColor: 'transparent'
                 }}
-                disabled={currentQuantity <= 1}
+                disabled={currentQuantity <= 0}
                 aria-label="Decrease quantity"
               >
                 −
@@ -274,7 +280,7 @@ const ProductCard = React.memo(({
                     e.preventDefault();
                   }
                 }}
-                className="w-9 h-9 sm:w-8 sm:h-8 rounded-r-full flex items-center justify-center text-xs font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -290,13 +296,13 @@ const ProductCard = React.memo(({
             </div>
           </div>
 
-          {/* Add to Cart Button - 45% mobile, 50% desktop, icon + "Add" text on mobile */}
+          {/* Add to Cart Button - 37% mobile, 50% desktop (same width as quantity), icon + "Add" text on mobile */}
           <button
             onClick={handleAddClick}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
-            className={`text-xs cursor-pointer px-2 md:px-3 h-9 sm:h-8 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[45%] md:w-1/2 ${
+            className={`text-xs cursor-pointer px-2 md:px-3 h-10 sm:h-9 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[37%] lg:w-1/2 ${
               isInCart
                 ? 'bg-black hover:bg-gray-800'
                 : isDisabled

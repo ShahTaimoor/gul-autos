@@ -56,14 +56,20 @@ productSchema.index({ category: 1, price: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ isFeatured: -1, createdAt: -1 }); // For sorting featured products first
 
-// Text search index for Shopify-like search functionality
+// Performance indexes for search optimization
+productSchema.index({ stock: 1 }); // For filtering in-stock products (stock > 0)
+productSchema.index({ isFeatured: -1 }); // For featured product sorting
+productSchema.index({ stock: 1, isFeatured: -1, createdAt: -1 }); // Compound index for search queries
+
+// Text search index for optimized search functionality
+// Note: MongoDB allows only ONE text index per collection
 productSchema.index({ 
     title: 'text', 
     description: 'text' 
 }, {
     weights: {
-        title: 10,  // Title matches are more important
-        description: 5
+        title: 10,  // Title matches are more important (higher weight)
+        description: 5  // Description matches have lower weight
     },
     name: 'text_search_index'
 });

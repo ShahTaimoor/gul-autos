@@ -78,29 +78,8 @@ const Checkout = ({ closeModal }) => {
       return;
     }
 
-    const outOfStockItems = validCartItems.filter(
-      (item) => !item.product.stock || item.product.stock <= 0
-    );
-
-    if (outOfStockItems.length > 0) {
-      const productNames = outOfStockItems.map(item => item.product.title).join(', ');
-      toast.error(`Some products are out of stock: ${productNames}. Please remove them from your cart.`);
-      setError(`Some products are out of stock: ${productNames}`);
-      return;
-    }
-
-    const insufficientStockItems = validCartItems.filter(
-      (item) => item.quantity > (item.product.stock || 0)
-    );
-
-    if (insufficientStockItems.length > 0) {
-      const messages = insufficientStockItems.map(
-        (item) => `"${item.product.title}": Only ${item.product.stock} available, you have ${item.quantity} in cart`
-      );
-      toast.error(messages.join('. '));
-      setError(messages.join('. '));
-      return;
-    }
+    // Allow orders even if stock would go negative
+    // Stock validation is handled by backend
 
     const totalPrice = validCartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 

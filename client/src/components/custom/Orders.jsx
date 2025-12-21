@@ -28,6 +28,7 @@ import { Badge } from '../ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
@@ -51,7 +52,8 @@ import {
   ChevronDown,
   Grid3X3,
   List as ListIcon,
-  BarChart3
+  BarChart3,
+  Search
 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -87,14 +89,17 @@ const Orders = () => {
   const { user } = useSelector((state) => state.auth);
   const toast = useToast();
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(getPakistaniDate());
-  const [showAll, setShowAll] = useState(false);
+  const today = getPakistaniDate();
+  const [fromDate, setFromDate] = useState(today);
+  const [toDate, setToDate] = useState(today);
   const [statusFilter, setStatusFilter] = useState('All');
   const [localOrders, setLocalOrders] = useState([]);
   const [packerNames, setPackerNames] = useState({});
   const [limit, setLimit] = useState(24);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const [showFilters, setShowFilters] = useState(false);
+  const [shopNameSearch, setShopNameSearch] = useState('');
+  const [mobileSearch, setMobileSearch] = useState('');
   const totalItems = useSelector((state) => state.orders.totalItems) || 0;
   const clickTimer = useRef(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -246,16 +251,12 @@ const Orders = () => {
     }
   }, [status, error, orders]);
 
-  const todayString = getPakistaniDate();
-
   const filteredOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .filter((order) => {
-      if (!showAll) {
-        const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
-        return orderDate === selectedDate;
-      }
-      return true;
+      // Date range filter based on Pakistan timezone
+      const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
+      return orderDate >= fromDate && orderDate <= toDate;
     })
     .filter((order) => {
       if (statusFilter !== 'All') {
@@ -263,7 +264,20 @@ const Orders = () => {
       }
       return true;
     })
-    ;
+    .filter((order) => {
+      // Shop name filter
+      const shopName = order.userId?.name || order.user?.name || '';
+      const matchesShopName = !shopNameSearch || 
+        shopName.toLowerCase().includes(shopNameSearch.toLowerCase());
+      return matchesShopName;
+    })
+    .filter((order) => {
+      // Mobile number filter
+      const phoneNumber = order.phone ? String(order.phone) : '';
+      const matchesMobile = !mobileSearch || 
+        phoneNumber.includes(mobileSearch);
+      return matchesMobile;
+    });
 
   const handleShare = async (order) => {
     const details = `
@@ -485,25 +499,72 @@ Phone: ${order.phone}
               </Tabs>
 
               {/* Date and View Controls */}
-              <div className="flex flex-wrap gap-2">
-                <Button 
-                  variant={showAll ? 'default' : 'outline'} 
-                  onClick={() => setShowAll(!showAll)} 
-                  className={`gap-2 ${showAll ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300 text-gray-700'}`}
-                >
-                  <CalendarDays className="h-4 w-4" />
-                  {showAll ? 'Show Today' : 'Show All'}
-                </Button>
+              <div className="flex flex-wrap gap-2 items-end">
+                {/* Search by Shop Name */}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="shopNameSearch" className="text-xs text-gray-600">
+                    Shop Name
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="shopNameSearch"
+                      type="text"
+                      placeholder="Search shop..."
+                      value={shopNameSearch}
+                      onChange={(e) => setShopNameSearch(e.target.value)}
+                      className="w-40 pl-8 h-9 text-sm border-gray-300"
+                    />
+                  </div>
+                </div>
 
-                {!showAll && (
+                {/* Search by Mobile Number */}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="mobileSearch" className="text-xs text-gray-600">
+                    Mobile
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="mobileSearch"
+                      type="text"
+                      placeholder="Search mobile..."
+                      value={mobileSearch}
+                      onChange={(e) => setMobileSearch(e.target.value)}
+                      className="w-40 pl-8 h-9 text-sm border-gray-300"
+                    />
+                  </div>
+                </div>
+
+                {/* Date Range Filters */}
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="fromDate" className="text-xs text-gray-600">
+                    From Date
+                  </Label>
                   <Input
+                    id="fromDate"
                     type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    max={todayString}
-                    className="w-auto border-gray-300"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    max={today}
+                    className="w-auto h-9 text-sm border-gray-300"
                   />
-                )}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <Label htmlFor="toDate" className="text-xs text-gray-600">
+                    To Date
+                  </Label>
+                  <Input
+                    id="toDate"
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    min={fromDate}
+                    max={today}
+                    className="w-auto h-9 text-sm border-gray-300"
+                  />
+                </div>
 
                 <Select value={limit.toString()} onValueChange={handleLimitChange}>
                   <SelectTrigger className="w-24 border-gray-300">
@@ -577,7 +638,9 @@ Phone: ${order.phone}
               </div>
               <div>
                 <h3 className="text-lg font-medium text-gray-900">
-                  {showAll ? 'No orders found' : `No ${statusFilter.toLowerCase()} orders found for ${selectedDate}`}
+                  {statusFilter === 'All' 
+                    ? `No orders found from ${fromDate} to ${toDate}`
+                    : `No ${statusFilter.toLowerCase()} orders found from ${fromDate} to ${toDate}`}
                 </h3>
                 <p className="text-gray-500 mt-1">
                   Check back later for new orders

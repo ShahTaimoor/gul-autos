@@ -68,14 +68,14 @@ const ProductGrid = React.memo(({
   return (
     <div className={`px-2 sm:px-0 ${
       gridType === 'grid2' 
-        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4' 
+        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2' 
         : 'flex flex-col space-y-0.5'
     }`}>
       {products.filter(product => product && product._id).map((product) => (
         <ProductCard
           key={product._id}
           product={product}
-          quantity={quantities[product._id] || 1}
+          quantity={quantities[product._id] ?? 0}
           onQuantityChange={onQuantityChange}
           onAddToCart={onAddToCart}
           isAddingToCart={addingProductId === product._id}

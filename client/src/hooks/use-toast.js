@@ -13,7 +13,7 @@ export const useToast = () => {
      */
     success: (message, options = {}) => {
       return toast.success(message, {
-        duration: 4000,
+        duration: 500,
         ...options,
       })
     },
@@ -25,7 +25,7 @@ export const useToast = () => {
      */
     error: (message, options = {}) => {
       return toast.error(message, {
-        duration: 5000,
+        duration: 500,
         ...options,
       })
     },
@@ -37,7 +37,7 @@ export const useToast = () => {
      */
     info: (message, options = {}) => {
       return toast.info(message, {
-        duration: 4000,
+        duration: 500,
         ...options,
       })
     },
@@ -49,7 +49,7 @@ export const useToast = () => {
      */
     warning: (message, options = {}) => {
       return toast.warning(message, {
-        duration: 4000,
+        duration: 500,
         ...options,
       })
     },
@@ -61,7 +61,7 @@ export const useToast = () => {
      */
     default: (message, options = {}) => {
       return toast(message, {
-        duration: 4000,
+        duration: 500,
         ...options,
       })
     },

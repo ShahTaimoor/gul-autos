@@ -497,6 +497,8 @@ router.get('/get-products', async (req, res) => {
       query.stock = { $gt: 0 };
     } else if (stockFilter === 'out-of-stock') {
       query.stock = { $lte: 0 };
+    } else if (stockFilter === 'low-stock') {
+      query.stock = { $gt: 0, $lt: 150 }; // Show only stock from 1 to 149 (exclude 0 and negative)
     }
 
 
@@ -620,92 +622,87 @@ router.get('/get-products', async (req, res) => {
 });
 
 
-// Helper function to calculate Levenshtein distance (edit distance)
+// REMOVED: Search functionality removed
+// Helper function to calculate Levenshtein distance (edit distance) for fuzzy matching
+/* REMOVED
 function levenshteinDistance(str1, str2) {
     const len1 = str1.length;
     const len2 = str2.length;
+    if (len1 === 0) return len2;
+    if (len2 === 0) return len1;
+    
     const matrix = [];
-
-    // Initialize matrix
     for (let i = 0; i <= len1; i++) {
         matrix[i] = [i];
     }
     for (let j = 0; j <= len2; j++) {
         matrix[0][j] = j;
     }
-
-    // Fill matrix
+    
     for (let i = 1; i <= len1; i++) {
         for (let j = 1; j <= len2; j++) {
             if (str1[i - 1] === str2[j - 1]) {
                 matrix[i][j] = matrix[i - 1][j - 1];
             } else {
                 matrix[i][j] = Math.min(
-                    matrix[i - 1][j] + 1,     // deletion
-                    matrix[i][j - 1] + 1,     // insertion
-                    matrix[i - 1][j - 1] + 1   // substitution
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + 1
                 );
             }
         }
     }
-
+    
     return matrix[len1][len2];
 }
 
-// Helper function to extract numbers from string
-function extractNumbers(str) {
-    return str.match(/\d+/g) || [];
-}
-
-// Helper function to calculate numeric similarity
-function numericSimilarity(num1, num2) {
-    if (num1 === num2) return 1;
-    const diff = Math.abs(num1 - num2);
-    const max = Math.max(num1, num2);
-    if (max === 0) return 1;
-    // For years, allow up to 20 years difference with decreasing similarity
-    if (diff <= 20) {
-        return 1 - (diff / 20) * 0.5; // 50% penalty max for 20 year difference
-    }
-    return 0.1; // Very low similarity for large differences
-}
-
-// Helper function to calculate fuzzy match score
-function calculateRelevanceScore(product, searchTerm) {
+// Helper function to calculate fuzzy relevance score
+function calculateFuzzyScore(product, searchTerm) {
     const searchLower = searchTerm.toLowerCase().trim();
     const titleLower = (product.title || '').toLowerCase().trim();
     const descriptionLower = (product.description || '').toLowerCase().trim();
     
     let score = 0;
-    const maxScore = 1000; // Increased max score for better granularity
-
-    // PRIORITY 1: Exact match in title (highest priority - 1000 points)
+    
+    // Exact match in title (highest score)
     if (titleLower === searchLower) {
-        return maxScore; // Exact match gets maximum score
+        return 1000;
     }
-
-    // PRIORITY 2: Title starts with search term (900 points)
+    
+    // Title starts with search term
     if (titleLower.startsWith(searchLower)) {
         score += 900;
     }
-    // PRIORITY 3: Title contains search term as whole phrase (800 points)
+    // Title contains search term as phrase
     else if (titleLower.includes(searchLower)) {
         score += 800;
     }
-    // PRIORITY 4: All search words found in title (700 points)
+    // Word-level matching
     else {
         const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
         const titleWords = titleLower.split(/\s+/);
         let allWordsFound = true;
-        let wordsFoundCount = 0;
         
         for (const searchWord of searchWords) {
             let wordFound = false;
             for (const titleWord of titleWords) {
                 if (titleWord === searchWord) {
-                    wordsFoundCount++;
+                    score += 100;
                     wordFound = true;
                     break;
+                } else if (titleWord.includes(searchWord) || searchWord.includes(titleWord)) {
+                    score += 50;
+                    wordFound = true;
+                    break;
+                } else if (searchWord.length >= 4 && titleWord.length >= 4) {
+                    const distance = levenshteinDistance(searchWord, titleWord);
+                    const maxLen = Math.max(searchWord.length, titleWord.length);
+                    const similarity = 1 - (distance / maxLen);
+                    if (similarity >= 0.75) {
+                        score += similarity * 30;
+                        wordFound = true;
+                        break;
+                    }
                 }
             }
             if (!wordFound) {
@@ -714,142 +711,27 @@ function calculateRelevanceScore(product, searchTerm) {
         }
         
         if (allWordsFound && searchWords.length > 0) {
-            score += 700 + (wordsFoundCount * 10);
-        }
-    }
-
-    // Count matching words first
-    const titleWords = titleLower.split(/\s+/);
-    const searchWords = searchLower.split(/\s+/).filter(w => w.length >= 2);
-    const searchNumbers = extractNumbers(searchTerm);
-    const nonNumericSearchWords = searchWords.filter(w => !/^\d+$/.test(w));
-    
-    let matchingWordCount = 0;
-    let matchingNonNumericCount = 0;
-    
-    // PRIORITY 5: Individual word matches in title (600-650 points)
-    for (const searchWord of searchWords) {
-        let wordMatched = false;
-        for (const titleWord of titleWords) {
-            // Exact word match
-            if (titleWord === searchWord) {
-                score += 50;
-                wordMatched = true;
-                matchingWordCount++;
-                if (!/^\d+$/.test(searchWord)) {
-                    matchingNonNumericCount++;
-                }
-                break;
-            }
-            // Word starts with search term or vice versa
-            else if (titleWord.startsWith(searchWord) || searchWord.startsWith(titleWord)) {
-                score += 30;
-                wordMatched = true;
-                matchingWordCount++;
-                if (!/^\d+$/.test(searchWord)) {
-                    matchingNonNumericCount++;
-                }
-                break;
-            }
-            // Word contains search term
-            else if (titleWord.includes(searchWord) || searchWord.includes(titleWord)) {
-                score += 20;
-                wordMatched = true;
-                matchingWordCount++;
-                if (!/^\d+$/.test(searchWord)) {
-                    matchingNonNumericCount++;
-                }
-                break;
-            }
-            // Fuzzy match with typo tolerance (only for words >= 4 chars)
-            else if (searchWord.length >= 4 && titleWord.length >= 4) {
-                const distance = levenshteinDistance(searchWord, titleWord);
-                const maxLen = Math.max(searchWord.length, titleWord.length);
-                const similarity = 1 - (distance / maxLen);
-                
-                // Accept matches with up to 25% character difference
-                if (similarity >= 0.75) {
-                    score += similarity * 15;
-                    wordMatched = true;
-                    matchingWordCount++;
-                    if (!/^\d+$/.test(searchWord)) {
-                        matchingNonNumericCount++;
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    // PRIORITY 6: Numeric similarity for year/model numbers (400-500 points)
-    // BUT: Penalize if only numeric words match when non-numeric words are also in search
-    const titleNumbers = extractNumbers(product.title || '');
-    
-    if (searchNumbers.length > 0 && titleNumbers.length > 0) {
-        let numericMatchFound = false;
-        for (const searchNum of searchNumbers) {
-            for (const titleNum of titleNumbers) {
-                const numSimilarity = numericSimilarity(parseInt(searchNum), parseInt(titleNum));
-                if (numSimilarity > 0.1) {
-                    numericMatchFound = true;
-                    // If non-numeric words exist in search but none matched, heavily penalize
-                    if (nonNumericSearchWords.length > 0 && matchingNonNumericCount === 0) {
-                        // Only give 20 points instead of 100 for numeric-only matches
-                        score += numSimilarity * 20;
-                    } else {
-                        score += numSimilarity * 100;
-                    }
-                }
-            }
+            score += 200;
         }
     }
     
-    // PENALTY: If search has multiple words but product only matches few
-    if (searchWords.length > 1) {
-        const matchRatio = matchingWordCount / searchWords.length;
-        // If less than 70% of words match, heavily penalize
-        if (matchRatio < 0.7) {
-            score = score * 0.3; // Reduce score by 70%
-        }
-        // If non-numeric words exist but none matched, heavily penalize
-        if (nonNumericSearchWords.length > 0 && matchingNonNumericCount === 0) {
-            score = score * 0.2; // Reduce score by 80%
-        }
-    }
-
-    // PRIORITY 7: Description contains search term (100-200 points)
+    // Description matches (lower weight)
     if (descriptionLower.includes(searchLower)) {
-        score += 200;
-    } else {
-        // Check if any search words are in description
-        for (const searchWord of searchWords) {
-            if (descriptionLower.includes(searchWord)) {
-                score += 20;
-            }
-        }
+        score += 100;
     }
-
-    // PRIORITY 8: Partial substring matches (50-100 points)
-    const searchWordsLower = searchLower.split(/\s+/).filter(w => w.length >= 3);
-    const combinedText = `${titleLower} ${descriptionLower}`;
     
-    for (const word of searchWordsLower) {
-        if (combinedText.includes(word)) {
-            score += 10;
-        }
-    }
-
-    return Math.min(score, maxScore);
+    return score;
 }
+REMOVED */
 
-// @route GET /api/products/search
-// @desc Search products with fuzzy matching
-// @access Public
+// REMOVED: Search route removed
+/* REMOVED
 router.get('/search', async (req, res) => {
     try {
         const { q, limit = 20 } = req.query;
 
-        if (!q || q.trim().length === 0) {
+        // Validate search query
+        if (!q || typeof q !== 'string' || q.trim().length === 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Search query is required'
@@ -857,301 +739,177 @@ router.get('/search', async (req, res) => {
         }
 
         const searchTerm = q.trim();
-        const searchLimit = parseInt(limit) || 20;
-        const searchLower = searchTerm.toLowerCase();
-
-        // First, try MongoDB text search for exact/partial matches (faster and more accurate)
-        let initialProducts = [];
-        try {
-            // Use MongoDB text search if available
-            initialProducts = await Product.find(
-                { 
-                    $text: { $search: searchTerm },
-                    stock: { $gt: 0 }
-                },
-                { score: { $meta: "textScore" } }
-            )
-            .select('title picture price description stock isFeatured createdAt')
-            .populate('user', 'name')
-            .populate('category', 'name')
-            .sort({ score: { $meta: "textScore" } })
-            .limit(searchLimit * 2) // Get more for filtering
-            .lean();
-        } catch (textSearchError) {
-            // If text search fails (index might not exist), fall back to regular search
-            console.log('Text search not available, using regular search');
-        }
-
-        // If text search didn't return enough results or failed, get all active products
-        if (initialProducts.length < searchLimit) {
-            const allProducts = await Product.find({ stock: { $gt: 0 } })
-                .select('title picture price description stock isFeatured createdAt')
-                .populate('user', 'name')
-                .populate('category', 'name')
-                .lean();
-            
-            // Combine with text search results, avoiding duplicates
-            const existingIds = new Set(initialProducts.map(p => p._id.toString()));
-            const additionalProducts = allProducts.filter(p => !existingIds.has(p._id.toString()));
-            initialProducts = [...initialProducts, ...additionalProducts];
-        }
-
-        // Calculate relevance scores for each product
-        const productsWithScores = initialProducts.map(product => {
-            const score = calculateRelevanceScore(product, searchTerm);
-            return {
-                ...product,
-                relevanceScore: score,
-                image: product.picture?.secure_url || null
-            };
-        });
-
-        // Separate products into categories for better ranking
-        const exactMatches = [];      // Exact title match (100% match)
-        const startsWithMatches = []; // Title starts with search
-        const containsMatches = [];   // Title contains search
-        const wordMatches = [];      // Individual words match
-        const fuzzyMatches = [];      // Fuzzy/typo matches
+        const searchLimit = Math.min(parseInt(limit) || 20, 100); // Cap at 100 for safety
+        const MAX_FUZZY_DATASET = 400; // Cap fuzzy search dataset
         
-        productsWithScores.forEach(product => {
-            const titleLower = (product.title || '').toLowerCase().trim();
-            const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
-            
-            // Count how many search words match in the title
-            const matchingWords = searchWords.filter(word => titleLower.includes(word));
-            const matchCount = matchingWords.length;
-            const matchRatio = searchWords.length > 0 ? matchCount / searchWords.length : 0;
-            
-            // Separate numeric and non-numeric words
-            const numericWords = searchWords.filter(w => /^\d+$/.test(w));
-            const nonNumericWords = searchWords.filter(w => !/^\d+$/.test(w));
-            
-            // Extract all numbers from title for exact numeric matching
-            const titleNumbers = (product.title || '').match(/\d+/g) || [];
-            
-            // Check exact numeric matches (years must match exactly, not just substring)
-            let allNumericMatch = true;
-            let matchingNumericCount = 0;
-            if (numericWords.length > 0) {
-                for (const numericWord of numericWords) {
-                    const numValue = parseInt(numericWord);
-                    // Check if this exact number appears in the title
-                    const exactMatch = titleNumbers.some(tn => parseInt(tn) === numValue);
-                    if (exactMatch) {
-                        matchingNumericCount++;
-                    } else {
-                        allNumericMatch = false;
-                    }
-                }
-            }
-            
-            const matchingNonNumeric = nonNumericWords.filter(w => titleLower.includes(w)).length;
-            
-            // PRIORITY 1: Exact match (100% - always show these first)
-            if (titleLower === searchLower) {
-                exactMatches.push(product);
-            }
-            // PRIORITY 2: Title starts with search term
-            else if (titleLower.startsWith(searchLower)) {
-                startsWithMatches.push(product);
-            }
-            // PRIORITY 3: Title contains the full search term
-            else if (titleLower.includes(searchLower)) {
-                containsMatches.push(product);
-            }
-            // PRIORITY 4: ALL search words are in title (100% word match) - STRICT REQUIREMENT
-            if (searchWords.length > 0 && matchCount === searchWords.length) {
-                wordMatches.push(product);
-            }
-            // PRIORITY 5: For searches with 2+ non-numeric words, ALL non-numeric words MUST match
-            else if (nonNumericWords.length >= 2) {
-                // Require ALL non-numeric words to match
-                if (matchingNonNumeric === nonNumericWords.length) {
-                    // If numeric words exist, ALL must match exactly
-                    if (numericWords.length === 0 || allNumericMatch) {
-                        wordMatches.push(product);
-                    }
-                    // Skip if numeric words don't match exactly
-                }
-                // Skip products that don't have all non-numeric words
-            }
-            // PRIORITY 6: For searches with 1 non-numeric word + numeric, both should match
-            else if (nonNumericWords.length === 1 && numericWords.length > 0) {
-                if (matchingNonNumeric === 1 && allNumericMatch) {
-                    wordMatches.push(product);
-                }
-                // Skip if non-numeric doesn't match or numeric doesn't match exactly
-            }
-            // PRIORITY 7: Most words match (at least 80% of words, minimum 2 words) - only for 3+ word searches
-            else if (searchWords.length >= 3 && matchRatio >= 0.8 && matchCount >= 2) {
-                // Require at least one non-numeric word if non-numeric words exist
-                // AND numeric words must match exactly if they exist
-                if ((nonNumericWords.length === 0 || matchingNonNumeric > 0) && 
-                    (numericWords.length === 0 || allNumericMatch)) {
-                    fuzzyMatches.push(product);
-                }
-            }
-            // PRIORITY 8: Single word searches - allow if it matches
-            else if (searchWords.length === 1 && titleLower.includes(searchWords[0])) {
-                if (product.relevanceScore > 100) {
-                    fuzzyMatches.push(product);
-                }
-            }
-        });
+        // Base query: Only in-stock products
+        const baseQuery = { stock: { $gt: 0 } };
+        
+        // Field projection for performance (only return needed fields)
+        const projection = 'title picture price description stock isFeatured createdAt category';
+        
+        let results = [];
+        let searchStrategy = 'none';
 
-        // Sort function for products - alphabetical by title (A-Z)
-        const sortProducts = (products) => {
-            return products.sort((a, b) => {
-                // First, prioritize featured products
+        // ============================================
+        // TIER 1: MongoDB $text Search (Primary - Fastest & Most Relevant)
+        // ============================================
+        try {
+            const textSearchResults = await Product.find(
+                {
+                    $text: { $search: searchTerm },
+                    ...baseQuery
+                },
+                { 
+                    score: { $meta: "textScore" }
+                }
+            )
+            .select(projection)
+            .populate('category', 'name')
+            .sort({ 
+                score: { $meta: "textScore" },
+                isFeatured: -1,
+                createdAt: -1
+            })
+            .limit(searchLimit * 2) // Get more for secondary sorting
+            .lean();
+
+            if (textSearchResults && textSearchResults.length > 0) {
+                results = textSearchResults;
+                searchStrategy = 'text';
+            }
+        } catch (textError) {
+            // Text index might not exist or query failed - continue to fallback
+            console.log('MongoDB text search not available, using fallback:', textError.message);
+        }
+
+        // ============================================
+        // TIER 2: Regex-based Partial Matching (Secondary)
+        // ============================================
+        if (results.length < searchLimit) {
+            try {
+                // Escape special regex characters in search term
+                const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regexPattern = new RegExp(escapedSearch, 'i');
+                
+                const regexQuery = {
+                    ...baseQuery,
+                    $or: [
+                        { title: regexPattern },
+                        { description: regexPattern }
+                    ]
+                };
+
+                const regexResults = await Product.find(regexQuery)
+                    .select(projection)
+                    .populate('category', 'name')
+                    .sort({ 
+                        isFeatured: -1,
+                        createdAt: -1
+                    })
+                    .limit(searchLimit * 2)
+                    .lean();
+
+                // Merge with text search results, avoiding duplicates
+                if (regexResults && regexResults.length > 0) {
+                    const existingIds = new Set(results.map(p => p._id.toString()));
+                    const newResults = regexResults.filter(p => !existingIds.has(p._id.toString()));
+                    results = [...results, ...newResults];
+                    
+                    if (searchStrategy === 'none') {
+                        searchStrategy = 'regex';
+                    }
+                }
+            } catch (regexError) {
+                console.log('Regex search error:', regexError.message);
+            }
+        }
+
+        // ============================================
+        // TIER 3: Limited Fuzzy Search (Tertiary - Capped Dataset)
+        // ============================================
+        if (results.length < searchLimit) {
+            try {
+                // Get a limited dataset for fuzzy search (capped for performance)
+                const fuzzyDataset = await Product.find(baseQuery)
+                    .select(projection)
+                    .populate('category', 'name')
+                    .sort({ isFeatured: -1, createdAt: -1 })
+                    .limit(MAX_FUZZY_DATASET)
+                    .lean();
+
+                if (fuzzyDataset && fuzzyDataset.length > 0) {
+                    // Calculate fuzzy scores
+                    const productsWithScores = fuzzyDataset.map(product => ({
+                        ...product,
+                        fuzzyScore: calculateFuzzyScore(product, searchTerm)
+                    }));
+
+                    // Filter products with minimum relevance (score > 50)
+                    const relevantProducts = productsWithScores
+                        .filter(p => p.fuzzyScore > 50)
+                        .sort((a, b) => b.fuzzyScore - a.fuzzyScore);
+
+                    // Merge with existing results, avoiding duplicates
+                    const existingIds = new Set(results.map(p => p._id.toString()));
+                    const newResults = relevantProducts
+                        .filter(p => !existingIds.has(p._id.toString()))
+                        .slice(0, searchLimit - results.length);
+
+                    results = [...results, ...newResults];
+                    
+                    if (searchStrategy === 'none') {
+                        searchStrategy = 'fuzzy';
+                    }
+                }
+            } catch (fuzzyError) {
+                console.log('Fuzzy search error:', fuzzyError.message);
+            }
+        }
+
+        // ============================================
+        // Final Sorting: Relevance -> Featured -> Newest
+        // ============================================
+        results = results
+            .slice(0, searchLimit) // Strict limit
+            .map(product => ({
+                ...product,
+                image: product.picture?.secure_url || null
+            }))
+            .sort((a, b) => {
+                // 1. Featured products first
                 if (b.isFeatured !== a.isFeatured) {
                     return b.isFeatured ? 1 : -1;
                 }
-                // Then sort alphabetically by title (A-Z)
-                const titleA = (a.title || '').toLowerCase().trim();
-                const titleB = (b.title || '').toLowerCase().trim();
-                return titleA.localeCompare(titleB);
+                // 2. Then by newest (createdAt)
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateB - dateA;
             });
-        };
 
-        // Additional strict filtering: Remove products that don't meet minimum requirements
-        const strictFilter = (products) => {
-            return products.filter(product => {
-                const titleLower = (product.title || '').toLowerCase().trim();
-                const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
-                const numericWords = searchWords.filter(w => /^\d+$/.test(w));
-                const nonNumericWords = searchWords.filter(w => !/^\d+$/.test(w));
-                
-                // Extract all numbers from title (for year matching)
-                const titleNumbers = (product.title || '').match(/\d+/g) || [];
-                
-                // Check exact numeric word matches (years must match exactly)
-                let allNumericMatch = true;
-                if (numericWords.length > 0) {
-                    for (const numericWord of numericWords) {
-                        const numValue = parseInt(numericWord);
-                        // Check if this exact number appears in the title
-                        const exactMatch = titleNumbers.some(tn => parseInt(tn) === numValue);
-                        if (!exactMatch) {
-                            allNumericMatch = false;
-                            break;
-                        }
-                    }
-                }
-                
-                // Check non-numeric word matches
-                const matchingNonNumeric = nonNumericWords.filter(w => titleLower.includes(w)).length;
-                
-                // STRICT RULE 1: If numeric words (years) exist, ALL must match exactly
-                if (numericWords.length > 0 && !allNumericMatch) {
-                    return false; // Exclude if year doesn't match exactly
-                }
-                
-                // STRICT RULE 2: For searches with 2+ non-numeric words, ALL must match
-                if (nonNumericWords.length >= 2) {
-                    if (matchingNonNumeric < nonNumericWords.length) {
-                        return false; // Exclude if not all non-numeric words match
-                    }
-                }
-                
-                // STRICT RULE 3: For searches with 1 non-numeric word, it must match
-                if (nonNumericWords.length === 1) {
-                    if (matchingNonNumeric < 1) {
-                        return false; // Exclude if the non-numeric word doesn't match
-                    }
-                }
-                
-                // STRICT RULE 4: Require at least 70% of ALL words (numeric + non-numeric) to match
-                const allMatchingWords = (allNumericMatch ? numericWords.length : 0) + matchingNonNumeric;
-                const totalWords = searchWords.length;
-                if (totalWords >= 2) {
-                    const matchRatio = allMatchingWords / totalWords;
-                    if (matchRatio < 0.7) {
-                        return false; // Exclude if less than 70% match
-                    }
-                }
-                
-                return true;
-            });
-        };
-
-        // Apply strict filtering to each category
-        const filteredExact = strictFilter([...exactMatches]);
-        const filteredStartsWith = strictFilter([...startsWithMatches]);
-        const filteredContains = strictFilter([...containsMatches]);
-        const filteredWords = strictFilter([...wordMatches]);
-        const filteredFuzzy = strictFilter([...fuzzyMatches]);
-
-        // Sort each category
-        const sortedExact = sortProducts(filteredExact);
-        const sortedStartsWith = sortProducts(filteredStartsWith);
-        const sortedContains = sortProducts(filteredContains);
-        const sortedWords = sortProducts(filteredWords);
-        const sortedFuzzy = sortProducts(filteredFuzzy);
-
-        // Combine all relevant products (relevance filtering already done)
-        // Then sort alphabetically by title (A-Z) while maintaining relevance-based inclusion
-        let relevantProducts = [];
-        
-        if (sortedExact.length > 0) {
-            // Add ALL exact matches first (100% guarantee - never cut off)
-            relevantProducts = [...sortedExact];
-            
-            // Calculate remaining slots after exact matches
-            const remainingSlots = Math.max(0, searchLimit - sortedExact.length);
-            
-            // Fill remaining slots with other matches in priority order
-            if (remainingSlots > 0) {
-                const otherMatches = [
-                    ...sortedStartsWith,
-                    ...sortedContains,
-                    ...sortedWords,
-                    ...sortedFuzzy
-                ].slice(0, remainingSlots);
-                
-                relevantProducts = [...relevantProducts, ...otherMatches];
-            }
-        } else {
-            // No exact matches, use normal priority order
-            relevantProducts = [
-                ...sortedStartsWith,
-                ...sortedContains,
-                ...sortedWords,
-                ...sortedFuzzy
-            ].slice(0, searchLimit);
-        }
-        
-        // Final alphabetical sort: Sort all relevant products alphabetically by title (A-Z)
-        // Featured products will still appear first within alphabetical groups
-        relevantProducts.sort((a, b) => {
-            // First, prioritize featured products
-            if (b.isFeatured !== a.isFeatured) {
-                return b.isFeatured ? 1 : -1;
-            }
-            // Then sort alphabetically by title (A-Z)
-            const titleA = (a.title || '').toLowerCase().trim();
-            const titleB = (b.title || '').toLowerCase().trim();
-            return titleA.localeCompare(titleB);
-        });
-        
-        // Remove relevance score from response
-        relevantProducts = relevantProducts.map(({ relevanceScore, ...product }) => product);
+        // Remove internal scoring fields from response
+        results = results.map(({ fuzzyScore, score, ...product }) => product);
 
         return res.status(200).json({
             success: true,
-            message: relevantProducts.length > 0 
-                ? `Found ${relevantProducts.length} product(s)` 
+            message: results.length > 0 
+                ? `Found ${results.length} product(s)` 
                 : 'No products found',
-            data: relevantProducts,
-            query: searchTerm
+            data: results,
+            query: searchTerm,
+            strategy: searchStrategy,
+            count: results.length
         });
     } catch (error) {
         console.error('Error while searching products:', error);
         res.status(500).json({
             success: false,
-            message: 'Server error while searching products'
+            message: 'Server error while searching products',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
+REMOVED */
 
 router.get('/single-product/:id', async (req, res) => {
     const { id } = req.params;
@@ -1171,6 +929,26 @@ router.get('/single-product/:id', async (req, res) => {
     }
 });
 
+// @route GET /api/products/low-stock-count
+// @desc Get count of products with stock less than 150
+// @access Public
+router.get('/low-stock-count', async (req, res) => {
+  try {
+    const count = await Product.countDocuments({
+      stock: { $gt: 0, $lt: 150 } // Show only stock from 1 to 149 (exclude 0 and negative)
+    });
 
+    return res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error('Error fetching low stock count:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching low stock count'
+    });
+  }
+});
 
 module.exports = router;

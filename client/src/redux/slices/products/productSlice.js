@@ -111,30 +111,39 @@ export const searchProducts = createAsyncThunk(
     }
 );
 
+export const fetchLowStockCount = createAsyncThunk(
+    'products/fetchLowStockCount',
+    async (_, thunkAPI) => {
+        try {
+            const API_URL = import.meta.env.VITE_API_URL;
+            const res = await fetch(`${API_URL}/low-stock-count`, {
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            return data.count || 0;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error.message || 'Failed to fetch low stock count');
+        }
+    }
+);
+
 
 const initialState = {
     products: [],
     singleProducts: null,
-    searchResults: [],
-    searchQuery: '',
     status: 'idle',
-    searchStatus: 'idle',
     error: null,
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
+    lowStockCount: 0,
 };
 
 export const productsSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {
-        clearSearchResults: (state) => {
-            state.searchResults = [];
-            state.searchQuery = '';
-            state.searchStatus = 'idle';
-        }
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder
             .addCase(AddProduct.pending, (state) => {
@@ -192,12 +201,6 @@ export const productsSlice = createSlice({
   const index = state.products.findIndex(p => p._id === updatedProduct._id);
   if (index !== -1) {
     state.products[index] = transformedProduct;
-  }
-
-  // Also update the product in search results if it exists there
-  const searchIndex = state.searchResults.findIndex(p => p._id === updatedProduct._id);
-  if (searchIndex !== -1) {
-    state.searchResults[searchIndex] = transformedProduct;
   }
 })
             .addCase(updateSingleProduct.rejected, (state, action) => {
@@ -257,15 +260,6 @@ export const productsSlice = createSlice({
                         stock: updatedProduct.stock
                     };
                 }
-
-                // Also update the product in search results if it exists there
-                const searchIndex = state.searchResults.findIndex(p => p._id === updatedProduct._id);
-                if (searchIndex !== -1) {
-                    state.searchResults[searchIndex] = {
-                        ...state.searchResults[searchIndex],
-                        stock: updatedProduct.stock
-                    };
-                }
             })
             .addCase(updateProductStock.rejected, (state, action) => {
                 state.status = 'failed';
@@ -289,39 +283,19 @@ export const productsSlice = createSlice({
                     }
                     return product;
                 });
-
-                // Also update products in search results
-                state.searchResults = state.searchResults.map(product => {
-                    if (productIds.includes(product._id)) {
-                        return {
-                            ...product,
-                            isFeatured: isFeatured
-                        };
-                    }
-                    return product;
-                });
             })
             .addCase(bulkUpdateFeatured.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.payload;
             })
-            .addCase(searchProducts.pending, (state) => {
-                state.searchStatus = 'loading';
-                state.error = null;
+            .addCase(fetchLowStockCount.fulfilled, (state, action) => {
+                state.lowStockCount = action.payload;
             })
-            .addCase(searchProducts.fulfilled, (state, action) => {
-                state.searchStatus = 'succeeded';
-                state.searchResults = action.payload.data || [];
-                state.searchQuery = action.payload.query || '';
-            })
-            .addCase(searchProducts.rejected, (state, action) => {
-                state.searchStatus = 'failed';
-                state.error = action.payload;
-                state.searchResults = [];
+            .addCase(fetchLowStockCount.rejected, (state) => {
+                state.lowStockCount = 0;
             })
 
     }
 });
 
-export const { clearSearchResults } = productsSlice.actions;
 export default productsSlice.reducer;

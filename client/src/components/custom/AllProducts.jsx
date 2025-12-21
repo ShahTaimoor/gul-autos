@@ -34,10 +34,11 @@ import {
   CheckSquare,
   Square,
   Upload as UploadIcon,
-  Loader2
+  Loader2,
+  Download
 } from 'lucide-react';
 
-import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts, clearSearchResults } from '@/redux/slices/products/productSlice';
+import { AddProduct, deleteSingleProduct, fetchProducts, updateProductStock, getSingleProduct, updateSingleProduct, bulkUpdateFeatured, searchProducts, clearSearchResults, importProductsFromExcel } from '@/redux/slices/products/productSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
 import { useToast } from '@/hooks/use-toast';
 import SearchSuggestions from './SearchSuggestions';
@@ -101,9 +102,12 @@ const AllProducts = () => {
   const [editingStockId, setEditingStockId] = useState(null);
   const [editingStockValue, setEditingStockValue] = useState('');
   const [isUpdatingStock, setIsUpdatingStock] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedProductFromSearch, setSelectedProductFromSearch] = useState(null);
 
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
@@ -158,7 +162,10 @@ const AllProducts = () => {
   const sortedProducts = useMemo(() => {
     let productList = [];
     
-    if (hasSearched && searchResults && searchResults.length > 0) {
+    // If a specific product was selected from search suggestions, show only that product
+    if (selectedProductFromSearch) {
+      productList = [selectedProductFromSearch].filter(product => product && product._id);
+    } else if (hasSearched && searchResults && searchResults.length > 0) {
       productList = searchResults.filter(product => product && product._id);
     } else {
       productList = products.filter(product => product && product._id);
@@ -177,7 +184,7 @@ const AllProducts = () => {
     }
     
     return uniqueProducts;
-  }, [products, searchResults, hasSearched]);
+  }, [products, searchResults, hasSearched, selectedProductFromSearch]);
 
   // Get deduplicated search results count for accurate display
   const uniqueSearchResultsCount = useMemo(() => {
@@ -479,6 +486,140 @@ const AllProducts = () => {
     }
   }, [dispatch, pagination.currentPage, selectedProducts, category, limit, stockFilter, sortBy, toast, hasSearched, searchQuery]);
 
+  // Get category display name
+  const getCategoryDisplayName = useCallback(() => {
+    if (category === 'all') return 'All';
+    const selectedCategory = categories?.find(cat => cat._id === category);
+    return selectedCategory?.name || 'Category';
+  }, [category, categories]);
+
+  // Get sort display name
+  const getSortDisplayName = useCallback(() => {
+    const sortLabels = {
+      'az': 'Name A-Z',
+      'za': 'Name Z-A',
+      'price-low': 'Price Low-High',
+      'price-high': 'Price High-Low',
+      'newest': 'Newest First',
+      'oldest': 'Oldest First',
+      'stock-high': 'Stock High-Low',
+      'stock-low': 'Stock Low-High'
+    };
+    return sortLabels[sortBy] || 'Sort';
+  }, [sortBy]);
+
+  // Get stock filter display name
+  const getStockDisplayName = useCallback(() => {
+    if (stockFilter === 'all') return 'All Products';
+    if (stockFilter === 'active') return 'In Stock';
+    return 'Out of Stock';
+  }, [stockFilter]);
+
+  // Handle export products to CSV
+  const handleExportProducts = useCallback(() => {
+    try {
+      // Get products to export - use sortedProducts which includes search results if in search mode
+      let productsToExport = [];
+      
+      if (hasSearched && searchResults && searchResults.length > 0) {
+        productsToExport = searchResults.filter(product => product && product._id);
+      } else {
+        productsToExport = products.filter(product => product && product._id);
+      }
+
+      if (productsToExport.length === 0) {
+        toast.error('No products to export');
+        return;
+      }
+
+      // Create CSV headers
+      const headers = ['Title', 'Description', 'Price', 'Stock', 'Category', 'Featured', 'Image URL'];
+      
+      // Create CSV rows
+      const csvRows = productsToExport.map(product => {
+        const row = [
+          product.title || '',
+          (product.description || '').replace(/"/g, '""'), // Escape quotes in CSV
+          product.price || '0',
+          product.stock || '0',
+          product.category?.name || '',
+          product.isFeatured ? 'Yes' : 'No',
+          product.picture?.secure_url || product.image || ''
+        ];
+        // Wrap each field in quotes and join with commas
+        return row.map(field => `"${field}"`).join(',');
+      });
+
+      // Combine headers and rows
+      const csvContent = [
+        headers.map(h => `"${h}"`).join(','),
+        ...csvRows
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${productsToExport.length} product(s) successfully!`);
+    } catch (error) {
+      toast.error('Failed to export products. Please try again.');
+    }
+  }, [products, searchResults, hasSearched, toast]);
+
+  // Handle import products from Excel
+  const handleExcelImport = useCallback(async (file) => {
+    if (!file) {
+      toast.error('Please select an Excel file to import');
+      return;
+    }
+
+    setImportLoading(true);
+    try {
+      const result = await dispatch(importProductsFromExcel(file)).unwrap();
+      
+      if (result.success) {
+        setExcelFile(null);
+        // Reset file input
+        const fileInput = document.getElementById('excelFileImport');
+        if (fileInput) fileInput.value = '';
+        
+        // Refresh products list
+        const currentPage = pagination.currentPage;
+        await dispatch(fetchProducts({ 
+          category, 
+          page: currentPage, 
+          limit, 
+          stockFilter,
+          sortBy
+        }));
+
+        toast.success(`Successfully imported ${result.count || 0} product(s) from Excel`);
+      }
+    } catch (error) {
+      toast.error(error || 'Failed to import products from Excel');
+    } finally {
+      setImportLoading(false);
+    }
+  }, [dispatch, pagination.currentPage, category, limit, stockFilter, sortBy, toast]);
+
+  // Handle file selection for import
+  const handleFileChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setExcelFile(file);
+      // Automatically trigger import when file is selected
+      handleExcelImport(file);
+    }
+  }, [handleExcelImport]);
+
   // Handle inline price edit
   const handleStartEditPrice = useCallback((product) => {
     setEditingPriceId(product._id);
@@ -606,15 +747,37 @@ const AllProducts = () => {
   const handleSearchSelect = useCallback((product) => {
     setSearchQuery(product.title);
     setHasSearched(true);
-    dispatch(searchProducts({ query: product.title, limit: 100 }));
-  }, [dispatch]);
-
-  const handleSearchChange = useCallback((value) => {
-    setSearchQuery(value);
+    setSelectedProductFromSearch(product); // Set the selected product to show only this one
   }, []);
+
+  const handleSearchChange = useCallback((e) => {
+    const value = typeof e === 'string' ? e : e.target.value;
+    setSearchQuery(value);
+    // Clear selected product and search state when value is empty
+    if (!value || value.trim() === '') {
+      setSelectedProductFromSearch(null);
+      setHasSearched(false);
+      dispatch(clearSearchResults());
+    } else if (selectedProductFromSearch) {
+      setSelectedProductFromSearch(null);
+    }
+  }, [selectedProductFromSearch, dispatch]);
+  
+  // Handle clear search
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setHasSearched(false);
+    setSelectedProductFromSearch(null);
+    dispatch(clearSearchResults());
+    // Also trigger onChange to update SearchSuggestions component
+    if (handleSearchChange) {
+      handleSearchChange({ target: { value: '' } });
+    }
+  }, [dispatch, handleSearchChange]);
 
   const handleSearchTrigger = useCallback((query) => {
     setHasSearched(true);
+    setSelectedProductFromSearch(null); // Clear selected product when doing a new search
     dispatch(searchProducts({ query, limit: 100 }));
   }, [dispatch]);
 
@@ -630,230 +793,268 @@ const AllProducts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Professional Header with Stats */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">
                 Product Management
               </h1>
-              <p className="text-gray-500 text-lg">Manage your catalog and inventory</p>
+              <p className="text-sm text-gray-600 mt-1">Manage your catalog and inventory</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <input
+                  id="excelFileImport"
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileChange}
+                  className="sr-only"
+                  disabled={importLoading}
+                />
+                <Button
+                  onClick={() => {
+                    const fileInput = document.getElementById('excelFileImport');
+                    if (fileInput && !importLoading) {
+                      fileInput.click();
+                    }
+                  }}
+                  variant="outline"
+                  className="h-9 px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-2 text-sm"
+                  disabled={importLoading}
+                >
+                  {importLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <UploadIcon className="h-4 w-4" />
+                      Import
+                    </>
+                  )}
+                </Button>
+              </div>
+              <Button
+                onClick={handleExportProducts}
+                variant="outline"
+                className="h-9 px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-2 text-sm"
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </div>
+          </div>
+          
+          {/* Stats */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white rounded border border-gray-200 p-3">
+              <div className="flex items-center gap-2">
+                <PackageSearch className="h-4 w-4 text-gray-600" />
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">{totalItems}</p>
+                  <p className="text-xs text-gray-600">Total Products</p>
+                </div>
+              </div>
             </div>
             
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 w-full lg:w-auto">
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-md">
-                    <PackageSearch className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">{totalItems}</p>
-                    <p className="text-xs text-gray-500 mt-1">Total Products</p>
-                  </div>
+            <div className="bg-white rounded border border-gray-200 p-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {products.filter(p => p.stock > 0).length}
+                  </p>
+                  <p className="text-xs text-gray-600">In Stock</p>
                 </div>
               </div>
-              
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-50 rounded-md">
-                    <TrendingUp className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">
-                      {products.filter(p => p.stock > 0).length}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">In Stock</p>
-                  </div>
+            </div>
+            
+            <div className="bg-white rounded border border-gray-200 p-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-orange-600" />
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {products.filter(p => p.stock === 0).length}
+                  </p>
+                  <p className="text-xs text-gray-600">Out of Stock</p>
                 </div>
               </div>
-              
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-50 rounded-md">
-                    <BarChart3 className="h-5 w-5 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">
-                      {products.filter(p => p.stock === 0).length}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Out of Stock</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 rounded-md">
-                    <Star className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900 leading-none">{categories?.length || 0}</p>
-                    <p className="text-xs text-gray-500 mt-1">Categories</p>
-                  </div>
+            </div>
+            
+            <div className="bg-white rounded border border-gray-200 p-3">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-gray-600" />
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">{categories?.length || 0}</p>
+                  <p className="text-xs text-gray-600">Categories</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
         
-        {/* Professional Search and Filter Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
-            {/* Search Input with Suggestions */}
-            <div className="relative flex-1">
-              <SearchSuggestions
-                placeholder="Search products... (e.g., Spoiler 2002)"
-                onSelectProduct={handleSearchSelect}
-                onSearch={handleSearchTrigger}
-                value={searchQuery}
-                onChange={handleSearchChange}
-                showButton={true}
-                buttonText="Search"
-                inputClassName="h-10 text-base"
-                className="w-full"
-              />
-              {hasSearched && searchQuery && (
-                <div className="mt-2 text-sm text-gray-600">
-                  {searchStatus === 'loading' ? (
-                    'Searching...'
-                  ) : uniqueSearchResultsCount > 0 ? (
-                    `Found ${uniqueSearchResultsCount} result${uniqueSearchResultsCount !== 1 ? 's' : ''} for "${searchQuery}"`
-                  ) : (
-                    `No results found for "${searchQuery}"`
-                  )}
-                </div>
-              )}
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded border border-gray-200 p-3 mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Search Input with Button */}
+            <div className="relative flex-1 min-w-[200px] flex items-center gap-2">
+              <div className="relative flex-1 [&>div>div>div>svg[class*='left']]:hidden">
+                <SearchSuggestions
+                  placeholder="Search products..."
+                  onSelectProduct={handleSearchSelect}
+                  onSearch={handleSearchTrigger}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  showButton={false}
+                  inputClassName="h-9 text-sm pl-3 pr-10 border-gray-300 rounded"
+                  className="w-full"
+                />
+              </div>
+              <Button
+                onClick={() => handleSearchTrigger(searchQuery)}
+                className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white rounded whitespace-nowrap"
+              >
+                Search
+              </Button>
             </div>
             
             {/* Grid Type Toggle */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button
-                variant={gridType === 'grid2' ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setGridType('grid2')}
-                className="h-10"
+                className={`h-9 w-9 p-0 rounded ${
+                  gridType === 'grid2' 
+                    ? 'bg-red-600 text-white hover:bg-red-700' 
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
               <Button
-                variant={gridType === 'grid3' ? 'default' : 'outline'}
+                variant="ghost"
                 size="sm"
                 onClick={() => setGridType('grid3')}
-                className="h-10"
+                className={`h-9 w-9 p-0 rounded ${
+                  gridType === 'grid3' 
+                    ? 'bg-red-600 text-white hover:bg-red-700' 
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
               >
                 <List className="h-4 w-4" />
               </Button>
             </div>
             
-            {/* Filter Controls - Fixed Alignment */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-              {/* Category Filter */}
-              <div className="flex-1 sm:min-w-[180px]">
-                <Select value={category} onValueChange={handleCategorySelect}>
-                  <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Filter className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <SelectValue placeholder="All Categories" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <div className="p-2">
-                      <Input
-                        placeholder="Search categories..."
-                        value={categorySearch}
-                        onChange={(e) => setCategorySearch(e.target.value)}
-                        className="mb-2 h-8 text-xs"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    {filteredCategories.map((cat) => (
-                      <SelectItem key={cat._id} value={cat._id} className="py-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
-                          {cat.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Stock Filter */}
-              <div className="flex-1 sm:min-w-[140px]">
-                <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
-                  <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <SelectValue placeholder="Stock Status" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    <SelectItem value="active">In Stock</SelectItem>
-                    <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {/* Sort Filter */}
-              <div className="flex-1 sm:min-w-[140px]">
-                <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
-                  <SelectTrigger className="h-10 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 transition-all duration-200">
-                    <div className="flex items-center gap-2 text-sm">
-                      <SortAsc className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                      <SelectValue placeholder="Sort By" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="az">Name A-Z</SelectItem>
-                    <SelectItem value="za">Name Z-A</SelectItem>
-                    <SelectItem value="price-low">Price Low-High</SelectItem>
-                    <SelectItem value="price-high">Price High-Low</SelectItem>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="stock-high">Stock High-Low</SelectItem>
-                    <SelectItem value="stock-low">Stock Low-High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-            </div>
+            {/* Filter Dropdown */}
+            <Select value={category} onValueChange={handleCategorySelect}>
+              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[120px]">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-gray-500" />
+                  <SelectValue>
+                    <span>{getCategoryDisplayName()}</span>
+                  </SelectValue>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <div className="p-2">
+                  <Input
+                    placeholder="Search categories..."
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                    className="mb-2 h-8 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                {filteredCategories.map((cat) => (
+                  <SelectItem key={cat._id} value={cat._id} className="text-sm">
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {/* Stock Filter Dropdown */}
+            <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
+              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[140px]">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-gray-500" />
+                  <SelectValue>
+                    <span>{getStockDisplayName()}</span>
+                  </SelectValue>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Products</SelectItem>
+                <SelectItem value="active">In Stock</SelectItem>
+                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Sort Dropdown */}
+            <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
+              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[140px]">
+                <div className="flex items-center gap-2">
+                  <SortAsc className="h-4 w-4 text-gray-500" />
+                  <SelectValue>
+                    <span>{getSortDisplayName()}</span>
+                  </SelectValue>
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="az">Name A-Z</SelectItem>
+                <SelectItem value="za">Name Z-A</SelectItem>
+                <SelectItem value="price-low">Price Low-High</SelectItem>
+                <SelectItem value="price-high">Price High-Low</SelectItem>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+                <SelectItem value="stock-high">Stock High-Low</SelectItem>
+                <SelectItem value="stock-low">Stock Low-High</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          
+          {/* Search Results Info */}
+          {hasSearched && searchQuery && (
+            <div className="mt-2 text-xs text-gray-600">
+              {searchStatus === 'loading' ? (
+                'Searching...'
+              ) : uniqueSearchResultsCount > 0 ? (
+                `Found ${uniqueSearchResultsCount} result${uniqueSearchResultsCount !== 1 ? 's' : ''} for "${searchQuery}"`
+              ) : (
+                `No results found for "${searchQuery}"`
+              )}
+            </div>
+          )}
         </div>
       
-        {/* Professional Products Grid */}
-        <div className="space-y-6">
+        {/* Products Grid */}
+        <div className="space-y-4">
           
           {/* Results Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  onClick={handleSelectAll}
-                  className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
-                  title={selectedProducts.length === sortedProducts.length ? 'Deselect all' : 'Select all'}
-                >
-                  {selectedProducts.length === sortedProducts.length && sortedProducts.length > 0 ? (
-                    <CheckSquare className="h-5 w-5 text-blue-600" />
-                  ) : (
-                    <Square className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Products ({sortedProducts.length})
-                </h2>
-                {selectedProducts.length > 0 && (
-                  <Badge variant="default" className="px-2.5 py-0.5 bg-blue-600 hover:bg-blue-700">
-                    {selectedProducts.length} selected
-                  </Badge>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSelectAll}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title={selectedProducts.length === sortedProducts.length ? 'Deselect all' : 'Select all'}
+              >
+                {selectedProducts.length === sortedProducts.length && sortedProducts.length > 0 ? (
+                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                ) : (
+                  <Square className="h-4 w-4 text-gray-400" />
                 )}
-              </div>
-              {stockFilter !== 'all' && (
-                <Badge variant="outline" className="px-2.5 py-0.5">
-                  {stockFilter === 'active' ? 'In Stock' : 'Out of Stock'}
+              </button>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Products ({sortedProducts.length})
+              </h2>
+              {selectedProducts.length > 0 && (
+                <Badge variant="default" className="px-2 py-0.5 bg-blue-600 text-xs">
+                  {selectedProducts.length} selected
                 </Badge>
               )}
             </div>
@@ -866,7 +1067,7 @@ const AllProducts = () => {
                   size="sm"
                   onClick={() => handleBulkStockUpdate(0)}
                   disabled={isBulkUpdating}
-                  className="border-red-200 text-red-600 hover:bg-red-50 h-8 text-xs"
+                  className="border-gray-300 text-red-600 hover:bg-red-50 h-8 text-xs px-2"
                 >
                   Mark Out of Stock
                 </Button>
@@ -875,7 +1076,7 @@ const AllProducts = () => {
                   size="sm"
                   onClick={() => handleBulkStockUpdate(1)}
                   disabled={isBulkUpdating}
-                  className="border-green-200 text-green-600 hover:bg-green-50 h-8 text-xs"
+                  className="border-gray-300 text-green-600 hover:bg-green-50 h-8 text-xs px-2"
                 >
                   Mark In Stock
                 </Button>
@@ -884,17 +1085,17 @@ const AllProducts = () => {
                   size="sm"
                   onClick={() => handleBulkMarkFeatured(true)}
                   disabled={isBulkUpdating}
-                  className="bg-yellow-600 hover:bg-yellow-700 text-white h-8 text-xs"
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs px-2"
                 >
-                  <Star className="h-3 w-3 mr-1.5" />
-                  Mark Featured
+                  <Star className="h-3 w-3 mr-1" />
+                  Featured
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkMarkFeatured(false)}
                   disabled={isBulkUpdating}
-                  className="border-gray-200 h-8 text-xs"
+                  className="border-gray-300 h-8 text-xs px-2"
                 >
                   Remove Featured
                 </Button>
@@ -902,7 +1103,7 @@ const AllProducts = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedProducts([])}
-                  className="text-gray-500 h-8 text-xs"
+                  className="text-gray-600 h-8 text-xs px-2"
                 >
                   Clear
                 </Button>
@@ -911,7 +1112,7 @@ const AllProducts = () => {
           </div>
 
           {/* Products Grid */}
-          <div className={`grid gap-6 ${
+          <div className={`grid gap-3 ${
             gridType === 'grid2' 
               ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
               : 'grid-cols-1'
@@ -919,34 +1120,34 @@ const AllProducts = () => {
             {sortedProducts.map((product, index) => (
               <Card 
                 key={product._id || `product-${index}`} 
-                className={`group relative overflow-hidden bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 ${
-                  selectedProducts.includes(product._id) ? 'ring-2 ring-blue-500 ring-offset-1' : ''
+                className={`group relative overflow-hidden bg-white border border-gray-200 hover:border-gray-300 transition-colors ${
+                  selectedProducts.includes(product._id) ? 'ring-2 ring-blue-500' : ''
                 } ${
-                  gridType === 'grid3' ? 'flex flex-row items-center gap-6 p-4' : 'p-0'
+                  gridType === 'grid3' ? 'flex flex-row items-center gap-4 p-3' : 'p-0'
                 }`}
               >
                 {/* Selection Checkbox */}
-                <div className="absolute top-3 left-3 z-10">
+                <div className="absolute top-2 left-2 z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleProductSelect(product._id);
                     }}
-                    className="p-1 bg-white/90 backdrop-blur-sm rounded-md shadow-sm hover:bg-white transition-colors"
+                    className="p-1 bg-white rounded border border-gray-200 hover:bg-gray-50 transition-colors"
                     title={selectedProducts.includes(product._id) ? 'Deselect' : 'Select'}
                   >
                     {selectedProducts.includes(product._id) ? (
-                      <CheckSquare className="h-5 w-5 text-blue-600" />
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
                     ) : (
-                      <Square className="h-5 w-5 text-gray-400" />
+                      <Square className="h-4 w-4 text-gray-400" />
                     )}
                   </button>
                 </div>
 
                 {/* Featured Badge */}
                 {product.isFeatured && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <Badge className="bg-yellow-500 text-white px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider shadow-sm border-0">
+                  <div className="absolute top-2 right-2 z-10">
+                    <Badge className="bg-yellow-500 text-white px-2 py-0.5 text-xs font-medium border-0">
                       <Star className="h-3 w-3 mr-1" />
                       Featured
                     </Badge>
@@ -954,27 +1155,26 @@ const AllProducts = () => {
                 )}
 
                 {/* Product Image */}
-                <div className={`relative overflow-hidden bg-gray-50 transition-all duration-500 cursor-pointer ${
+                <div className={`relative overflow-hidden bg-gray-100 cursor-pointer ${
                   gridType === 'grid3' 
-                    ? 'w-24 h-24 flex-shrink-0 rounded-lg border border-gray-100' 
-                    : 'aspect-square w-full border-b border-gray-100'
+                    ? 'w-20 h-20 flex-shrink-0 rounded border border-gray-200' 
+                    : 'aspect-square w-full border-b border-gray-200'
                 }`}
                 onClick={() => handlePreviewImage(product.image || product.picture?.secure_url)}
                 >
                   <LazyImage
                     src={product.image || product.picture?.secure_url}
                     alt={product.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover"
                     fallback="/logo.jpeg"
                     quality={90}
                   />
                   
                   {/* Stock Badge */}
                   {!product.isFeatured && (
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-2 right-2">
                       <Badge 
-                        variant={product.stock > 0 ? 'default' : 'destructive'}
-                        className={`px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider shadow-sm border-0 ${
+                        className={`px-1.5 py-0.5 text-xs font-medium border-0 ${
                           product.stock > 0 
                             ? 'bg-green-100 text-green-700' 
                             : 'bg-red-100 text-red-700'
@@ -986,21 +1186,21 @@ const AllProducts = () => {
                   )}
 
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
-                    <div className="bg-white/90 backdrop-blur-sm rounded-full p-2.5 shadow-lg">
-                      <Eye className="h-5 w-5 text-gray-900" />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="bg-white rounded-full p-2">
+                      <Eye className="h-4 w-4 text-gray-900" />
                     </div>
                   </div>
                 </div>
 
                 {/* Product Info */}
-                <div className={`${gridType === 'grid3' ? 'flex-1 space-y-2' : 'p-5 space-y-4'}`}>
-                  <div className="space-y-1.5">
-                    <h3 className="font-semibold text-base text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+                <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-4 space-y-3'}`}>
+                  <div className="space-y-1">
+                    <h3 className="font-medium text-sm text-gray-900 line-clamp-2">
                       {product.title}
                     </h3>
                     
-                    <p className="text-gray-500 text-sm line-clamp-2 leading-relaxed">
+                    <p className="text-gray-600 text-xs line-clamp-2">
                       {product.description}
                     </p>
                   </div>
@@ -1134,12 +1334,12 @@ const AllProducts = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-50 mt-2">
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(product)}
-                      className="flex-1 h-9 text-xs font-medium border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                      className="flex-1 h-8 text-xs border-gray-300 hover:bg-gray-100"
                     >
                       Edit
                     </Button>
@@ -1148,23 +1348,23 @@ const AllProducts = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(product._id)}
-                      className="h-9 px-3 border-gray-200 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+                      className="h-8 px-2 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
 
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleStockToggle(product)}
-                        className={`h-9 px-3 transition-all duration-200 ${
+                        className={`h-8 px-2 ${
                           product.stock > 0 
-                            ? 'text-orange-600 hover:bg-orange-50 hover:text-orange-700' 
-                            : 'text-green-600 hover:bg-green-50 hover:text-green-700'
+                            ? 'text-orange-600 hover:bg-orange-50' 
+                            : 'text-green-600 hover:bg-green-50'
                         }`}
                         title={product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
                       >
-                         <TrendingUp className="h-4 w-4" />
+                         <TrendingUp className="h-3.5 w-3.5" />
                       </Button>
                   </div>
                 </div>
@@ -1173,13 +1373,13 @@ const AllProducts = () => {
           </div>
         </div>
 
-        {/* Professional Pagination */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mt-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between w-full">
-            <div className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-900">{pagination.startItem}</span> to{' '}
-              <span className="font-semibold text-gray-900">{pagination.endItem}</span> of{' '}
-              <span className="font-semibold text-gray-900">{totalItems}</span> products
+        {/* Pagination */}
+        <div className="bg-white rounded border border-gray-200 p-4 mt-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="text-sm text-gray-600">
+              Showing <span className="font-medium text-gray-900">{pagination.startItem}</span> to{' '}
+              <span className="font-medium text-gray-900">{pagination.endItem}</span> of{' '}
+              <span className="font-medium text-gray-900">{totalItems}</span> products
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -1208,29 +1408,29 @@ const AllProducts = () => {
           </div>
         </div>
 
-        {/* Professional Empty State */}
+        {/* Empty State */}
         {sortedProducts.length === 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center mt-6">
+          <div className="bg-white rounded border border-gray-200 p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <PackageSearch className="h-10 w-10 text-gray-400" />
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PackageSearch className="h-8 w-8 text-gray-400" />
               </div>
               
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
                 {stockFilter !== 'all' 
                   ? 'No matching products' 
                   : 'No products found'
                 }
               </h3>
               
-              <p className="text-gray-500 mb-8">
+              <p className="text-gray-600 text-sm mb-6">
                 {stockFilter !== 'all'
                   ? 'Try adjusting your filters.'
                   : 'Get started by creating your first product.'
                 }
               </p>
               
-              <div className="flex justify-center gap-3">
+              <div className="flex justify-center gap-2">
                 {stockFilter !== 'all' ? (
                   <>
                     <Button
@@ -1239,13 +1439,13 @@ const AllProducts = () => {
                         setStockFilter('all');
                         setCurrentPage(1);
                       }}
-                      className="px-6 border-gray-200 hover:bg-gray-50"
+                      className="px-4 border-gray-300 hover:bg-gray-100"
                     >
                       Clear Filters
                     </Button>
                     <Button
                       onClick={() => setShowCreateForm(true)}
-                      className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="px-4 bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Product
@@ -1254,9 +1454,9 @@ const AllProducts = () => {
                 ) : (
                   <Button
                     onClick={() => setShowCreateForm(true)}
-                    className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    className="px-4 bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    <Plus className="h-5 w-5 mr-2" />
+                    <Plus className="h-4 w-4 mr-2" />
                     Create Product
                   </Button>
                 )}

@@ -1,11 +1,10 @@
-import { Link } from 'react-router-dom'
 import { useState } from 'react'
 
 const Footer = () => {
   const [hoveredIcon, setHoveredIcon] = useState(null)
 
   return (
-    <footer className="relative overflow-hidden bg-black text-white">
+    <footer className="relative overflow-hidden bg-black text-white pb-20 lg:pb-0">
       {/* Modern background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Animated gradient orbs */}
@@ -16,9 +15,9 @@ const Footer = () => {
 
       {/* Main content */}
       <div className="relative z-10">
-        {/* Top section with company info and quick links */}
+        {/* Top section with company info */}
         <div className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             
             {/* Company Brand Section */}
             <div className="lg:col-span-1 space-y-6">
@@ -67,23 +66,6 @@ const Footer = () => {
                   </a>
                 ))}
               </div>
-            </div>
-
-            {/* Quick Links */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-white">Quick Links</h3>
-              <ul className="space-y-3">
-                {['Home', 'Products', 'About Us', 'Contact', 'My Orders'].map((link) => (
-                  <li key={link}>
-                    <Link 
-                      to={link === 'Home' ? '/' : `/${link.toLowerCase().replace(' ', '-')}`}
-                      className="text-slate-300 hover:text-white transition-colors duration-200 text-sm"
-                    >
-                      {link}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
 
             {/* Contact Information */}

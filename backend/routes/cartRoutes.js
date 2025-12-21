@@ -261,45 +261,18 @@ router.post('/check-stock', isAuthorized, async (req, res) => {
       const availableStock = product.stock || 0;
       const requestedQuantity = item.quantity || 0;
       
-      if (availableStock <= 0) {
-        outOfStockItems.push({
-          productId: product._id,
-          productTitle: product.title,
-          availableStock: 0,
-          requestedQuantity
-        });
-        stockStatus.push({
-          productId: product._id.toString(),
-          available: false,
-          availableStock: 0,
-          requestedQuantity,
-          message: `"${product.title}" is out of stock`
-        });
-      } else if (requestedQuantity > availableStock) {
-        insufficientStockItems.push({
-          productId: product._id,
-          productTitle: product.title,
-          availableStock,
-          requestedQuantity
-        });
-        stockStatus.push({
-          productId: product._id.toString(),
-          available: false,
-          availableStock,
-          requestedQuantity,
-          message: `Only ${availableStock} units available for "${product.title}"`
-        });
-      } else {
-        stockStatus.push({
-          productId: product._id.toString(),
-          available: true,
-          availableStock,
-          requestedQuantity
-        });
-      }
+      // Allow orders even if stock would go negative
+      // Always mark as available to allow orders through
+      stockStatus.push({
+        productId: product._id.toString(),
+        available: true,
+        availableStock,
+        requestedQuantity
+      });
     }
     
-    const isValid = outOfStockItems.length === 0 && insufficientStockItems.length === 0;
+    // Always return valid since we allow orders even with negative stock
+    const isValid = true;
     
     res.json({
       success: isValid,

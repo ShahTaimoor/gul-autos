@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/cart/cartSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts, searchProducts, clearSearchResults } from '@/redux/slices/products/productSlice';
+import { fetchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import CategorySwiper from './CategorySwiper';
 import ProductGrid from './ProductGrid';
@@ -27,7 +27,6 @@ import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 import { useToast } from '@/hooks/use-toast';
-import SearchSuggestions from './SearchSuggestions';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -154,7 +153,6 @@ const ProductList = () => {
   // Read initial values from URL params
   const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
-  const urlSearchQuery = searchParams.get('search') || '';
   
   // Redux selectors - get categories first
   const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
@@ -259,12 +257,10 @@ const ProductList = () => {
   }, [category, page, categorySlug, updateURLParams, searchParams]);
 
   // Categories already fetched above
-  const { products: productList = [], status, totalItems, currentPage, totalPages, searchResults, searchStatus } = useSelector((s) => s.products);
+  const { products: productList = [], status, totalItems, currentPage, totalPages } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
   
-  // Check if we're in search mode
-  const isSearchMode = urlSearchQuery && urlSearchQuery.trim().length > 0;
   
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -301,68 +297,33 @@ const ProductList = () => {
   }, [categories]);
 
   // Products are now sorted on the backend, so we use them directly
-  // Use search results if in search mode, otherwise use regular products
   const sortedProducts = useMemo(() => {
-    // If in search mode, always use search results (even if empty array)
-    if (isSearchMode) {
-      const results = (searchResults || []).filter((product) => product && product._id);
-      // Remove duplicates by _id
-      const uniqueResults = [];
-      const seenIds = new Set();
-      for (const product of results) {
-        const productId = product._id?.toString();
-        if (productId && !seenIds.has(productId)) {
-          seenIds.add(productId);
-          uniqueResults.push(product);
-        }
-      }
-      return uniqueResults;
-    }
     // The backend already handles filtering, so we just need to ensure products exist and are valid
     return productList.filter((product) => product && product._id);
-  }, [productList, searchResults, isSearchMode]);
+  }, [productList]);
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
 
-  // Clear search results when search is removed from URL (only on products page)
+
+  // Fetch products when filters change
   useEffect(() => {
-    const hasSearchInUrl = urlSearchQuery && urlSearchQuery.trim().length > 0;
-    const hasSearchResults = searchResults && searchResults.length > 0;
-    
-    // Only clear search results if we're on the products page and search was removed from URL
-    // Don't clear on home page to allow search suggestions to work
-    const isOnProductsPage = location.pathname === '/products';
-    
-    if (isOnProductsPage && !hasSearchInUrl && hasSearchResults) {
-      dispatch(clearSearchResults());
+    const params = {
+      page,
+      limit,
+      stockFilter,
+      sortBy
+    };
+
+    // Add category if not 'all'
+    if (category && category !== 'all') {
+      params.category = category;
     }
-  }, [urlSearchQuery, searchResults, dispatch, location.pathname]);
 
-  // Fetch products when filters change or perform search
-  useEffect(() => {
-    // If search query exists in URL, perform search
-    if (isSearchMode && urlSearchQuery.trim()) {
-      dispatch(searchProducts({ query: urlSearchQuery.trim(), limit: 100 }));
-    } else {
-      // Otherwise fetch regular products
-      const params = {
-        page,
-        limit,
-        stockFilter,
-        sortBy
-      };
-
-      // Add category if not 'all'
-      if (category && category !== 'all') {
-        params.category = category;
-      }
-
-      dispatch(fetchProducts(params));
-    }
-  }, [dispatch, page, limit, stockFilter, sortBy, category, isSearchMode, urlSearchQuery]);
+    dispatch(fetchProducts(params));
+  }, [dispatch, page, limit, stockFilter, sortBy, category]);
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
@@ -376,20 +337,17 @@ const ProductList = () => {
     }
   }, [dispatch, categories, categoriesStatus]);
 
-  // Initialize quantities when products change (both regular products and search results)
+  // Initialize quantities when products change
   useEffect(() => {
-    // Use sortedProducts which handles both regular products and search results
-    const productsToInitialize = isSearchMode ? searchResults : productList;
-    
-    if (productsToInitialize && productsToInitialize.length > 0) {
+    if (productList && productList.length > 0) {
       setQuantities((prev) => {
         const updatedQuantities = { ...prev };
         let hasChanges = false;
         
-        productsToInitialize.filter(product => product && product._id).forEach((product) => {
+        productList.filter(product => product && product._id).forEach((product) => {
           // Only initialize if not already set (preserve user input)
           if (updatedQuantities[product._id] === undefined) {
-            updatedQuantities[product._id] = product.stock > 0 ? 1 : 0;
+            updatedQuantities[product._id] = 0;
             hasChanges = true;
           }
         });
@@ -398,7 +356,7 @@ const ProductList = () => {
         return hasChanges ? updatedQuantities : prev;
       });
     }
-  }, [productList, searchResults, isSearchMode]);
+  }, [productList]);
 
   // Scroll detection for both desktop and mobile
   useEffect(() => {
@@ -425,7 +383,7 @@ const ProductList = () => {
     if (value === '') {
       return setQuantities((prev) => ({ ...prev, [productId]: '' }));
     }
-    const newValue = Math.max(Math.min(parseInt(value), stock), 1);
+    const newValue = Math.max(Math.min(parseInt(value), stock), 0);
     setQuantities((prev) => ({ ...prev, [productId]: newValue }));
   }, []);
 
@@ -435,12 +393,12 @@ const ProductList = () => {
       return;
     }
 
-    // Get quantity from state, or default to 1 if not set (handles search results)
-    const qty = parseInt(quantities[product._id]) || 1;
+    // Get quantity from state, default to 0 if not set
+    const qty = parseInt(quantities[product._id]) || 0;
     
     // Ensure quantity is valid and within stock limits
     if (qty <= 0 || qty > product.stock) {
-      toast.error(`Invalid quantity. Available stock: ${product.stock}`);
+      toast.error(`Please select a valid quantity. Available stock: ${product.stock}`);
       return;
     }
 
@@ -468,9 +426,6 @@ const ProductList = () => {
     // Find category slug from ID
     const categorySlug = categoryId === 'all' ? 'all' : 
       (categories?.find(cat => cat._id === categoryId)?.slug || 'all');
-    
-    // Clear search results from Redux immediately when category changes
-    dispatch(clearSearchResults());
     
     // Update category and page
     setCategory(categoryId);
@@ -528,7 +483,7 @@ const ProductList = () => {
     setOpenCheckoutDialog(true);
   }, [user, cartItems.length, navigate]);
   
-  const loadingProducts = (isSearchMode ? searchStatus === 'loading' : status === 'loading');
+  const loadingProducts = status === 'loading';
   
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
@@ -555,15 +510,6 @@ const ProductList = () => {
             </div>
           </div>
 
-          {/* Search Input - Always visible */}
-          <div className={`fixed ${isScrolled ? 'top-0' : 'top-14'} left-0 right-0 z-50 bg-white lg:hidden transition-all duration-300`}>
-            <div className={`px-4 pt-3 ${isScrolled ? 'pb-0' : 'pb-2'}`}>
-              <SearchSuggestions
-                placeholder="Search products..."
-                inputClassName="h-10 w-full text-sm border-gray-300 focus:border-primary focus:ring-primary bg-white"
-              />
-            </div>
-          </div>
         </>
       )}
       
@@ -596,45 +542,6 @@ const ProductList = () => {
       {/* Spacer to prevent content from going under fixed header */}
       <div className={isMobile ? (isScrolled ? 'h-[140px]' : 'h-[240px]') : 'h-44 lg:h-34'}></div>
 
-      {/* Search Results Header - Hidden on mobile */}
-      {isSearchMode && urlSearchQuery && (
-        <div className="hidden lg:block mt-6 mb-2 px-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Search Results <span className="text-sm text-gray-600 mt-0.5 whitespace-nowrap" > {searchStatus === 'loading' ? (
-                    'Searching...'
-                  ) : searchStatus === 'succeeded' && searchResults ? (
-                    searchResults.length > 0 ? (
-                      `Found ${searchResults.length} product${searchResults.length !== 1 ? 's' : ''} for "${urlSearchQuery}"`
-                    ) : (
-                      `No products found for "${urlSearchQuery}"`
-                    )
-                  ) : (
-                    'Searching...'
-                  )}</span>
-                </h2>
-                <p className="text-sm text-gray-600 mt-0.5 whitespace-nowrap">
-                 
-                </p>
-              </div>
-              {urlSearchQuery && (
-                <button
-                  onClick={() => {
-                    const newParams = new URLSearchParams(searchParams);
-                    newParams.delete('search');
-                    setSearchParams(newParams, { replace: true });
-                  }}
-                  className="text-sm text-primary hover:text-primary/80 font-medium px-3 py-1 hover:bg-primary/5 rounded-md transition-colors"
-                >
-                  Clear Search
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Product Grid */}
       <div className={isMobile ? "mt-4" : "mt-6"}>
@@ -651,16 +558,14 @@ const ProductList = () => {
         />
       </div>
 
-      {/* Pagination - Only show if not in search mode (search shows all results) */}
-      {!isSearchMode && (
-        <div className="px-2 sm:px-0 mt-6 mb-4">
-          <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
-          />
-        </div>
-      )}
+      {/* Pagination */}
+      <div className="px-2 sm:px-0 mt-6 mb-4">
+        <Pagination
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
 
       {/* Image Preview Modal */}
       {previewImage && (

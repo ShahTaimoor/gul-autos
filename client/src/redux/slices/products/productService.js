@@ -145,25 +145,6 @@ const bulkUpdateFeatured = async ({ productIds, isFeatured }) => {
     }
 };
 
-// search products with fuzzy matching
-const searchProducts = async (query, limit = 20) => {
-    try {
-        const response = await axiosInstance.get(
-            '/search',
-            {
-                params: { q: query, limit },
-                headers: { 'Content-Type': 'application/json' },
-            }
-        );
-        return response.data;
-    } catch (error) {
-        const errorMessage =
-            error.response?.data?.message || error.message || 'Something went wrong';
-        return Promise.reject(errorMessage);
-    }
-};
-
-
 const productService = { 
     createProduct, 
     allProduct, 
@@ -172,8 +153,7 @@ const productService = {
     deleteProduct, 
     importProductsFromExcel, 
     updateProductStock, 
-    bulkUpdateFeatured,
-    searchProducts
+    bulkUpdateFeatured
 };
 
 export default productService;

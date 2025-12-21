@@ -27,6 +27,7 @@ const AdminProfile = lazy(() => import('./pages/AdminProfile'));
 
 const CreateProducts = lazy(() => import('./components/custom/CreateProducts'));
 const AllProducts = lazy(() => import('./components/custom/AllProducts'));
+const LowStock = lazy(() => import('./components/custom/LowStock'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 const Media = lazy(() => import('./pages/Media'));
@@ -134,6 +135,16 @@ const App = () => {
         <ProtectedRoute>
           <AdminLayout>
             <AllProducts />
+          </AdminLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/dashboard/low-stock',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <LowStock />
           </AdminLayout>
         </ProtectedRoute>
       ),

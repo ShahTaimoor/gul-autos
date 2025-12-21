@@ -6,6 +6,7 @@ import { searchProducts } from '@/redux/slices/products/productSlice';
 import { Input } from '../ui/input';
 import { Search, X, Loader2 } from 'lucide-react';
 import LazyImage from '../ui/LazyImage';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const SearchSuggestions = ({ 
   placeholder = "Search products...", 
@@ -21,6 +22,7 @@ const SearchSuggestions = ({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isMobile = useIsMobile();
   
   // Initialize state from URL if not controlled
   const initialSearchValue = value !== undefined ? value : (searchParams.get('search') || '');
@@ -41,8 +43,12 @@ const SearchSuggestions = ({
       if (urlSearchValue !== prevUrlSearchRef.current) {
         prevUrlSearchRef.current = urlSearchValue;
         setInternalSearchQuery(urlSearchValue);
-        // Hide suggestions when search is cleared
+        // Hide suggestions when search is cleared or when navigating to search results
         if (!urlSearchValue) {
+          setShowSuggestions(false);
+          setSelectedIndex(-1);
+        } else {
+          // Hide suggestions when URL changes to search results (navigation happened)
           setShowSuggestions(false);
           setSelectedIndex(-1);
         }
@@ -84,14 +90,20 @@ const SearchSuggestions = ({
   }, [debouncedQuery, dispatch]);
 
   // Show suggestions immediately when user types (not debounced)
+  // But don't show if the query matches the URL search param (meaning we're on search results page)
   useEffect(() => {
     const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery.length >= 1) {
+    const urlSearch = searchParams.get('search') || '';
+    
+    // Only show suggestions if:
+    // 1. There's a query
+    // 2. The query doesn't match the URL search param (meaning user is typing, not viewing results)
+    if (trimmedQuery.length >= 1 && trimmedQuery !== urlSearch) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchParams]);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -156,6 +168,9 @@ const SearchSuggestions = ({
     setShowSuggestions(false);
     setSelectedIndex(-1);
     
+    // Scroll to top when selecting a product
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     if (onSelectProduct) {
       onSelectProduct(product);
     } else {
@@ -210,6 +225,9 @@ const SearchSuggestions = ({
     setShowSuggestions(false);
     dispatch(searchProducts({ query: trimmedQuery, limit: 100 }));
     
+    // Scroll to top when searching
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     if (onSearch) {
       onSearch(trimmedQuery);
     } else if (!onSelectProduct) {
@@ -235,7 +253,10 @@ const SearchSuggestions = ({
     <div className={`relative ${className}`} ref={searchContainerRef}>
       <div className="relative flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
+          {/* Search icon on left for desktop, hidden on mobile */}
+          {!isMobile && (
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 md:h-5 md:w-5" />
+          )}
           <Input
             type="text"
             placeholder={placeholder}
@@ -248,19 +269,38 @@ const SearchSuggestions = ({
                 setShowSuggestions(true);
               }
             }}
-            className={`pl-10 pr-10 ${inputClassName}`}
+            className={`${isMobile ? (searchQuery ? 'pl-3 pr-24' : 'pl-3 pr-12') : 'pl-10 pr-10'} ${inputClassName}`}
           />
-          {searchQuery && (
-            <button
-              onClick={handleClearSearch}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4 md:h-5 md:w-5" />
-            </button>
-          )}
+          {/* Right side buttons */}
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+            {/* Clear button - shown when there's text */}
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4 md:h-5 md:w-5" />
+              </button>
+            )}
+            {/* Search icon button on right for mobile */}
+            {isMobile && (
+              <button
+                onClick={handleSearch}
+                disabled={searchStatus === 'loading' || !searchQuery.trim()}
+                className="bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-2 rounded-md"
+                aria-label="Search"
+              >
+                {searchStatus === 'loading' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
+                ) : (
+                  <Search className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
-        {showButton && (
+        {showButton && !isMobile && (
           <button
             onClick={handleSearch}
             disabled={searchStatus === 'loading' || !searchQuery.trim()}
@@ -335,6 +375,8 @@ const SearchSuggestions = ({
               <button
                 onClick={() => {
                   setShowSuggestions(false);
+                  // Scroll to top when viewing all results
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                   if (onSearch) {
                     onSearch(debouncedQuery.trim());
                   } else if (!onSelectProduct) {
