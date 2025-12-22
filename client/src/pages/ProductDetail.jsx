@@ -23,6 +23,7 @@ const ProductDetail = () => {
   
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isInitialMount, setIsInitialMount] = useState(true);
 
   // Fetch product on mount
   useEffect(() => {
@@ -30,6 +31,13 @@ const ProductDetail = () => {
       dispatch(getSingleProduct(id));
     }
   }, [id, dispatch]);
+
+  // Track initial mount to avoid showing toast on first render
+  useEffect(() => {
+    if (singleProducts) {
+      setIsInitialMount(false);
+    }
+  }, [singleProducts]);
 
   // Find if product is in cart
   const cartItem = cartItems.find(item => item.product?._id === id);
@@ -39,8 +47,17 @@ const ProductDetail = () => {
   const handleQuantityChange = useCallback((delta) => {
     if (!singleProducts) return;
     const newQuantity = Math.max(1, Math.min(quantity + delta, singleProducts.stock));
-    setQuantity(newQuantity);
-  }, [quantity, singleProducts]);
+    if (newQuantity !== quantity) {
+      setQuantity(newQuantity);
+      if (!isInitialMount) {
+        toast.success(`Quantity updated to ${newQuantity}`);
+      }
+    } else if (delta > 0 && quantity >= singleProducts.stock) {
+      toast.info(`Maximum available quantity is ${singleProducts.stock}`);
+    } else if (delta < 0 && quantity <= 1) {
+      toast.info('Minimum quantity is 1');
+    }
+  }, [quantity, singleProducts, isInitialMount, toast]);
 
   const handleAddToCart = useCallback(async () => {
     if (!user) {
@@ -60,7 +77,7 @@ const ProductDetail = () => {
         quantity: quantity
       })).unwrap();
       
-      toast.success(`${singleProducts.title} has been added to your cart.`);
+      toast.success(`${quantity} ${quantity === 1 ? 'item' : 'items'} of ${singleProducts.title} added to cart successfully!`);
     } catch (error) {
       toast.error(error || 'Failed to add product to cart.');
     } finally {
@@ -126,42 +143,6 @@ const ProductDetail = () => {
                 <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
                   {singleProducts.title}
                 </h1>
-
-                {singleProducts.category && (
-                  <div className="mb-4">
-                    <span className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                      {singleProducts.category.name}
-                    </span>
-                  </div>
-                )}
-
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-3 mb-4">
-                    <span className="text-4xl font-bold text-primary">
-                      ${singleProducts.price?.toFixed(2) || '0.00'}
-                    </span>
-                  </div>
-
-                  {singleProducts.description && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                        {singleProducts.description}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mb-6">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-gray-700">Stock:</span>
-                      <span className={`text-sm font-semibold ${
-                        isOutOfStock ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {isOutOfStock ? 'Out of Stock' : `${singleProducts.stock} available`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Quantity and Add to Cart */}
@@ -185,7 +166,16 @@ const ProductDetail = () => {
                         value={quantity}
                         onChange={(e) => {
                           const val = parseInt(e.target.value) || 1;
-                          setQuantity(Math.max(1, Math.min(val, singleProducts.stock)));
+                          const newQuantity = Math.max(1, Math.min(val, singleProducts.stock));
+                          if (newQuantity !== quantity) {
+                            setQuantity(newQuantity);
+                            if (!isInitialMount) {
+                              toast.success(`Quantity updated to ${newQuantity}`);
+                            }
+                          }
+                          if (val > singleProducts.stock && !isInitialMount) {
+                            toast.info(`Maximum available quantity is ${singleProducts.stock}`);
+                          }
                         }}
                         className="w-16 text-center border-0 focus:outline-none focus:ring-0"
                       />

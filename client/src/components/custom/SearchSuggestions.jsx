@@ -368,7 +368,7 @@ const SearchSuggestions = ({
                 setShowSuggestions(true);
               }
             }}
-            className={`${isMobile ? (searchQuery ? 'pl-3 pr-24' : 'pl-3 pr-12') : 'pl-10 pr-10'} ${inputClassName}`}
+            className={`${isMobile ? (searchQuery ? 'pl-3 pr-24' : 'pl-3 pr-12') : 'pl-10 pr-10'} ${isMobile ? 'border-primary focus-visible:border-primary' : ''} ${inputClassName}`}
           />
           {/* Right side buttons */}
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">

@@ -18,7 +18,7 @@ import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
+import { removeFromCart, updateCartQuantity, fetchCart } from "../../redux/slices/cart/cartSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
@@ -119,6 +119,13 @@ const Navbar = () => {
     cartItems.reduce((sum, item) => sum + item.quantity, 0), 
     [cartItems]
   );
+
+  // Fetch cart when user is authenticated (on mount and when user changes)
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchCart());
+    }
+  }, [dispatch, user]);
 
   useEffect(() => {
     // Check if user is on mobile/tablet (< 1024px)
@@ -298,6 +305,7 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
+
 
     {/* Checkout Dialog */}
     <Dialog open={openCheckoutDialog} onOpenChange={setOpenCheckoutDialog}>

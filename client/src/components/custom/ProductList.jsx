@@ -27,6 +27,7 @@ import CartImage from '../ui/CartImage';
 import Checkout from '../../pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 import { useToast } from '@/hooks/use-toast';
+import SearchSuggestions from './SearchSuggestions';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -394,17 +395,46 @@ const ProductList = () => {
     }
   }, [dispatch, categories, categoriesStatus]);
 
-  // Initialize quantities when products change
+  // Initialize quantities from cart items when cart loads
   useEffect(() => {
-    if (productList && productList.length > 0) {
+    if (cartItems && cartItems.length > 0) {
       setQuantities((prev) => {
         const updatedQuantities = { ...prev };
         let hasChanges = false;
         
-        productList.filter(product => product && product._id).forEach((product) => {
-          // Only initialize if not already set (preserve user input)
+        cartItems.forEach((item) => {
+          const productId = item.product?._id || item.product;
+          if (productId && item.quantity) {
+            // Initialize quantity from cart if not already set by user
+            if (updatedQuantities[productId] === undefined || updatedQuantities[productId] === 0) {
+              updatedQuantities[productId] = item.quantity;
+              hasChanges = true;
+            }
+          }
+        });
+        
+        return hasChanges ? updatedQuantities : prev;
+      });
+    }
+  }, [cartItems]);
+
+  // Initialize quantities when products change (set to 0 if not in cart)
+  useEffect(() => {
+    if (sortedProducts && sortedProducts.length > 0) {
+      setQuantities((prev) => {
+        const updatedQuantities = { ...prev };
+        let hasChanges = false;
+        
+        sortedProducts.filter(product => product && product._id).forEach((product) => {
+          // Only initialize if not already set (preserve cart quantities and user input)
           if (updatedQuantities[product._id] === undefined) {
-            updatedQuantities[product._id] = 0;
+            // Check if product is in cart
+            const cartItem = cartItems.find(item => {
+              const productId = item.product?._id || item.product;
+              return productId === product._id;
+            });
+            // Set quantity from cart if exists, otherwise 0
+            updatedQuantities[product._id] = cartItem?.quantity || 0;
             hasChanges = true;
           }
         });
@@ -413,7 +443,7 @@ const ProductList = () => {
         return hasChanges ? updatedQuantities : prev;
       });
     }
-  }, [productList]);
+  }, [sortedProducts, cartItems]);
 
   // Scroll detection for both desktop and mobile
   useEffect(() => {
@@ -571,9 +601,20 @@ const ProductList = () => {
       )}
       
       {/* Fixed Categories Container */}
-      <div className={`fixed ${isMobile ? (isScrolled ? 'top-[52px]' : 'top-[112px]') : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white' : 'bg-primary/10') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md pb-2 transition-all duration-300`}>
-        {/* Category Swiper */}
+      <div className={`fixed ${isMobile ? (isScrolled ? 'top-[0px]' : 'top-[54px]') : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white' : 'bg-primary/10') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md transition-all duration-300`}>
         <div className="max-w-7xl lg:mx-auto">
+          {/* Search Input - Mobile only, above categories */}
+          {isMobile && (
+            <div className="px-3 sm:px-4 pt-3 pb-2">
+              <SearchSuggestions
+                placeholder="Search products..."
+                className="w-full"
+                inputClassName="w-full"
+              />
+            </div>
+          )}
+          
+          {/* Category Swiper */}
           {combinedCategories && combinedCategories.length > 0 ? (
             <CategorySwiper
               categories={combinedCategories}
@@ -597,7 +638,7 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className={isMobile ? (isScrolled ? 'h-[140px]' : 'h-[240px]') : 'h-44 lg:h-34'}></div>
+      <div className={isMobile ? (isScrolled ? 'h-[200px]' : 'h-[300px]') : 'h-44 lg:h-34'}></div>
 
 
       {/* Product Grid */}
