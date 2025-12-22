@@ -182,9 +182,20 @@ const ProductList = () => {
   // Update category when URL changes (but not if in search mode)
   useEffect(() => {
     if (!isSearchMode && categoryBySlug !== category) {
+      isSyncingFromURLRef.current = true; // Mark that we're syncing from URL
       setCategory(categoryBySlug);
     }
   }, [categoryBySlug, isSearchMode, category]);
+
+  // Reset sync flag after category state has been updated
+  useEffect(() => {
+    if (isSyncingFromURLRef.current) {
+      const timer = setTimeout(() => {
+        isSyncingFromURLRef.current = false;
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [category]);
 
   // Mark as initialized after categories are loaded
   useEffect(() => {
@@ -202,6 +213,7 @@ const ProductList = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [openCheckoutDialog, setOpenCheckoutDialog] = useState(false);
   const isCategoryChangingRef = useRef(false);
+  const isSyncingFromURLRef = useRef(false);
   
   const dispatch = useDispatch();
   const { openDrawer } = useAuthDrawer();
@@ -249,8 +261,20 @@ const ProductList = () => {
       return;
     }
     
+    // Skip sync if we're currently syncing from URL to prevent loops
+    if (isSyncingFromURLRef.current) {
+      return;
+    }
+    
     const currentCategorySlug = searchParams.get('category') || 'all';
     const currentPage = searchParams.get('page') || '1';
+    
+    // Only sync if categorySlug (from state) doesn't match URL AND doesn't match categoryBySlug (from URL)
+    // This prevents syncing when we're in the middle of updating from URL
+    if (categorySlug === urlCategorySlug) {
+      // Already in sync with URL, no need to update
+      return;
+    }
     
     const updates = {};
     let hasUpdates = false;
@@ -272,7 +296,7 @@ const ProductList = () => {
     if (hasUpdates) {
       updateURLParams(updates);
     }
-  }, [category, page, categorySlug, updateURLParams, searchParams, isSearchMode]);
+  }, [category, page, categorySlug, updateURLParams, searchParams, isSearchMode, urlCategorySlug]);
 
   // Categories already fetched above
   const { 
@@ -361,10 +385,14 @@ const ProductList = () => {
         page: page 
       }));
     } else if (!isSearchMode) {
-      // For regular products, wait for categories to load if category is specified
+      // For "all" category, fetch immediately without waiting
+      // For specific categories, wait for categories to load
       if (urlCategorySlug !== 'all' && !isInitialized) {
         return; // Wait for categories to load
       }
+      
+      // Use categoryBySlug to determine what to fetch (source of truth from URL)
+      const categoryToFetch = categoryBySlug === 'all' ? null : categoryBySlug;
       
       // Fetch regular products
       const params = {
@@ -374,14 +402,14 @@ const ProductList = () => {
         sortBy
       };
 
-      // Add category if not 'all'
-      if (category && category !== 'all') {
-        params.category = category;
+      // Add category only if not 'all'
+      if (categoryToFetch && categoryToFetch !== 'all') {
+        params.category = categoryToFetch;
       }
 
       dispatch(fetchProducts(params));
     }
-  }, [dispatch, page, limit, stockFilter, sortBy, category, isSearchMode, urlSearchQuery, isInitialized, urlCategorySlug]);
+  }, [dispatch, page, limit, stockFilter, sortBy, categoryBySlug, isSearchMode, urlSearchQuery, isInitialized]);
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
