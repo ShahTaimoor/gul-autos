@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart, removeFromCart, updateCartQuantity } from '@/redux/slices/cart/cartSlice';
 import { AllCategory } from '@/redux/slices/categories/categoriesSlice';
-import { fetchProducts } from '@/redux/slices/products/productSlice';
+import { fetchProducts, searchProducts } from '@/redux/slices/products/productSlice';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import CategorySwiper from './CategorySwiper';
 import ProductGrid from './ProductGrid';
@@ -153,6 +153,7 @@ const ProductList = () => {
   // Read initial values from URL params
   const urlCategorySlug = searchParams.get('category') || 'all'; // Now using slug instead of ID
   const urlPage = parseInt(searchParams.get('page') || '1', 10);
+  const urlSearchQuery = searchParams.get('search') || '';
   
   // Redux selectors - get categories first
   const { categories, status: categoriesStatus } = useSelector((s) => s.categories);
@@ -166,19 +167,30 @@ const ProductList = () => {
     return found?._id || 'all';
   }, [urlCategorySlug, categories]);
 
+  // Determine if we're in search mode (must be defined early)
+  const isSearchMode = urlSearchQuery.trim().length > 0;
+
   // Local state for filters
   const [category, setCategory] = useState(categoryBySlug);
   const [page, setPage] = useState(urlPage);
   const [limit] = useState(24);
   const [stockFilter] = useState('active');
   const [sortBy, setSortBy] = useState('az'); // Default to alphabetical (A-Z) sorting
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Update category when URL changes
+  // Update category when URL changes (but not if in search mode)
   useEffect(() => {
-    if (categoryBySlug !== category) {
+    if (!isSearchMode && categoryBySlug !== category) {
       setCategory(categoryBySlug);
     }
-  }, [categoryBySlug]);
+  }, [categoryBySlug, isSearchMode, category]);
+
+  // Mark as initialized after categories are loaded
+  useEffect(() => {
+    if (categories && categories.length > 0 && !isInitialized) {
+      setIsInitialized(true);
+    }
+  }, [categories, isInitialized]);
 
   // Local state for UI-specific functionality
   const [quantities, setQuantities] = useState({});
@@ -225,6 +237,11 @@ const ProductList = () => {
 
   // Sync URL params with state (but avoid loops)
   useEffect(() => {
+    // Skip sync if we're in search mode (search takes priority)
+    if (isSearchMode) {
+      return;
+    }
+    
     // Skip sync if we're manually changing category
     if (isCategoryChangingRef.current) {
       isCategoryChangingRef.current = false;
@@ -254,13 +271,34 @@ const ProductList = () => {
     if (hasUpdates) {
       updateURLParams(updates);
     }
-  }, [category, page, categorySlug, updateURLParams, searchParams]);
+  }, [category, page, categorySlug, updateURLParams, searchParams, isSearchMode]);
 
   // Categories already fetched above
-  const { products: productList = [], status, totalItems, currentPage, totalPages } = useSelector((s) => s.products);
+  const { 
+    products: productList = [], 
+    status, 
+    totalItems, 
+    currentPage, 
+    totalPages,
+    searchResults,
+    searchStatus,
+    searchPagination
+  } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
   const { items: cartItems = [] } = useSelector((s) => s.cart);
   
+  // Use search pagination if in search mode
+  const displayPagination = useMemo(() => {
+    if (isSearchMode && searchPagination) {
+      return searchPagination;
+    }
+    return {
+      total: totalItems,
+      page: currentPage,
+      limit: limit,
+      totalPages: totalPages
+    };
+  }, [isSearchMode, searchPagination, totalItems, currentPage, limit, totalPages]);
   
   // Calculate total quantity
   const totalQuantity = useMemo(() => 
@@ -270,9 +308,9 @@ const ProductList = () => {
 
   // Use pagination hook to eliminate pagination duplication
   const pagination = usePagination({
-    initialPage: 1,
-    initialLimit: 24,
-    totalItems,
+    initialPage: page,
+    initialLimit: limit,
+    totalItems: displayPagination.total || 0,
     onPageChange: (newPage) => {
       setPage(newPage);
     }
@@ -297,10 +335,14 @@ const ProductList = () => {
   }, [categories]);
 
   // Products are now sorted on the backend, so we use them directly
+  // Use search results if in search mode, otherwise use regular product list
   const sortedProducts = useMemo(() => {
+    if (isSearchMode && searchResults && searchResults.length > 0) {
+      return searchResults.filter((product) => product && product._id);
+    }
     // The backend already handles filtering, so we just need to ensure products exist and are valid
     return productList.filter((product) => product && product._id);
-  }, [productList]);
+  }, [productList, isSearchMode, searchResults]);
 
   // Scroll to top on page change
   useEffect(() => {
@@ -308,22 +350,37 @@ const ProductList = () => {
   }, [page]);
 
 
-  // Fetch products when filters change
+  // Fetch products when filters change (only if not in search mode)
   useEffect(() => {
-    const params = {
-      page,
-      limit,
-      stockFilter,
-      sortBy
-    };
+    if (isSearchMode && urlSearchQuery.trim().length > 0) {
+      // Fetch search results immediately - search doesn't need categories
+      dispatch(searchProducts({ 
+        query: urlSearchQuery.trim(), 
+        limit: limit, 
+        page: page 
+      }));
+    } else if (!isSearchMode) {
+      // For regular products, wait for categories to load if category is specified
+      if (urlCategorySlug !== 'all' && !isInitialized) {
+        return; // Wait for categories to load
+      }
+      
+      // Fetch regular products
+      const params = {
+        page,
+        limit,
+        stockFilter,
+        sortBy
+      };
 
-    // Add category if not 'all'
-    if (category && category !== 'all') {
-      params.category = category;
+      // Add category if not 'all'
+      if (category && category !== 'all') {
+        params.category = category;
+      }
+
+      dispatch(fetchProducts(params));
     }
-
-    dispatch(fetchProducts(params));
-  }, [dispatch, page, limit, stockFilter, sortBy, category]);
+  }, [dispatch, page, limit, stockFilter, sortBy, category, isSearchMode, urlSearchQuery, isInitialized, urlCategorySlug]);
 
   // Fetch categories on mount and ensure they stay loaded
   useEffect(() => {
@@ -463,10 +520,10 @@ const ProductList = () => {
   }, []);
 
   const handlePageChange = useCallback((newPage) => {
-    pagination.setCurrentPage(newPage);
+    setPage(newPage);
     // Update URL params for page
     updateURLParams({ page: newPage === 1 ? null : newPage.toString() });
-  }, [pagination, updateURLParams]);
+  }, [updateURLParams]);
   
   const handlePreviewImage = useCallback((image) => {
     setPreviewImage(image);
@@ -483,7 +540,7 @@ const ProductList = () => {
     setOpenCheckoutDialog(true);
   }, [user, cartItems.length, navigate]);
   
-  const loadingProducts = status === 'loading';
+  const loadingProducts = isSearchMode ? searchStatus === 'loading' : status === 'loading';
   
   return (
     <div className="max-w-7xl lg:mx-auto lg:px-4 py-2 lg:py-8">
@@ -558,14 +615,42 @@ const ProductList = () => {
         />
       </div>
 
+      {/* Search Results Header */}
+      {isSearchMode && (
+        <div className="px-2 sm:px-0 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Search Results for &quot;{urlSearchQuery}&quot;
+              {displayPagination.total > 0 && (
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  ({displayPagination.total} {displayPagination.total === 1 ? 'product' : 'products'})
+                </span>
+              )}
+            </h2>
+            <button
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.delete('search');
+                setSearchParams(newParams);
+              }}
+              className="text-sm text-primary hover:text-primary/80"
+            >
+              Clear Search
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Pagination */}
-      <div className="px-2 sm:px-0 mt-6 mb-4">
-        <Pagination
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          onPageChange={handlePageChange}
-        />
-      </div>
+      {displayPagination.totalPages > 1 && (
+        <div className="px-2 sm:px-0 mt-6 mb-4">
+          <Pagination
+            currentPage={displayPagination.page || 1}
+            totalPages={displayPagination.totalPages || 1}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Image Preview Modal */}
       {previewImage && (

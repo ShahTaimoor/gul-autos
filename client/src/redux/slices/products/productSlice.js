@@ -101,9 +101,21 @@ export const bulkUpdateFeatured = createAsyncThunk(
 
 export const searchProducts = createAsyncThunk(
     'products/searchProducts',
-    async ({ query, limit = 20 }, thunkAPI) => {
+    async ({ query, limit = 20, page = 1 }, thunkAPI) => {
         try {
-            const res = await productService.searchProducts(query, limit);
+            const res = await productService.searchProducts(query, limit, page);
+            return res;
+        } catch (error) {
+            return thunkAPI.rejectWithValue(error);
+        }
+    }
+);
+
+export const fetchSearchSuggestions = createAsyncThunk(
+    'products/fetchSearchSuggestions',
+    async ({ query, limit = 8 }, thunkAPI) => {
+        try {
+            const res = await productService.searchSuggestions(query, limit);
             return res;
         } catch (error) {
             return thunkAPI.rejectWithValue(error);
@@ -138,12 +150,46 @@ const initialState = {
     totalPages: 1,
     totalItems: 0,
     lowStockCount: 0,
+    // Search state
+    searchResults: [],
+    searchStatus: 'idle',
+    searchQuery: '',
+    searchPagination: {
+        total: 0,
+        page: 1,
+        limit: 20,
+        totalPages: 0
+    },
+    // Suggestions state
+    suggestions: {
+        products: [],
+        categories: []
+    },
+    suggestionsStatus: 'idle',
+    suggestionsQuery: ''
 };
 
 export const productsSlice = createSlice({
     name: 'products',
     initialState,
-    reducers: {},
+    reducers: {
+        clearSearchResults: (state) => {
+            state.searchResults = [];
+            state.searchQuery = '';
+            state.searchStatus = 'idle';
+            state.searchPagination = {
+                total: 0,
+                page: 1,
+                limit: 20,
+                totalPages: 0
+            };
+        },
+        clearSuggestions: (state) => {
+            state.suggestions = { products: [], categories: [] };
+            state.suggestionsQuery = '';
+            state.suggestionsStatus = 'idle';
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(AddProduct.pending, (state) => {
@@ -294,8 +340,45 @@ export const productsSlice = createSlice({
             .addCase(fetchLowStockCount.rejected, (state) => {
                 state.lowStockCount = 0;
             })
+            // Search products
+            .addCase(searchProducts.pending, (state) => {
+                state.searchStatus = 'loading';
+                state.error = null;
+            })
+            .addCase(searchProducts.fulfilled, (state, action) => {
+                state.searchStatus = 'succeeded';
+                const { data, query, pagination } = action.payload || {};
+                state.searchResults = data || [];
+                state.searchQuery = query || '';
+                state.searchPagination = pagination || {
+                    total: 0,
+                    page: 1,
+                    limit: 20,
+                    totalPages: 0
+                };
+            })
+            .addCase(searchProducts.rejected, (state, action) => {
+                state.searchStatus = 'failed';
+                state.error = action.payload;
+                state.searchResults = [];
+            })
+            // Search suggestions
+            .addCase(fetchSearchSuggestions.pending, (state) => {
+                state.suggestionsStatus = 'loading';
+            })
+            .addCase(fetchSearchSuggestions.fulfilled, (state, action) => {
+                state.suggestionsStatus = 'succeeded';
+                const { data, query } = action.payload || {};
+                state.suggestions = data || { products: [], categories: [] };
+                state.suggestionsQuery = query || '';
+            })
+            .addCase(fetchSearchSuggestions.rejected, (state) => {
+                state.suggestionsStatus = 'failed';
+                state.suggestions = { products: [], categories: [] };
+            })
 
     }
 });
 
+export const { clearSearchResults, clearSuggestions } = productsSlice.actions;
 export default productsSlice.reducer;

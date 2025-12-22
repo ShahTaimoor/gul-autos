@@ -622,7 +622,113 @@ router.get('/get-products', async (req, res) => {
 });
 
 
-// REMOVED: Search functionality removed
+// ============================================
+// PRODUCTION-READY SEARCH SYSTEM
+// ============================================
+
+/**
+ * Helper function to extract keywords from search query
+ * Filters out common stop words and splits into individual keywords
+ */
+function extractKeywords(query) {
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from']);
+    return query
+        .toLowerCase()
+        .trim()
+        .split(/\s+/)
+        .filter(word => word.length > 0 && !stopWords.has(word));
+}
+
+/**
+ * Helper function to calculate relevance score for a product
+ * Higher scores = more relevant
+ */
+function calculateRelevanceScore(product, keywords, categoryName = '') {
+    const titleLower = (product.title || '').toLowerCase();
+    const descriptionLower = (product.description || '').toLowerCase();
+    const categoryLower = (categoryName || '').toLowerCase();
+    const tagsLower = (product.tags || []).map(t => t.toLowerCase()).join(' ');
+    
+    let score = 0;
+    let matchedKeywords = 0;
+    const totalKeywords = keywords.length;
+    
+    // Check each keyword
+    for (const keyword of keywords) {
+        let keywordMatched = false;
+        
+        // Exact match in title (highest priority)
+        if (titleLower === keyword) {
+            score += 1000;
+            keywordMatched = true;
+        } else if (titleLower.startsWith(keyword + ' ') || titleLower.endsWith(' ' + keyword)) {
+            // Keyword at start or end of title
+            score += 800;
+            keywordMatched = true;
+        } else if (titleLower.includes(keyword)) {
+            // Keyword anywhere in title
+            score += 600;
+            keywordMatched = true;
+        }
+        
+        // Match in tags (high priority)
+        if (tagsLower.includes(keyword)) {
+            score += 500;
+            keywordMatched = true;
+        }
+        
+        // Match in category name
+        if (categoryLower.includes(keyword)) {
+            score += 300;
+            keywordMatched = true;
+        }
+        
+        // Match in description (lower priority)
+        if (descriptionLower.includes(keyword)) {
+            score += 100;
+            keywordMatched = true;
+        }
+        
+        if (keywordMatched) {
+            matchedKeywords++;
+        }
+    }
+    
+    // Bonus for matching all keywords (AND logic requirement)
+    if (matchedKeywords === totalKeywords && totalKeywords > 0) {
+        score += 500; // Significant bonus for matching all keywords
+    } else if (matchedKeywords < totalKeywords) {
+        // Penalty for missing keywords - reduce score significantly
+        score = score * (matchedKeywords / totalKeywords) * 0.3; // Heavy penalty
+    }
+    
+    // Boost featured products
+    if (product.isFeatured) {
+        score += 50;
+    }
+    
+    return {
+        score,
+        matchedKeywords,
+        totalKeywords
+    };
+}
+
+/**
+ * Check if a product matches all keywords (AND logic)
+ */
+function matchesAllKeywords(product, keywords, categoryName = '') {
+    const searchableText = [
+        product.title || '',
+        product.description || '',
+        categoryName,
+        ...(product.tags || [])
+    ].join(' ').toLowerCase();
+    
+    return keywords.every(keyword => searchableText.includes(keyword));
+}
+
+// REMOVED: Old search functionality removed
 // Helper function to calculate Levenshtein distance (edit distance) for fuzzy matching
 /* REMOVED
 function levenshteinDistance(str1, str2) {
@@ -910,6 +1016,255 @@ router.get('/search', async (req, res) => {
     }
 });
 REMOVED */
+
+// @route GET /api/products/search
+// @desc Search products with AND-based keyword matching and relevance scoring
+// @access Public
+router.get('/search', async (req, res) => {
+    try {
+        const { q, limit = 20, page = 1 } = req.query;
+
+        // Validate search query
+        if (!q || typeof q !== 'string' || q.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Search query is required'
+            });
+        }
+
+        const searchQuery = q.trim();
+        const searchLimit = Math.min(parseInt(limit) || 20, 100); // Cap at 100
+        const searchPage = Math.max(parseInt(page) || 1, 1);
+        const skip = (searchPage - 1) * searchLimit;
+
+        // Extract keywords from search query
+        const keywords = extractKeywords(searchQuery);
+        
+        if (keywords.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: 'No valid keywords found',
+                data: [],
+                query: searchQuery,
+                pagination: {
+                    total: 0,
+                    page: searchPage,
+                    limit: searchLimit,
+                    totalPages: 0
+                }
+            });
+        }
+
+        // Base query: Only in-stock products
+        const baseQuery = { stock: { $gt: 0 } };
+
+        // Build AND-based regex patterns for each keyword
+        const regexPatterns = keywords.map(keyword => {
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(escaped, 'i');
+        });
+
+        // Build MongoDB query with AND logic
+        // Each keyword must appear in at least one of: title, description, tags, or category
+        const searchConditions = regexPatterns.map(pattern => ({
+            $or: [
+                { title: pattern },
+                { description: pattern },
+                { tags: pattern }
+            ]
+        }));
+
+        // Find products matching all keywords
+        const products = await Product.find({
+            ...baseQuery,
+            $and: searchConditions
+        })
+        .select('title picture price description stock isFeatured createdAt category tags')
+        .populate('category', 'name')
+        .lean();
+
+        // Calculate relevance scores and filter
+        const productsWithScores = products.map(product => {
+            const categoryName = product.category?.name || '';
+            const relevance = calculateRelevanceScore(product, keywords, categoryName);
+            
+            // Only include products that match ALL keywords (AND logic)
+            if (relevance.matchedKeywords < keywords.length) {
+                return null;
+            }
+            
+            return {
+                ...product,
+                relevanceScore: relevance.score,
+                matchedKeywords: relevance.matchedKeywords,
+                totalKeywords: relevance.totalKeywords
+            };
+        }).filter(product => product !== null); // Remove null entries
+
+        // Sort by relevance score (descending), then featured, then newest
+        productsWithScores.sort((a, b) => {
+            // Primary: Relevance score
+            if (b.relevanceScore !== a.relevanceScore) {
+                return b.relevanceScore - a.relevanceScore;
+            }
+            // Secondary: Featured status
+            if (b.isFeatured !== a.isFeatured) {
+                return b.isFeatured ? 1 : -1;
+            }
+            // Tertiary: Newest first
+            return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+
+        // Paginate results
+        const total = productsWithScores.length;
+        const paginatedResults = productsWithScores.slice(skip, skip + searchLimit);
+
+        // Remove internal scoring fields from response
+        const formattedResults = paginatedResults.map(({ relevanceScore, matchedKeywords, totalKeywords, ...product }) => ({
+            ...product,
+            image: product.picture?.secure_url || null
+        }));
+
+        return res.status(200).json({
+            success: true,
+            message: total > 0 
+                ? `Found ${total} product(s) matching all keywords` 
+                : 'No products found matching all keywords',
+            data: formattedResults,
+            query: searchQuery,
+            keywords: keywords,
+            pagination: {
+                total,
+                page: searchPage,
+                limit: searchLimit,
+                totalPages: Math.ceil(total / searchLimit)
+            }
+        });
+    } catch (error) {
+        console.error('Error while searching products:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while searching products',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
+
+// @route GET /api/products/search-suggestions
+// @desc Get search suggestions (autocomplete) with AND-based filtering
+// @access Public
+router.get('/search-suggestions', async (req, res) => {
+    try {
+        const { q, limit = 8 } = req.query;
+
+        // Validate search query
+        if (!q || typeof q !== 'string' || q.trim().length < 2) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                query: q || ''
+            });
+        }
+
+        const searchQuery = q.trim();
+        const suggestionLimit = Math.min(parseInt(limit) || 8, 8); // Max 8 suggestions
+
+        // Extract keywords
+        const keywords = extractKeywords(searchQuery);
+        
+        if (keywords.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                query: searchQuery
+            });
+        }
+
+        // Base query: Only in-stock products
+        const baseQuery = { stock: { $gt: 0 } };
+
+        // Build AND-based regex patterns
+        const regexPatterns = keywords.map(keyword => {
+            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(escaped, 'i');
+        });
+
+        // Build MongoDB query with AND logic
+        const searchConditions = regexPatterns.map(pattern => ({
+            $or: [
+                { title: pattern },
+                { description: pattern },
+                { tags: pattern }
+            ]
+        }));
+
+        // Find products matching all keywords
+        const products = await Product.find({
+            ...baseQuery,
+            $and: searchConditions
+        })
+        .select('title picture price category tags')
+        .populate('category', 'name')
+        .limit(suggestionLimit * 2) // Get more for scoring
+        .lean();
+
+        // Calculate relevance scores and filter
+        const productsWithScores = products.map(product => {
+            const categoryName = product.category?.name || '';
+            const relevance = calculateRelevanceScore(product, keywords, categoryName);
+            
+            // Only include products that match ALL keywords
+            if (relevance.matchedKeywords < keywords.length) {
+                return null;
+            }
+            
+            return {
+                ...product,
+                relevanceScore: relevance.score
+            };
+        }).filter(product => product !== null);
+
+        // Sort by relevance score
+        productsWithScores.sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+        // Limit to suggestion limit
+        const suggestions = productsWithScores
+            .slice(0, suggestionLimit)
+            .map(({ relevanceScore, ...product }) => ({
+                ...product,
+                image: product.picture?.secure_url || null
+            }));
+
+        // Get unique categories that match
+        const categorySet = new Set();
+        products.forEach(product => {
+            if (product.category?.name) {
+                const categoryLower = product.category.name.toLowerCase();
+                if (keywords.some(keyword => categoryLower.includes(keyword))) {
+                    categorySet.add(product.category.name);
+                }
+            }
+        });
+        const categories = Array.from(categorySet).slice(0, 3);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                products: suggestions,
+                categories: categories
+            },
+            query: searchQuery,
+            keywords: keywords
+        });
+    } catch (error) {
+        console.error('Error while fetching search suggestions:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching suggestions',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+});
 
 router.get('/single-product/:id', async (req, res) => {
     const { id } = req.params;

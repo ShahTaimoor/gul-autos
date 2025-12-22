@@ -22,6 +22,7 @@ import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cart
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
+import SearchSuggestions from "./SearchSuggestions";
 
 // Cart Product Component
 const CartProduct = ({ product, quantity }) => {
@@ -212,6 +213,14 @@ const Navbar = () => {
             </Link>
           </div>
 
+          {/* Center: Search Bar */}
+          <div className="flex-1 max-w-2xl mx-4 hidden md:block">
+            <SearchSuggestions
+              placeholder="Search products..."
+              className="w-full"
+              inputClassName="w-full"
+            />
+          </div>
 
           {/* Right side: Contact, Cart, Auth */}
           <div className="flex items-center space-x-4 flex-shrink-0">

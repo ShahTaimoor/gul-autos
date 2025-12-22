@@ -47,6 +47,11 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    tags: [{
+        type: String,
+        trim: true,
+        lowercase: true
+    }],
 
 }, { timestamps: true })
 
@@ -65,11 +70,13 @@ productSchema.index({ stock: 1, isFeatured: -1, createdAt: -1 }); // Compound in
 // Note: MongoDB allows only ONE text index per collection
 productSchema.index({ 
     title: 'text', 
-    description: 'text' 
+    description: 'text',
+    tags: 'text'
 }, {
     weights: {
         title: 10,  // Title matches are more important (higher weight)
-        description: 5  // Description matches have lower weight
+        description: 5,  // Description matches have lower weight
+        tags: 8  // Tags have high relevance
     },
     name: 'text_search_index'
 });

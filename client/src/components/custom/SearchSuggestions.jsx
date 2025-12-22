@@ -2,11 +2,84 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useDebounce } from '@/hooks/use-debounce';
-import { searchProducts } from '@/redux/slices/products/productSlice';
+import { fetchSearchSuggestions } from '@/redux/slices/products/productSlice';
 import { Input } from '../ui/input';
 import { Search, X, Loader2 } from 'lucide-react';
 import LazyImage from '../ui/LazyImage';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+/**
+ * Highlight keywords in text
+ */
+const highlightKeywords = (text, keywords) => {
+    if (!text || !keywords || keywords.length === 0) return text;
+    
+    const lowerText = text.toLowerCase();
+    const parts = [];
+    let lastIndex = 0;
+    
+    // Sort keywords by length (longest first) to avoid partial matches
+    const sortedKeywords = [...keywords].sort((a, b) => b.length - a.length);
+    
+    // Find all matches
+    const matches = [];
+    sortedKeywords.forEach(keyword => {
+        const lowerKeyword = keyword.toLowerCase();
+        let index = lowerText.indexOf(lowerKeyword, lastIndex);
+        while (index !== -1) {
+            matches.push({ start: index, end: index + lowerKeyword.length, keyword });
+            index = lowerText.indexOf(lowerKeyword, index + 1);
+        }
+    });
+    
+    // Sort matches by start position
+    matches.sort((a, b) => a.start - b.start);
+    
+    // Merge overlapping matches
+    const mergedMatches = [];
+    for (const match of matches) {
+        if (mergedMatches.length === 0) {
+            mergedMatches.push(match);
+        } else {
+            const lastMatch = mergedMatches[mergedMatches.length - 1];
+            if (match.start <= lastMatch.end) {
+                // Merge overlapping matches
+                lastMatch.end = Math.max(lastMatch.end, match.end);
+            } else {
+                mergedMatches.push(match);
+            }
+        }
+    }
+    
+    // Build highlighted text
+    if (mergedMatches.length === 0) {
+        return text;
+    }
+    
+    const result = [];
+    let currentIndex = 0;
+    
+    mergedMatches.forEach(match => {
+        // Add text before match
+        if (match.start > currentIndex) {
+            result.push(text.substring(currentIndex, match.start));
+        }
+        // Add highlighted match
+        result.push(
+            <mark key={match.start} className="bg-yellow-200 font-semibold px-0.5 rounded">
+                {text.substring(match.start, match.end)}
+            </mark>
+        );
+        currentIndex = match.end;
+    });
+    
+    // Add remaining text
+    if (currentIndex < text.length) {
+        result.push(text.substring(currentIndex));
+    }
+    
+    return result;
+};
 
 const SearchSuggestions = ({ 
   placeholder = "Search products...", 
@@ -59,16 +132,26 @@ const SearchSuggestions = ({
   // Use controlled value if provided, otherwise use internal state
   const searchQuery = value !== undefined ? value : internalSearchQuery;
 
-  const { searchResults, searchStatus, searchQuery: reduxSearchQuery } = useSelector((state) => state.products);
+  const { suggestions, suggestionsStatus, suggestionsQuery } = useSelector((state) => state.products);
   
-  // Filter out duplicate products by _id
-  const uniqueSearchResults = useMemo(() => {
-    if (!searchResults || searchResults.length === 0) return [];
+  // Extract keywords from query for highlighting
+  const keywords = useMemo(() => {
+    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from']);
+    return searchQuery
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0 && !stopWords.has(word));
+  }, [searchQuery]);
+  
+  // Get unique products from suggestions
+  const uniqueSuggestions = useMemo(() => {
+    if (!suggestions?.products || suggestions.products.length === 0) return [];
     
     const uniqueResults = [];
     const seenIds = new Set();
     
-    for (const product of searchResults) {
+    for (const product of suggestions.products) {
       const productId = product._id?.toString();
       if (productId && !seenIds.has(productId)) {
         seenIds.add(productId);
@@ -77,28 +160,29 @@ const SearchSuggestions = ({
     }
     
     return uniqueResults;
-  }, [searchResults]);
+  }, [suggestions]);
   
-  // Debounce search query for API calls (reduced delay for faster response)
-  const debouncedQuery = useDebounce(searchQuery, 150);
+  // Debounce search query for API calls (300-500ms as per requirements)
+  const debouncedQuery = useDebounce(searchQuery, 400);
 
-  // Fetch suggestions when debounced query changes
+  // Fetch suggestions when debounced query changes (only if 2+ characters)
   useEffect(() => {
-    if (debouncedQuery.trim().length >= 1) {
-      dispatch(searchProducts({ query: debouncedQuery, limit: 8 }));
+    const trimmedQuery = debouncedQuery.trim();
+    if (trimmedQuery.length >= 2) {
+      dispatch(fetchSearchSuggestions({ query: trimmedQuery, limit: 8 }));
     }
   }, [debouncedQuery, dispatch]);
 
-  // Show suggestions immediately when user types (not debounced)
+  // Show suggestions when user types (only if 2+ characters as per requirements)
   // But don't show if the query matches the URL search param (meaning we're on search results page)
   useEffect(() => {
     const trimmedQuery = searchQuery.trim();
     const urlSearch = searchParams.get('search') || '';
     
     // Only show suggestions if:
-    // 1. There's a query
+    // 1. There's a query with 2+ characters (as per requirements)
     // 2. The query doesn't match the URL search param (meaning user is typing, not viewing results)
-    if (trimmedQuery.length >= 1 && trimmedQuery !== urlSearch) {
+    if (trimmedQuery.length >= 2 && trimmedQuery !== urlSearch) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -133,9 +217,9 @@ const SearchSuggestions = ({
     }
     setSelectedIndex(-1);
     
-    // Show suggestions immediately when typing or backspacing (if still has text)
+    // Show suggestions when typing (only if 2+ characters as per requirements)
     // Set this immediately based on the new value, not waiting for state to update
-    if (trimmedValue.length >= 1) {
+    if (trimmedValue.length >= 2) {
       setShowSuggestions(true);
     } else {
       setShowSuggestions(false);
@@ -174,15 +258,22 @@ const SearchSuggestions = ({
     if (onSelectProduct) {
       onSelectProduct(product);
     } else {
-      // Default behavior: navigate to products page with search
-      navigate(`/products?search=${encodeURIComponent(product.title)}`);
+      // Navigate to product detail page by ID
+      if (product._id) {
+        navigate(`/product/${product._id}`);
+      } else {
+        // Fallback: navigate to products page with search
+        navigate(`/products?search=${encodeURIComponent(product.title)}`);
+      }
     }
   }, [navigate, onSelectProduct, onChange]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
-    if (!showSuggestions || !uniqueSearchResults || uniqueSearchResults.length === 0) {
-      if (e.key === 'Enter' && searchQuery.trim()) {
+    const totalItems = uniqueSuggestions.length + (suggestions?.categories?.length || 0);
+    
+    if (!showSuggestions || totalItems === 0) {
+      if (e.key === 'Enter' && searchQuery.trim().length >= 2) {
         handleSearch();
       }
       return;
@@ -192,7 +283,7 @@ const SearchSuggestions = ({
       case 'ArrowDown':
         e.preventDefault();
         setSelectedIndex((prev) => 
-          prev < uniqueSearchResults.length - 1 ? prev + 1 : prev
+          prev < totalItems - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -201,9 +292,16 @@ const SearchSuggestions = ({
         break;
       case 'Enter':
         e.preventDefault();
-        if (selectedIndex >= 0 && uniqueSearchResults[selectedIndex]) {
-          handleSelectProduct(uniqueSearchResults[selectedIndex]);
-        } else if (searchQuery.trim()) {
+        if (selectedIndex >= 0 && selectedIndex < uniqueSuggestions.length) {
+          handleSelectProduct(uniqueSuggestions[selectedIndex]);
+        } else if (selectedIndex >= uniqueSuggestions.length) {
+          // Category selected
+          const categoryIndex = selectedIndex - uniqueSuggestions.length;
+          const category = suggestions?.categories?.[categoryIndex];
+          if (category) {
+            handleSearch();
+          }
+        } else if (searchQuery.trim().length >= 2) {
           handleSearch();
         }
         break;
@@ -219,11 +317,10 @@ const SearchSuggestions = ({
   // Handle search button click
   const handleSearch = useCallback(() => {
     const trimmedQuery = searchQuery.trim();
-    if (trimmedQuery.length === 0) {
+    if (trimmedQuery.length < 2) {
       return;
     }
     setShowSuggestions(false);
-    dispatch(searchProducts({ query: trimmedQuery, limit: 100 }));
     
     // Scroll to top when searching
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -233,7 +330,7 @@ const SearchSuggestions = ({
     } else if (!onSelectProduct) {
       navigate(`/products?search=${encodeURIComponent(trimmedQuery)}`);
     }
-  }, [searchQuery, dispatch, navigate, onSelectProduct, onSearch]);
+  }, [searchQuery, navigate, onSelectProduct, onSearch]);
 
   // Scroll selected item into view
   useEffect(() => {
@@ -245,9 +342,11 @@ const SearchSuggestions = ({
     }
   }, [selectedIndex]);
 
-  const isLoading = searchStatus === 'loading' && searchQuery.trim().length >= 1;
-  const hasResults = uniqueSearchResults && uniqueSearchResults.length > 0;
-  const showDropdown = showSuggestions && searchQuery.trim().length >= 1;
+  const isLoading = suggestionsStatus === 'loading' && searchQuery.trim().length >= 2;
+  const hasProducts = uniqueSuggestions && uniqueSuggestions.length > 0;
+  const hasCategories = suggestions?.categories && suggestions.categories.length > 0;
+  const hasResults = hasProducts || hasCategories;
+  const showDropdown = showSuggestions && searchQuery.trim().length >= 2;
 
   return (
     <div className={`relative ${className}`} ref={searchContainerRef}>
@@ -265,7 +364,7 @@ const SearchSuggestions = ({
             onKeyDown={handleKeyDown}
             onFocus={() => {
               const trimmedQuery = searchQuery.trim();
-              if (trimmedQuery.length >= 1) {
+              if (trimmedQuery.length >= 2) {
                 setShowSuggestions(true);
               }
             }}
@@ -287,11 +386,11 @@ const SearchSuggestions = ({
             {isMobile && (
               <button
                 onClick={handleSearch}
-                disabled={searchStatus === 'loading' || !searchQuery.trim()}
+                disabled={suggestionsStatus === 'loading' || !searchQuery.trim()}
                 className="bg-primary hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center p-2 rounded-md"
                 aria-label="Search"
               >
-                {searchStatus === 'loading' ? (
+                {suggestionsStatus === 'loading' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
                 ) : (
                   <Search className="h-4 w-4 md:h-5 md:w-5 text-white" />
@@ -303,10 +402,10 @@ const SearchSuggestions = ({
         {showButton && !isMobile && (
           <button
             onClick={handleSearch}
-            disabled={searchStatus === 'loading' || !searchQuery.trim()}
+            disabled={suggestionsStatus === 'loading' || !searchQuery.trim()}
             className="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
-            {searchStatus === 'loading' ? (
+            {suggestionsStatus === 'loading' ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Searching...
@@ -328,7 +427,8 @@ const SearchSuggestions = ({
             </div>
           ) : hasResults ? (
             <div ref={suggestionsRef} className="py-1">
-              {uniqueSearchResults.map((product, index) => {
+              {/* Product Suggestions */}
+              {uniqueSuggestions.map((product, index) => {
                 const productImage = product.image || product.picture?.secure_url || '/logo.jpeg';
                 const isSelected = index === selectedIndex;
                 
@@ -353,24 +453,64 @@ const SearchSuggestions = ({
                       />
                     </div>
                     
-                    {/* Product Info */}
+                    {/* Product Info with Highlighted Keywords */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm md:text-base text-gray-900 line-clamp-2">
-                        {product.title}
+                        {highlightKeywords(product.title, keywords)}
                       </h4>
+                      {product.category?.name && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          in {highlightKeywords(product.category.name, keywords)}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
               })}
+              
+              {/* Category Suggestions */}
+              {hasCategories && (
+                <>
+                  {uniqueSuggestions.length > 0 && (
+                    <div className="border-t border-gray-200 my-1"></div>
+                  )}
+                  {suggestions.categories.map((category, index) => {
+                    const categoryIndex = uniqueSuggestions.length + index;
+                    const isSelected = categoryIndex === selectedIndex;
+                    
+                    return (
+                      <div
+                        key={`category-${category}`}
+                        onClick={() => {
+                          setShowSuggestions(false);
+                          navigate(`/products?category=${encodeURIComponent(category.toLowerCase())}`);
+                        }}
+                        className={`flex items-center gap-3 px-4 py-2 cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-primary/10 border-l-4 border-primary'
+                            : 'hover:bg-gray-50 border-l-4 border-transparent'
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-700 font-medium">
+                            <Search className="inline h-3 w-3 mr-2 text-gray-400" />
+                            Category: {highlightKeywords(category, keywords)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
           ) : (
             <div className="p-4 text-center text-sm text-gray-500">
-              No products found for &quot;{debouncedQuery}&quot;
+              No products found matching all keywords &quot;{debouncedQuery}&quot;
             </div>
           )}
           
           {/* View All Results Link */}
-          {hasResults && debouncedQuery.trim() && (
+          {hasResults && debouncedQuery.trim().length >= 2 && (
             <div className="border-t border-gray-200 p-2">
               <button
                 onClick={() => {

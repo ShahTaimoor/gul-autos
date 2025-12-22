@@ -145,6 +145,42 @@ const bulkUpdateFeatured = async ({ productIds, isFeatured }) => {
     }
 };
 
+// search products
+const searchProducts = async (query, limit = 20, page = 1) => {
+    try {
+        const response = await axiosInstance.get(
+            '/search',
+            {
+                params: { q: query, limit, page },
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
+// search suggestions (autocomplete)
+const searchSuggestions = async (query, limit = 8) => {
+    try {
+        const response = await axiosInstance.get(
+            '/search-suggestions',
+            {
+                params: { q: query, limit },
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        const errorMessage =
+            error.response?.data?.message || error.message || 'Something went wrong';
+        return Promise.reject(errorMessage);
+    }
+};
+
 const productService = { 
     createProduct, 
     allProduct, 
@@ -153,7 +189,9 @@ const productService = {
     deleteProduct, 
     importProductsFromExcel, 
     updateProductStock, 
-    bulkUpdateFeatured
+    bulkUpdateFeatured,
+    searchProducts,
+    searchSuggestions
 };
 
 export default productService;
