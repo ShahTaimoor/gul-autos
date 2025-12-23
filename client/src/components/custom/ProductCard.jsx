@@ -70,7 +70,10 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
-    e.preventDefault();
+    // Only prevent default if the event is cancelable (not during scroll)
+    if (e.cancelable !== false) {
+      e.preventDefault();
+    }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     // Prevent focus on input and scroll
@@ -87,7 +90,10 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
-    e.preventDefault();
+    // Only prevent default if the event is cancelable (not during scroll)
+    if (e.cancelable !== false) {
+      e.preventDefault();
+    }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     // Prevent focus on input and scroll
