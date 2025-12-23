@@ -11,6 +11,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       filename: 'manifest.webmanifest',
+      strategies: 'generateSW',
+      injectRegister: 'auto',
       includeAssets: ["vite.svg", "robots.txt", "logo.jpeg"],
       workbox: {
         // Don't cache index.html - exclude it from precaching
