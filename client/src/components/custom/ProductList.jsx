@@ -666,11 +666,11 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className={isMobile ? (isScrolled ? 'h-[200px]' : 'h-[300px]') : 'h-44 lg:h-34'}></div>
+      <div className={isMobile ? (isScrolled ? 'h-[180px]' : 'h-[240px]') : 'h-8 lg:h-34'}></div>
 
 
       {/* Product Grid */}
-      <div className={isMobile ? "mt-4" : "mt-6"}>
+      <div className={isMobile ? "mt-2" : "mt-2"}>
         <ProductGrid
           products={sortedProducts}
           loading={loadingProducts}
