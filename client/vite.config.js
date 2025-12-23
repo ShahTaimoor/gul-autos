@@ -12,6 +12,50 @@ export default defineConfig({
       registerType: "autoUpdate",
       filename: 'manifest.webmanifest',
       includeAssets: ["vite.svg", "robots.txt", "logo.jpeg"],
+      workbox: {
+        // Don't cache index.html - exclude it from precaching
+        globPatterns: ['**/*.{js,css,ico,png,svg,webmanifest,woff,woff2}'],
+        // Exclude index.html from precaching - this ensures it's always fetched fresh
+        navigateFallback: null,
+        // Use network-first strategy for navigation requests (index.html)
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.destination === 'document',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 0, // Don't cache HTML pages
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.(?:js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+            },
+          },
+        ],
+        // Skip waiting and claim clients immediately on update
+        skipWaiting: true,
+        clientsClaim: true,
+        // Clean up outdated caches
+        cleanupOutdatedCaches: true,
+      },
       manifest: {
         name: "Gultraders",
         short_name: "Gultraders",
@@ -33,9 +77,6 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-      },
       devOptions: {
         enabled: false,
         type: 'module',
@@ -48,4 +89,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    manifest: true,
+    sourcemap: false
+  }
 });
