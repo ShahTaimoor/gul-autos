@@ -676,6 +676,13 @@ const CreateProducts = () => {
                                   src={previewUrl || URL.createObjectURL(inputValues.picture)}
                                   alt="Preview"
                                   className="w-24 h-24 object-cover rounded-lg border"
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                  loading="eager"
+                                  decoding="async"
+                                  onError={(e) => {
+                                    e.target.src = '/placeholder-product.jpg';
+                                  }}
                                 />
                                 {inputValues.picture.type === 'image/webp' && (
                                   <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
@@ -973,6 +980,7 @@ const CreateProducts = () => {
                           className="w-full h-full object-cover"
                           fallback="/logo.jpeg"
                           quality={85}
+                          loading="eager"
                         />
                         
                         {/* Uploaded Media Indicator */}

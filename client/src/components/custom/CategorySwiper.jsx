@@ -88,8 +88,14 @@ const CategoryItem = React.memo(({ category, isSelected, onSelect, index }) => (
         loading="lazy"
         width="56"
         height="56"
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer-when-downgrade"
+        decoding="async"
+        fetchPriority="auto"
         onError={(e) => {
-          e.currentTarget.src = "/fallback.jpg";
+          if (e.currentTarget.src !== "/fallback.jpg") {
+            e.currentTarget.src = "/fallback.jpg";
+          }
         }}
       />
     </div>

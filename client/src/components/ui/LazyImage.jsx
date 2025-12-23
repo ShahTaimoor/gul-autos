@@ -75,13 +75,16 @@ const LazyImage = ({
     return originalUrl.replace(/\.(jpg|jpeg|png)$/i, '.webp');
   }, [quality]);
 
-  // Load image when in view
+  // Load image when in view (or immediately if loading="eager")
   useEffect(() => {
-    if (inView && src && !currentSrc) {
-      const webpUrl = supportsWebP ? getWebPUrl(src) : src;
-      setCurrentSrc(webpUrl);
+    if (src && !currentSrc) {
+      // If loading is eager, load immediately without waiting for inView
+      if (loading === 'eager' || inView) {
+        const webpUrl = supportsWebP ? getWebPUrl(src) : src;
+        setCurrentSrc(webpUrl);
+      }
     }
-  }, [inView, src, currentSrc, supportsWebP, getWebPUrl]);
+  }, [inView, src, currentSrc, supportsWebP, getWebPUrl, loading]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -167,6 +170,10 @@ const LazyImage = ({
           loading={loading}
           sizes={getResponsiveSizes()}
           srcSet={generateSrcSet(src)}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer-when-downgrade"
+          decoding="async"
+          fetchPriority="auto"
           {...props}
         />
       )}

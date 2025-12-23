@@ -537,6 +537,13 @@ const Category = () => {
                         )}
                         alt="Image Preview"
                         className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        loading="eager"
+                        decoding="async"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-image.png';
+                        }}
                       />
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
@@ -844,9 +851,15 @@ const Category = () => {
                                 src={category.image}
                                 alt={category.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
+                                loading="eager"
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                decoding="async"
+                                fetchPriority="high"
                                 onError={(e) => {
-                                  e.target.src = '/placeholder-image.png';
+                                  if (e.target.src !== '/placeholder-image.png') {
+                                    e.target.src = '/placeholder-image.png';
+                                  }
                                 }}
                               />
                             </div>
@@ -954,9 +967,15 @@ const Category = () => {
                                 src={category.image}
                                 alt={category.name}
                                 className="w-full h-full object-cover"
-                                loading="lazy"
+                                loading="eager"
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                decoding="async"
+                                fetchPriority="high"
                                 onError={(e) => {
-                                  e.target.src = '/placeholder-image.png';
+                                  if (e.target.src !== '/placeholder-image.png') {
+                                    e.target.src = '/placeholder-image.png';
+                                  }
                                 }}
                               />
                             </div>

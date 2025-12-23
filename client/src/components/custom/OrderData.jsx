@@ -444,6 +444,7 @@ const OrderData = ({
                       className="h-16 w-16 rounded-lg object-cover border"
                       fallback="fallback.jpg"
                       quality={80}
+                      loading="eager"
                     />
                     <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium">
                       {product.quantity}

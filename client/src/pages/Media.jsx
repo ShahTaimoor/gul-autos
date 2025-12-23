@@ -646,6 +646,7 @@ const Media = () => {
                       className="w-full h-full object-cover"
                       fallback="/logo.jpeg"
                       quality={85}
+                      loading="eager"
                     />
 
                     {/* Product Image Indicator */}
@@ -986,6 +987,15 @@ const Media = () => {
               alt="Preview"
               className="rounded-lg shadow-lg object-contain w-full h-auto max-h-[90vh]"
               loading="eager"
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer-when-downgrade"
+              decoding="async"
+              fetchPriority="high"
+              onError={(e) => {
+                if (e.target.src !== '/logo.jpeg') {
+                  e.target.src = '/logo.jpeg';
+                }
+              }}
             />
             <button
               onClick={() => setPreviewImage(null)}

@@ -131,6 +131,10 @@ const CartImage = ({
           onLoad={handleImageLoad}
           onError={handleImageError}
           loading="eager"
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer-when-downgrade"
+          decoding="async"
+          fetchPriority="auto"
           {...props}
         />
       )}

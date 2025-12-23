@@ -257,6 +257,10 @@ const Orders = () => {
   const filteredOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .filter((order) => {
+      // Skip date filter when "All Orders" is selected
+      if (statusFilter === 'All') {
+        return true;
+      }
       // Date range filter based on Pakistan timezone
       const orderDate = new Date(order.createdAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
       return orderDate >= fromDate && orderDate <= toDate;
@@ -416,147 +420,182 @@ Phone: ${order.phone}
   };
 
   // Calculate stats
+  const totalOrdersCount = totalItems || orders.length;
   const pendingOrders = orders.filter(order => order.status === 'Pending').length;
   const completedOrders = orders.filter(order => order.status === 'Completed').length;
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      {/* Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Order Management</h1>
-              <p className="text-gray-500 mt-1">Manage and track customer orders efficiently</p>
+    <div className="min-h-screen bg-white">
+      <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+        {/* Stats Cards Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Total Orders Card */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Total Orders</p>
+                <p className="text-3xl font-bold text-gray-900">{totalOrdersCount}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                <ShoppingBag className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
-            
+          </div>
+
+          {/* Pending Orders Card */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Pending Orders</p>
+                <p className="text-3xl font-bold text-orange-600">{pendingOrders}</p>
+              </div>
+              <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </div>
+
+          {/* Completed Orders Card */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
+                <p className="text-3xl font-bold text-green-600">{completedOrders}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="px-4 py-6 md:px-6 lg:px-8 space-y-6 max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{orders.length}</p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <ShoppingBag className="h-6 w-6 text-blue-600" />
+        {/* Filters and Controls Section */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+          <div className="space-y-4">
+            {/* Top Row: Status Tabs and View Toggle */}
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              {/* Status Filter Tabs */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setStatusFilter('All')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    statusFilter === 'All'
+                      ? 'bg-gray-900 text-white border-2 border-gray-900'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  All Orders
+                </button>
+                <button
+                  onClick={() => setStatusFilter('Pending')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    statusFilter === 'Pending'
+                      ? 'bg-gray-900 text-white border-2 border-gray-900'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setStatusFilter('Completed')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    statusFilter === 'Completed'
+                      ? 'bg-gray-900 text-white border-2 border-gray-900'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  Completed
+                </button>
+              </div>
+
+              {/* View Toggle */}
+              <div className="flex gap-1 border border-gray-300 rounded-md bg-white p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`p-2 rounded transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <ListIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Bottom Row: Search and Filter Inputs */}
+            <div className="flex flex-wrap items-end gap-4">
+              {/* Shop Name Search */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="shopNameSearch" className="text-xs font-medium text-gray-700">
+                  Shop Name
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="shopNameSearch"
+                    type="text"
+                    placeholder="Search shop..."
+                    value={shopNameSearch}
+                    onChange={(e) => setShopNameSearch(e.target.value)}
+                    className="w-48 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">Pending Orders</p>
-                  <p className="text-2xl font-bold text-amber-600 mt-1">{pendingOrders}</p>
-                </div>
-                <div className="p-3 bg-amber-50 rounded-lg">
-                  <Clock className="h-6 w-6 text-amber-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">Completed</p>
-                  <p className="text-2xl font-bold text-emerald-600 mt-1">{completedOrders}</p>
-                </div>
-                <div className="p-3 bg-emerald-50 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-emerald-600" />
+              {/* Mobile Search */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="mobileSearch" className="text-xs font-medium text-gray-700">
+                  Mobile
+                </Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="mobileSearch"
+                    type="text"
+                    placeholder="Search mobile..."
+                    value={mobileSearch}
+                    onChange={(e) => setMobileSearch(e.target.value)}
+                    className="w-48 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Filters and Controls */}
-        <Card className="border border-gray-200 shadow-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4 justify-between">
-
-              {/* Status Filter */}
-              <Tabs defaultValue="all" className="w-full lg:w-auto">
-                <TabsList className="grid w-full grid-cols-3 lg:w-auto bg-gray-100">
-                  <TabsTrigger value="all" onClick={() => setStatusFilter('All')}>
-                    All Orders
-                  </TabsTrigger>
-                  <TabsTrigger value="pending" onClick={() => setStatusFilter('Pending')}>
-                    Pending
-                  </TabsTrigger>
-                  <TabsTrigger value="completed" onClick={() => setStatusFilter('Completed')}>
-                    Completed
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {/* Date and View Controls */}
-              <div className="flex flex-wrap gap-2 items-end">
-                {/* Search by Shop Name */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="shopNameSearch" className="text-xs text-gray-600">
-                    Shop Name
-                  </Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="shopNameSearch"
-                      type="text"
-                      placeholder="Search shop..."
-                      value={shopNameSearch}
-                      onChange={(e) => setShopNameSearch(e.target.value)}
-                      className="w-40 pl-8 h-9 text-sm border-gray-300"
-                    />
-                  </div>
-                </div>
-
-                {/* Search by Mobile Number */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="mobileSearch" className="text-xs text-gray-600">
-                    Mobile
-                  </Label>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="mobileSearch"
-                      type="text"
-                      placeholder="Search mobile..."
-                      value={mobileSearch}
-                      onChange={(e) => setMobileSearch(e.target.value)}
-                      className="w-40 pl-8 h-9 text-sm border-gray-300"
-                    />
-                  </div>
-                </div>
-
-                {/* Date Range Filters */}
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="fromDate" className="text-xs text-gray-600">
-                    From Date
-                  </Label>
+              {/* From Date */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="fromDate" className="text-xs font-medium text-gray-700">
+                  From Date
+                </Label>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="fromDate"
                     type="date"
                     value={fromDate}
                     onChange={(e) => setFromDate(e.target.value)}
                     max={today}
-                    className="w-auto h-9 text-sm border-gray-300"
+                    className="w-40 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+              </div>
 
-                <div className="flex flex-col gap-1">
-                  <Label htmlFor="toDate" className="text-xs text-gray-600">
-                    To Date
-                  </Label>
+              {/* To Date */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="toDate" className="text-xs font-medium text-gray-700">
+                  To Date
+                </Label>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   <Input
                     id="toDate"
                     type="date"
@@ -564,12 +603,18 @@ Phone: ${order.phone}
                     onChange={(e) => setToDate(e.target.value)}
                     min={fromDate}
                     max={today}
-                    className="w-auto h-9 text-sm border-gray-300"
+                    className="w-40 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
+              </div>
 
+              {/* Items Per Page */}
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium text-gray-700">
+                  Per Page
+                </Label>
                 <Select value={limit.toString()} onValueChange={handleLimitChange}>
-                  <SelectTrigger className="w-24 border-gray-300">
+                  <SelectTrigger className="w-20 h-10 text-sm border-gray-300 rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -579,53 +624,42 @@ Phone: ${order.phone}
                     <SelectItem value="48">48</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
 
-                {/* View Mode Toggle */}
-                <div className="flex border border-gray-300 rounded-md bg-white">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className={getViewModeButtonClassName(viewMode, 'grid', 'left')}
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                    className={getViewModeButtonClassName(viewMode, 'table', 'right')}
-                  >
-                    <ListIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* Bulk Actions */}
-                {filteredOrders.length > 0 && (
+              {/* Bulk Actions Button */}
+              {filteredOrders.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-medium text-gray-700 opacity-0">
+                    Actions
+                  </Label>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="destructive" className="gap-2 bg-red-600 hover:bg-red-700">
+                      <Button 
+                        variant="destructive" 
+                        className="gap-2 bg-red-600 hover:bg-red-700 h-10 px-4 rounded-lg"
+                      >
                         <Trash2 className="h-4 w-4" />
                         Bulk Actions
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={handleDeleteAllOrders}
-                        className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                        className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
                       >
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Delete All ({filteredOrders.length})
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                )}
-              </div>
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Orders Display */}
         {status === 'loading' ? (
@@ -641,11 +675,13 @@ Phone: ${order.phone}
               <div>
                 <h3 className="text-lg font-medium text-gray-900">
                   {statusFilter === 'All' 
-                    ? `No orders found from ${fromDate} to ${toDate}`
+                    ? 'No orders found'
                     : `No ${statusFilter.toLowerCase()} orders found from ${fromDate} to ${toDate}`}
                 </h3>
                 <p className="text-gray-500 mt-1">
-                  Check back later for new orders
+                  {statusFilter === 'All' 
+                    ? 'There are no orders in the system'
+                    : 'Check back later for new orders'}
                 </p>
               </div>
             </CardContent>
@@ -706,8 +742,12 @@ Phone: ${order.phone}
                           {order.products.slice(0, 3).map((item, index) => (
                             <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border border-gray-100 shadow-sm">
                               <img
-                                src={item?.id?.picture?.secure_url || '/placeholder-product.jpg'}
-                                alt={item.id?.name}
+                                {...imageService.getSafeImageProps(
+                                  item?.id?.picture?.secure_url,
+                                  item.id?.name || 'Product image',
+                                  '/placeholder-product.jpg',
+                                  'eager'
+                                )}
                                 className="w-8 h-8 rounded-md object-cover border border-gray-200"
                               />
                               <div className="flex-1 min-w-0">

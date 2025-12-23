@@ -1168,6 +1168,7 @@ const AllProducts = () => {
                     className="w-full h-full object-cover"
                     fallback="/logo.jpeg"
                     quality={90}
+                    loading="eager"
                   />
                   
                   {/* Stock Badge */}
