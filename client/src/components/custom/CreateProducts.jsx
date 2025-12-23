@@ -43,7 +43,8 @@ import {
 import LazyImage from '../ui/LazyImage';
 import Pagination from '../custom/Pagination';
 import { convertToWebP, getImageInfo, createPreviewUrl, revokePreviewUrl, isWebPSupported } from '@/utils/imageConverter';
-import axiosInstance from '@/redux/slices/auth/axiosInstance';
+import { useMedia } from '@/hooks/use-media';
+import { imageService } from '@/services/imageService';
 import { useToast } from '@/hooks/use-toast';
 
 const CreateProducts = () => {
@@ -64,8 +65,11 @@ const CreateProducts = () => {
   const [isConverting, setIsConverting] = useState(false);
   const [conversionInfo, setConversionInfo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [uploadedMedia, setUploadedMedia] = useState([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
+  const {
+    uploadedMedia,
+    mediaLoading,
+    fetchMedia,
+  } = useMedia();
 
   // Initial input values
   const initialValues = {
@@ -101,23 +105,6 @@ const CreateProducts = () => {
     setCategorySearch(e.target.value);
   };
 
-  // Fetch media from database
-  const fetchMedia = useCallback(async () => {
-    setMediaLoading(true);
-    try {
-      const response = await axiosInstance.get('/media');
-      
-      if (response.data.success) {
-        setUploadedMedia(response.data.data);
-      } else {
-        // Media fetch failed - error handled silently as it's not critical for UI
-      }
-    } catch (error) {
-      // Error fetching media - handled silently to avoid disrupting user experience
-    } finally {
-      setMediaLoading(false);
-    }
-  }, []);
 
   // Handle image file selection and conversion
   const handleImageChange = async (e) => {
@@ -292,7 +279,7 @@ const CreateProducts = () => {
         stockFilter: 'active'
       }));
       // Also fetch uploaded media
-      fetchMedia();
+      fetchMedia(1000);
     }
   }, [dispatch, showMediaPicker, mediaSearchTerm, fetchMedia]);
 
@@ -362,8 +349,7 @@ const CreateProducts = () => {
       
       try {
         // Fetch the image
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
+        const blob = await imageService.fetchImageBlob(imageUrl);
         const file = new File([blob], `${product.title}.jpg`, { type: blob.type });
         
         // Convert to WebP if it's not already

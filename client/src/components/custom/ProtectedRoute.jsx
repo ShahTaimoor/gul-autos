@@ -1,30 +1,57 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { clearTokenExpired, logout, setTokenExpired } from '@/redux/slices/auth/authSlice';
 import { fetchCart } from '@/redux/slices/cart/cartSlice';
+import { verifyToken } from '@/hooks/use-auth';
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const { pathname } = useLocation();
   const { user, isAuthenticated, tokenExpired } = useSelector((state) => state.auth);
   const { items: cartItems = [] } = useSelector((state) => state.cart);
+  
+  // Track when user logged in to avoid immediate token checks
+  const loginTimeRef = useRef(null);
+  const lastCheckTimeRef = useRef(null);
+
+  // Track login time when user becomes authenticated
+  useEffect(() => {
+    if (user && isAuthenticated && !loginTimeRef.current) {
+      loginTimeRef.current = Date.now();
+    } else if (!user || !isAuthenticated) {
+      loginTimeRef.current = null;
+      lastCheckTimeRef.current = null;
+    }
+  }, [user, isAuthenticated]);
 
   // Enhanced auth check for mobile devices
   const checkAuthentication = useCallback(async () => {
     if (user && isAuthenticated) {
+      const now = Date.now();
+      const timeSinceLogin = loginTimeRef.current ? now - loginTimeRef.current : Infinity;
+      const timeSinceLastCheck = lastCheckTimeRef.current ? now - lastCheckTimeRef.current : Infinity;
+      
+      // Don't check if:
+      // 1. Less than 30 seconds since login (cookies might not be ready)
+      // 2. Less than 5 minutes since last check (avoid too frequent checks)
+      if (timeSinceLogin < 30000) {
+        return; // Too soon after login, skip check
+      }
+      
+      if (timeSinceLastCheck < 5 * 60 * 1000) {
+        return; // Already checked recently, skip
+      }
+      
       try {
-        // Make a lightweight auth check
-        const response = await fetch('/api/verify-token', {
-          credentials: 'include',
-          method: 'GET'
-        });
-        
-        if (!response.ok) {
+        const isValid = await verifyToken();
+        lastCheckTimeRef.current = Date.now();
+        if (!isValid) {
           dispatch(setTokenExpired());
         }
       } catch (error) {
-        // Don't logout on network errors, just log
+        // Don't logout on network errors - just log for debugging
+        console.error('Token verification error:', error);
       }
     }
   }, [user, isAuthenticated, dispatch]);
@@ -35,11 +62,30 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [dispatch, user, isAuthenticated]);
 
-  // Periodic auth check for mobile (every 5 minutes)
+  // Periodic auth check for mobile (every 5 minutes, but only after 30 seconds from login)
   useEffect(() => {
     if (user && isAuthenticated) {
-      const interval = setInterval(checkAuthentication, 5 * 60 * 1000); // 5 minutes
-      return () => clearInterval(interval);
+      // Wait 30 seconds after login before starting periodic checks
+      const initialDelay = loginTimeRef.current 
+        ? Math.max(0, 30000 - (Date.now() - loginTimeRef.current))
+        : 30000;
+      
+      let intervalId = null;
+      
+      const timeoutId = setTimeout(() => {
+        // First check after delay
+        checkAuthentication();
+        
+        // Then set up periodic checks every 5 minutes
+        intervalId = setInterval(checkAuthentication, 5 * 60 * 1000);
+      }, initialDelay);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+      };
     }
   }, [user, isAuthenticated, checkAuthentication]);
 

@@ -57,6 +57,8 @@ import {
 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { imageService } from '@/services/imageService';
+import { getViewModeButtonClassName, getPaginationButtonClassName } from '@/utils/classNameHelpers';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -125,18 +127,19 @@ const Orders = () => {
     Completed: CheckCircle,
   };
 
-  const getImageBase64 = (url) =>
-    fetch(url)
-      .then((response) => response.blob())
-      .then(
-        (blob) =>
-          new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          })
-      );
+  const getImageBase64 = async (url) => {
+    try {
+      const blob = await imageService.fetchImageBlob(url);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      return '';
+    }
+  };
 
   const handlePackerNameChange = (orderId, name) => {
     setPackerNames((prev) => ({
@@ -298,8 +301,7 @@ Phone: ${order.phone}
 
     if (navigator.canShare && navigator.canShare({ files: [] })) {
       try {
-        const response = await fetch(firstImageUrl);
-        const blob = await response.blob();
+        const blob = await imageService.fetchImageBlob(firstImageUrl);
         const file = new File([blob], 'order-product.jpg', { type: blob.type });
 
         await navigator.share({
@@ -584,7 +586,7 @@ Phone: ${order.phone}
                     variant={viewMode === 'grid' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
-                    className={`rounded-r-none h-9 px-3 ${viewMode === 'grid' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={getViewModeButtonClassName(viewMode, 'grid', 'left')}
                   >
                     <Grid3X3 className="h-4 w-4" />
                   </Button>
@@ -592,7 +594,7 @@ Phone: ${order.phone}
                     variant={viewMode === 'table' ? 'default' : 'ghost'}
                     size="sm"
                     onClick={() => setViewMode('table')}
-                    className={`rounded-l-none h-9 px-3 ${viewMode === 'table' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+                    className={getViewModeButtonClassName(viewMode, 'table', 'right')}
                   >
                     <ListIcon className="h-4 w-4" />
                   </Button>
@@ -999,7 +1001,7 @@ Phone: ${order.phone}
                       size="sm"
                       onClick={() => typeof pg === 'number' && pagination.setCurrentPage(pg)}
                       disabled={pg === '...'}
-                      className={pg === pagination.currentPage ? 'bg-blue-600 hover:bg-blue-700' : 'border-gray-300'}
+                      className={getPaginationButtonClassName(pg, pagination.currentPage)}
                     >
                       {pg}
                     </Button>

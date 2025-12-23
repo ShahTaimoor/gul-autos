@@ -28,6 +28,7 @@ import Checkout from '../../pages/Checkout';
 import { useAuthDrawer } from '@/contexts/AuthDrawerContext';
 import { useToast } from '@/hooks/use-toast';
 import SearchSuggestions from './SearchSuggestions';
+import { getHeaderClassName, getStickyHeaderClassName, getSpacerHeightClassName } from '@/utils/classNameHelpers';
 
 // Import the optimized ProductCard component
 import ProductCard from './ProductCard';
@@ -606,7 +607,7 @@ const ProductList = () => {
       {isMobile && (
         <>
           {/* Logo Section - Hides on scroll */}
-          <div className={`fixed top-0 left-0 right-0 z-50 ${isScrolled ? 'bg-white border-b border-gray-200' : 'bg-primary/10 border-b border-primary/20'} shadow-sm lg:hidden transition-all duration-300 ease-in-out ${isScrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`}>
+          <div className={getHeaderClassName(isScrolled, isMobile)}>
             <div className="px-4 py-3">
               <div className="flex items-center justify-center">
                 <Link to="/" className="flex items-center space-x-2">
@@ -629,7 +630,7 @@ const ProductList = () => {
       )}
       
       {/* Fixed Categories Container */}
-      <div className={`fixed ${isMobile ? (isScrolled ? 'top-[0px]' : 'top-[54px]') : 'top-14'} left-0 right-0 z-40 ${isMobile ? (isScrolled ? 'bg-white' : 'bg-primary/10') : 'bg-white/95 border-b border-gray-200/50'} backdrop-blur-xl shadow-md transition-all duration-300`}>
+      <div className={getStickyHeaderClassName(isMobile, isScrolled)}>
         <div className="max-w-7xl lg:mx-auto">
           {/* Search Input - Mobile only, above categories */}
           {isMobile && (
@@ -666,7 +667,7 @@ const ProductList = () => {
       </div>
 
       {/* Spacer to prevent content from going under fixed header */}
-      <div className={isMobile ? (isScrolled ? 'h-[180px]' : 'h-[240px]') : 'h-8 lg:h-34'}></div>
+      <div className={getSpacerHeightClassName(isMobile, isScrolled)}></div>
 
 
       {/* Product Grid */}

@@ -7,8 +7,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
 import LazyImage from '../components/ui/LazyImage';
 import Pagination from '../components/custom/Pagination';
 import { usePagination } from '@/hooks/use-pagination';
+import { useMedia } from '@/hooks/use-media';
+import { imageService } from '@/services/imageService';
 import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search, Loader2 } from 'lucide-react';
-import axiosInstance from '@/redux/slices/auth/axiosInstance';
 
 const Media = () => {
   const dispatch = useDispatch();
@@ -39,11 +40,17 @@ const Media = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
-  const [isImporting, setIsImporting] = useState(false);
-  const [uploadedMedia, setUploadedMedia] = useState([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
+  const {
+    uploadedMedia,
+    mediaLoading,
+    isDeleting,
+    isImporting,
+    fetchMedia,
+    uploadMedia,
+    deleteMedia,
+    bulkDeleteMedia,
+  } = useMedia();
   const [selectedItems, setSelectedItems] = useState([]);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   
@@ -59,28 +66,9 @@ const Media = () => {
   const [uploadTotalPages, setUploadTotalPages] = useState(1);
   const [showAllImages, setShowAllImages] = useState(false); // Option to show all images without pagination
 
-  // Fetch media from database
-  const fetchMedia = useCallback(async () => {
-    setMediaLoading(true);
-    try {
-      // Request up to 2000 images from backend
-      const response = await axiosInstance.get('/media?limit=2000');
-      
-      if (response.data.success) {
-        setUploadedMedia(response.data.data);
-      } else {
-        // Media fetch failed - error handled silently as it's not critical for UI
-      }
-    } catch (error) {
-      // Error fetching media - handled silently to avoid disrupting user experience
-    } finally {
-      setMediaLoading(false);
-    }
-  }, []);
-
   // Fetch media on component mount
   useEffect(() => {
-    fetchMedia();
+    fetchMedia(2000);
   }, [fetchMedia]);
 
   // Fetch products when filters change
@@ -207,17 +195,10 @@ const Media = () => {
 
   const handleDownloadImage = useCallback(async (imageUrl, productTitle) => {
     try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${productTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const filename = `${productTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.jpg`;
+      await imageService.downloadImage(imageUrl, filename);
     } catch (error) {
+      // Download error handled silently
     }
   }, []);
 
@@ -251,52 +232,24 @@ const Media = () => {
 
   // Delete functionality
   const handleDeleteSingle = useCallback(async (itemId) => {
-    setIsDeleting(true);
-    try {
-      const response = await axiosInstance.delete(`/media/${itemId}`);
-      
-      if (response.data.success) {
-        // Refresh media list
-        await fetchMedia();
-        // Remove from selected items if it was selected
-        setSelectedItems(prev => prev.filter(id => id !== itemId));
-      } else {
-        throw new Error(response.data.message || 'Delete failed');
-      }
-    } catch (error) {
-      // Delete error handled - user will see error from backend response
-    } finally {
-      setIsDeleting(false);
+    const result = await deleteMedia(itemId);
+    if (result.success) {
+      setSelectedItems((prev) => prev.filter((id) => id !== itemId));
     }
-  }, [fetchMedia]);
+  }, [deleteMedia]);
 
   const handleBulkDelete = useCallback(async () => {
     if (selectedItems.length === 0) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      const response = await axiosInstance.delete('/media/bulk', {
-        data: { ids: selectedItems }
-      });
-      
-      if (response.data.success) {
-        // Refresh media list
-        await fetchMedia();
-        // Clear selection
-        setSelectedItems([]);
-        setDeleteMode(false);
-        setShowDeleteModal(false);
-      } else {
-        throw new Error(response.data.message || 'Bulk delete failed');
-      }
-    } catch (error) {
-      // Bulk delete error handled - user will see error from backend response
-    } finally {
-      setIsDeleting(false);
+    const result = await bulkDeleteMedia(selectedItems);
+    if (result.success) {
+      setSelectedItems([]);
+      setDeleteMode(false);
+      setShowDeleteModal(false);
     }
-  }, [selectedItems, fetchMedia]);
+  }, [selectedItems, bulkDeleteMedia]);
 
   const handleSelectItem = useCallback((itemId) => {
     setSelectedItems(prev => {
@@ -336,12 +289,12 @@ const Media = () => {
 
     // Check for duplicate names before uploading
     const duplicateNames = [];
-    const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
-    
-    selectedFiles.forEach(file => {
-      const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+    const existingNames = uploadedMedia.map((media) => media.name?.toLowerCase());
+
+    selectedFiles.forEach((file) => {
+      const fileName = file.name.replace(/\.[^/.]+$/, '');
       const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-      
+
       if (existingNames.includes(sanitizedName)) {
         duplicateNames.push(file.name);
       }
@@ -351,33 +304,12 @@ const Media = () => {
       return;
     }
 
-    setIsImporting(true);
-    try {
-      const formData = new FormData();
-      selectedFiles.forEach((file, index) => {
-        formData.append('images', file);
-      });
-
-      const response = await axiosInstance.post('/media/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data.success) {
-        // Refresh media list from database
-        await fetchMedia();
-        setShowImportModal(false);
-        setSelectedFiles([]);
-      } else {
-        throw new Error(response.data.message || 'Upload failed');
-      }
-    } catch (error) {
-      // Upload error handled - user will see error from backend response
-    } finally {
-      setIsImporting(false);
+    const result = await uploadMedia(selectedFiles);
+    if (result.success) {
+      setShowImportModal(false);
+      setSelectedFiles([]);
     }
-  }, [selectedFiles, fetchMedia, uploadedMedia]);
+  }, [selectedFiles, uploadMedia, uploadedMedia]);
 
   // Export functionality for uploaded media
   const handleUploadExport = useCallback(async () => {
@@ -400,16 +332,7 @@ const Media = () => {
             
             if (imageUrl) {
               try {
-                const response = await fetch(imageUrl, {
-                  // Add timeout to prevent hanging
-                  signal: AbortSignal.timeout(10000) // 10 second timeout
-                });
-                
-                if (!response.ok) {
-                  throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const blob = await response.blob();
+                const blob = await imageService.fetchImageBlob(imageUrl, 10000);
                 const fileName = `${media.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `uploaded_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {
@@ -460,10 +383,7 @@ const Media = () => {
           
           if (imageUrl) {
             try {
-              const response = await fetch(imageUrl, {
-                signal: AbortSignal.timeout(5000) // 5 second timeout for individual downloads
-              });
-              const blob = await response.blob();
+              const blob = await imageService.fetchImageBlob(imageUrl, 5000);
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
               link.href = url;
@@ -511,16 +431,7 @@ const Media = () => {
             
             if (imageUrl) {
               try {
-                const response = await fetch(imageUrl, {
-                  // Add timeout to prevent hanging
-                  signal: AbortSignal.timeout(10000) // 10 second timeout
-                });
-                
-                if (!response.ok) {
-                  throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const blob = await response.blob();
+                const blob = await imageService.fetchImageBlob(imageUrl, 10000);
                 const fileName = `${product.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `product_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {
@@ -571,10 +482,7 @@ const Media = () => {
           
           if (imageUrl) {
             try {
-              const response = await fetch(imageUrl, {
-                signal: AbortSignal.timeout(5000) // 5 second timeout for individual downloads
-              });
-              const blob = await response.blob();
+              const blob = await imageService.fetchImageBlob(imageUrl, 5000);
               const url = URL.createObjectURL(blob);
               const link = document.createElement('a');
               link.href = url;
@@ -1167,10 +1075,10 @@ const Media = () => {
                   disabled={
                     isImporting || 
                     selectedFiles.length === 0 || 
-                    selectedFiles.some(file => {
+                    selectedFiles.some((file) => {
                       const fileName = file.name.replace(/\.[^/.]+$/, '');
                       const sanitizedName = fileName.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-                      const existingNames = uploadedMedia.map(media => media.name?.toLowerCase());
+                      const existingNames = uploadedMedia.map((media) => media.name?.toLowerCase());
                       return existingNames.includes(sanitizedName);
                     })
                   }

@@ -1,117 +1,46 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { updateUserRole } from '../redux/slices/auth/authSlice';
-import { useSelector } from 'react-redux';
 import OneLoader from '../components/ui/OneLoader';
-import { 
-  Shield, 
-  User, 
-  Crown, 
-  RefreshCw, 
-  Users as UsersIcon, 
-  MapPin, 
-  Phone, 
+import { useUsers } from '@/hooks/use-users';
+import {
+  getRoleLabel,
+  getRoleIcon,
+  filterUsers,
+  getUserStats,
+  getPageNumbers,
+} from '@/utils/userHelpers';
+import {
+  RefreshCw,
+  Users as UsersIcon,
+  User,
+  Shield,
+  Crown,
+  MapPin,
+  Phone,
   Building2,
   Search,
   Filter,
-  MoreVertical,
-  CheckCircle,
   AlertCircle,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 const Users = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [updatingRoles, setUpdatingRoles] = useState({});
+  const { users, loading, updatingRoles, fetchUsers, handleRoleChange } = useUsers();
+  const { user: currentUser } = useSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const dispatch = useDispatch();
-  const { user: currentUser } = useSelector((state) => state.auth);
-
-  const getAllUsers = () => {
-    setLoading(true);
-    fetch(import.meta.env.VITE_API_URL + '/all-users', {
-      credentials: 'include',
-      headers: { "Content-Type": "application/json" }
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setUsers(Array.isArray(data) ? data : data?.users || []);
-      })
-      .catch((error) => {
-        // Error fetching users - handled silently, user will see empty state
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  const handleRoleChange = async (userId, newRole) => {
-    setUpdatingRoles(prev => ({ ...prev, [userId]: true }));
-    
-    try {
-      const result = await dispatch(updateUserRole({ userId, role: parseInt(newRole) })).unwrap();
-      
-      if (result.success) {
-        // Update the local state
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user._id === userId 
-              ? { ...user, role: parseInt(newRole) }
-              : user
-          )
-        );
-      }
-    } catch (error) {
-      // Role change error - user will see error from Redux action
-    } finally {
-      setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
-    }
-  };
-
-  const getRoleLabel = (role) => {
-    switch (role) {
-      case 0:
-        return { label: 'User', color: 'bg-blue-100 text-blue-800', icon: User };
-      case 1:
-        return { label: 'Admin', color: 'bg-green-100 text-green-800', icon: Shield };
-      case 2:
-        return { label: 'Super Admin', color: 'bg-purple-100 text-purple-800', icon: Crown };
-      default:
-        return { label: 'User', color: 'bg-blue-100 text-blue-800', icon: User };
-    }
-  };
-
-  const getRoleIcon = (role) => {
-    const { icon: Icon } = getRoleLabel(role);
-    return <Icon className="h-4 w-4" />;
-  };
-
   // Filter users based on search term and role filter
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phone?.includes(searchTerm);
-    
-    const matchesRole = roleFilter === 'all' || user.role.toString() === roleFilter;
-    
-    return matchesSearch && matchesRole;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const filteredUsers = useMemo(
+    () => filterUsers(users, searchTerm, roleFilter),
+    [users, searchTerm, roleFilter]
+  );
 
   // Reset to first page when search or filter changes
   useEffect(() => {
@@ -119,12 +48,33 @@ const Users = () => {
   }, [searchTerm, roleFilter]);
 
   // Get user statistics
-  const userStats = {
-    total: users.length,
-    users: users.filter(u => u.role === 0).length,
-    admins: users.filter(u => u.role === 1).length,
-    superAdmins: users.filter(u => u.role === 2).length
-  };
+  const userStats = useMemo(() => getUserStats(users), [users]);
+
+  // Pagination calculations
+  const totalPages = useMemo(
+    () => Math.ceil(filteredUsers.length / itemsPerPage),
+    [filteredUsers.length, itemsPerPage]
+  );
+  
+  const startIndex = useMemo(
+    () => (currentPage - 1) * itemsPerPage,
+    [currentPage, itemsPerPage]
+  );
+  
+  const endIndex = useMemo(
+    () => startIndex + itemsPerPage,
+    [startIndex, itemsPerPage]
+  );
+  
+  const paginatedUsers = useMemo(
+    () => filteredUsers.slice(startIndex, endIndex),
+    [filteredUsers, startIndex, endIndex]
+  );
+  
+  const pageNumbers = useMemo(
+    () => getPageNumbers(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
 
   // Pagination handlers
   const handlePageChange = (page) => {
@@ -135,46 +85,6 @@ const Users = () => {
     setItemsPerPage(parseInt(value));
     setCurrentPage(1);
   };
-
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
-        }
-      } else {
-        pages.push(1);
-        pages.push('...');
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
-        }
-        pages.push('...');
-        pages.push(totalPages);
-      }
-    }
-    
-    return pages;
-  };
-
-  useEffect(() => {
-    getAllUsers();
-  }, []);
 
   if (loading) {
     return (
@@ -202,7 +112,7 @@ const Users = () => {
               </div>
             </div>
             <Button 
-              onClick={getAllUsers} 
+              onClick={fetchUsers} 
               variant="outline" 
               size="sm"
               className="border-gray-300 hover:bg-gray-50 text-gray-700"
@@ -474,7 +384,7 @@ const Users = () => {
                 </Button>
 
                 <div className="flex items-center gap-1">
-                  {getPageNumbers().map((page, index) => (
+                  {pageNumbers.map((page, index) => (
                     <button
                       key={index}
                       onClick={() => typeof page === 'number' && handlePageChange(page)}
