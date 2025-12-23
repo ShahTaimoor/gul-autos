@@ -67,7 +67,7 @@ const getProductsQuerySchema = Joi.object({
     Joi.number().integer().min(1),
     Joi.string().valid('all')
   ).optional(),
-  stockFilter: Joi.string().valid('active', 'out-of-stock', 'low-stock').optional(),
+  stockFilter: Joi.string().valid('active', 'out-of-stock', 'low-stock', 'all').optional(),
   sortBy: Joi.string().valid('az', 'za', 'price-low', 'price-high', 'newest', 'oldest', 'stock-high', 'stock-low', 'relevance').optional()
 });
 
