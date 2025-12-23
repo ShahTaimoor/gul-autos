@@ -712,7 +712,7 @@ const ProductList = () => {
 
       {/* Pagination */}
       {displayPagination.totalPages > 1 && (
-        <div className="px-2 sm:px-0 mt-6 mb-4">
+        <div className="px-2 sm:px-0 mt-6 mb-0 lg:mb-4">
           <Pagination
             currentPage={displayPagination.page || 1}
             totalPages={displayPagination.totalPages || 1}

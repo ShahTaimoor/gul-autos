@@ -4,7 +4,7 @@ const Footer = () => {
   const [hoveredIcon, setHoveredIcon] = useState(null)
 
   return (
-    <footer className="relative overflow-hidden bg-black text-white pb-20 lg:pb-0">
+    <footer className="relative overflow-hidden bg-black text-white pb-20 lg:pb-0 -mt-16 lg:mt-0">
       {/* Modern background effects */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Animated gradient orbs */}
@@ -16,7 +16,7 @@ const Footer = () => {
       {/* Main content */}
       <div className="relative z-10">
         {/* Top section with company info */}
-        <div className="container mx-auto px-4 py-16">
+        <div className="container mx-auto px-4 pt-2 pb-8 lg:pt-8 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
             
             {/* Company Brand Section */}
@@ -135,15 +135,10 @@ const Footer = () => {
         {/* Bottom section */}
         <div className="border-t border-slate-700/50">
           <div className="container mx-auto px-4 py-6">
-            <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex justify-center items-center">
               <p className="text-slate-400 text-sm">
                 © {new Date().getFullYear()} <span className="text-red-500 font-semibold">GULTRADERS</span>. All rights reserved.
               </p>
-              <div className="flex space-x-6 text-sm">
-                <a href="#" className="text-slate-400 hover:text-white transition-colors duration-200">Privacy Policy</a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors duration-200">Terms of Service</a>
-                <a href="#" className="text-slate-400 hover:text-white transition-colors duration-200">Support</a>
-              </div>
             </div>
           </div>
         </div>
