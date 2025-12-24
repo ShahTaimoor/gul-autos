@@ -263,8 +263,7 @@ const OrderData = ({
             fillColor: primaryColor,
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 10,
-            textColor: [255, 255, 255]
+            fontSize: 10
           },
           columnStyles: {
             0: { cellWidth: 15, halign: "center" },
