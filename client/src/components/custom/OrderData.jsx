@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -6,6 +6,7 @@ import { Separator } from "../ui/separator";
 import LazyImage from "../ui/LazyImage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { imageService } from "@/services/imageService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,9 +48,11 @@ const OrderData = ({
   user,
   hideStatus = false,
   hideCOD = false,
+  hideDownload = false,
   onDelete,
   _id,
 }) => {
+  const [downloading, setDownloading] = useState(false);
 
   const statusColors = {
     Pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -61,94 +64,145 @@ const OrderData = ({
     Completed: CheckCircle,
   };
 
-  const handleDownloadInvoice = () => {
+  const getImageBase64 = async (url) => {
+    try {
+      const blob = await imageService.fetchImageBlob(url);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    setDownloading(true);
     try {
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
 
-      // Styles
-      const primaryColor = [52, 152, 219]; // Admin blue
-      const customerHeaderColor = [100, 100, 100]; // Dark gray
-      const lightGray = [240, 240, 240];
-      const borderColor = [200, 200, 200];
-      const borderWidth = 0.5;
-      const cellPadding = 5;
+      // Styles - TCS Red Theme
+      const primaryColor = [220, 38, 38]; // Red-600 (#DC2626) - Primary brand color
+      const primaryDark = [153, 27, 27]; // Red-800 (#991B1B)
+      const darkGray = [51, 51, 51];
+      const mediumGray = [100, 100, 100];
+      const lightGray = [250, 250, 250];
+      const borderGray = [220, 220, 220];
+      const accentGray = [245, 245, 245];
 
-      // Customer Info
-      const shopName = user?.name || "Shop Name";
-      const orderDate = new Date(createdAt).toLocaleDateString();
-      const cityText = city || "Not specified";
-      const mobileText = phone ? String(phone) : "Not specified";
-      const addressText = address || "Not specified";
-      const maxAddressWidth = 170;
-      const docAddressLines = doc.splitTextToSize(addressText, maxAddressWidth);
-
-      const customerDetails = [
-        [
-          { content: `Order Date: ${orderDate}`, styles: { fontStyle: "bold" } },
-          { content: `Shop Name: ${shopName}`, styles: { fontStyle: "bold" } }
-        ],
-        [
-          { content: `Mobile: ${mobileText}` },
-          { content: `City: ${cityText}` }
-        ],
-        [
-          {
-            content: `Address: ${docAddressLines.join(" ")}`,
-            colSpan: 2,
-            styles: {
-              fillColor: lightGray,
-              textColor: 0,
-              lineColor: borderColor,
-              lineWidth: borderWidth,
-              halign: "left"
-            }
-          }
-        ]
-      ];
-
-      autoTable(doc, {
-        startY: 20,
-        head: [
-          [
-            {
-              content: "Customer Details",
-              colSpan: 2,
-              styles: {
-                fillColor: primaryColor,
-                textColor: 255,
-                halign: 'center',
-                fontStyle: 'bold',
-                lineColor: borderColor,
-                lineWidth: borderWidth
-              }
-            }
-          ]
-        ],
-        body: customerDetails,
-        theme: "grid",
-        styles: {
-          fillColor: 255,
-          textColor: 0,
-          lineColor: borderColor,
-          lineWidth: borderWidth,
-          cellPadding: cellPadding,
-          fontSize: 10
-        },
-        headStyles: {
-          fillColor: primaryColor,
-          textColor: 255,
-          lineColor: borderColor,
-          lineWidth: borderWidth,
-          cellPadding: cellPadding
-        },
-        columnStyles: {
-          0: { cellWidth: 60, halign: 'left' },
-          1: { cellWidth: 'auto', halign: 'left' }
-        },
-        margin: { left: 14, right: 14 },
-        tableLineWidth: borderWidth,
-        tableLineColor: borderColor,
+      // Get shop information (customer who placed the order)
+      const customerInfo = user || {};
+      const shopName = customerInfo.name || "Shop Name";
+      const username = customerInfo.username || "N/A";
+      const cityText = city || "N/A";
+      const phoneText = phone ? String(phone) : "N/A";
+      const addressText = address || "N/A";
+      const orderDate = new Date(createdAt);
+      const formattedDate = orderDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
       });
+      const formattedTime = orderDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      const orderId = _id ? _id.slice(-8).toUpperCase() : 'N/A';
+
+      // Start content from top (no header)
+      let yPos = 15;
+
+      // Shop Information Section - Professional Card Design
+      const infoBoxPadding = 8;
+      
+      // Calculate required height based on actual content
+      const addressLines = doc.splitTextToSize(addressText, contentWidth - 60);
+      const addressHeight = addressLines.length > 1 ? (addressLines.length * 6.5) : 6.5;
+      // Calculate exact height: title area (8+5+8) + 2 data lines (13) + address (height) + minimal bottom padding (3)
+      const infoBoxHeight = 21 + 13 + addressHeight + 3;
+      
+      // Background box with subtle border
+      doc.setFillColor(...lightGray);
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'FD');
+      
+      // Left accent bar
+      doc.setFillColor(...primaryColor);
+      doc.rect(margin, yPos, 4, infoBoxHeight, 'F');
+      
+      // Section Title
+      let currentY = yPos + infoBoxPadding;
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text('SHOP INFORMATION', margin + 10, currentY);
+      
+      // Divider line
+      currentY += 5;
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin + 10, currentY, pageWidth - margin - 10, currentY);
+      
+      currentY += 8;
+      doc.setFontSize(9.5);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      
+      // Two-column layout for information
+      const leftCol = margin + 10;
+      const rightCol = pageWidth / 2 + 5;
+      const lineHeight = 6.5;
+      const labelWidth = 35;
+      const startY = currentY;
+      
+      // First line: Shop Name and Username
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Shop Name:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(shopName, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Username:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(username, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      // Second line: Phone and City
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Phone:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(phoneText, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('City:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(cityText, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      // Third line: Address spans full width
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Address:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(addressLines, leftCol + labelWidth, currentY);
+      
+      yPos += infoBoxHeight + 10;
 
       // Product Table: Admin or Super Admin (role 1 or 2)
       if (Number(user?.role) === 1 || Number(user?.role) === 2) {
@@ -156,9 +210,9 @@ const OrderData = ({
           idx + 1,
           product?.id?.title || "Unnamed Product",
           product?.quantity || 0,
-          product?.id?.price ? ` ${product.id.price}` : "",
+          product?.id?.price ? `Rs. ${product.id.price}` : "",
           product?.quantity && product?.id?.price
-            ? `${product.quantity * product.id.price}`
+            ? `Rs. ${product.quantity * product.id.price}`
             : ""
         ]);
 
@@ -174,86 +228,208 @@ const OrderData = ({
             styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
           },
           {
-            content: `Rs. ${grandTotal}`,
+            content: `Rs. ${grandTotal.toLocaleString()}`,
             styles: { halign: "right", fontStyle: "bold", fillColor: lightGray }
           }
         ]);
 
+        // Section Title for Products
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...primaryColor);
+        doc.text('ORDER ITEMS', margin, yPos - 3);
+        yPos += 5;
+        
         autoTable(doc, {
-          startY: doc.lastAutoTable.finalY + 10,
+          startY: yPos,
           head: [[
-            { content: "ID", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } },
-            { content: "Item", styles: { fillColor: primaryColor, textColor: 255 } },
-            { content: "Qty", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } },
-            { content: "Price", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } },
-            { content: "Total", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } }
+            { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRICE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "TOTAL", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
           ]],
           body: tableBody,
-          theme: "grid",
+          theme: "striped",
           styles: {
-            fontSize: 10,
-            cellPadding: cellPadding,
-            textColor: 0,
-            lineColor: borderColor,
-            lineWidth: borderWidth
+            fontSize: 9.5,
+            cellPadding: 4,
+            textColor: [0, 0, 0],
+            lineColor: borderGray,
+            lineWidth: 0.3,
+            halign: 'left'
           },
           headStyles: {
             fillColor: primaryColor,
-            textColor: 255,
-            fontStyle: 'bold'
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10,
+            textColor: [255, 255, 255]
           },
           columnStyles: {
-            0: { cellWidth: 16, halign: "center" },
-            1: { cellWidth: 93 },
+            0: { cellWidth: 15, halign: "center" },
+            1: { cellWidth: 90 },
             2: { cellWidth: 18, halign: "center" },
-            3: { cellWidth: 25, halign: "center" },
-            4: { cellWidth: 30, halign: "center" }
+            3: { cellWidth: 28, halign: "right" },
+            4: { cellWidth: 32, halign: "right" }
           },
-          margin: { left: 14, right: 14 }
+          margin: { left: margin, right: margin },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255]
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255]
+          }
         });
-      } else {
-        // Product Table: Customer (role 0)
-        const customerTableBody = products.map((product, idx) => [
-          idx + 1,
-          product?.id?.title || "Unnamed Product",
-          product?.quantity || 0
-        ]);
 
+        // Order Summary Box for Admin - Below the table
+        const finalY = doc.lastAutoTable.finalY || yPos + 60;
+        yPos = finalY + 10;
+        
+        const summaryHeight = 25;
+        doc.setFillColor(...accentGray);
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.5);
+        doc.rect(margin, yPos, contentWidth, summaryHeight, 'FD');
+        
+        // Left accent
+        doc.setFillColor(...primaryColor);
+        doc.rect(margin, yPos, 4, summaryHeight, 'F');
+        
+        yPos += 8;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...darkGray);
+        doc.text('Total Amount:', margin + 10, yPos);
+        doc.setFontSize(16);
+        doc.setTextColor(...primaryColor);
+        const totalAmount = price || products.reduce(
+          (sum, p) => sum + ((p?.quantity || 0) * (p?.id?.price || 0)),
+          0
+        );
+        doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+      } else {
+        // Product Table: Customer (role 0) - with images, no price/total
+        const customerTableBody = await Promise.all(
+          products.map(async (product, idx) => {
+            const imgUrl = product?.id?.picture?.secure_url || "/placeholder-product.jpg";
+            let imgData = "";
+            try {
+              imgData = await getImageBase64(imgUrl);
+            } catch {
+              imgData = ""; // fallback if image fails
+            }
+            return [
+              { content: "", img: imgData }, // image cell
+              idx + 1,
+              product?.id?.title || "Unnamed Product",
+              product?.quantity || 0
+            ];
+          })
+        );
+
+        // Section Title for Products
+        doc.setFontSize(13);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(...primaryColor);
+        doc.text('ORDER ITEMS', margin, yPos - 3);
+        yPos += 5;
+        
         autoTable(doc, {
-          startY: doc.lastAutoTable.finalY + 10,
+          startY: yPos,
           head: [[
-            { content: "ID", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } },
-            { content: "Product Name", styles: { fillColor: primaryColor, textColor: 255 } },
-            { content: "Quantity", styles: { halign: 'center', fillColor: primaryColor, textColor: 255 } }
+            { content: "IMAGE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+            { content: "QUANTITY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
           ]],
           body: customerTableBody,
-          theme: "grid",
+          theme: "striped",
+          didDrawCell: function (data) {
+            if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
+              doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 3, data.cell.y + 3, 40, 40);
+            }
+          },
           styles: {
-            fontSize: 11,
-            cellPadding: 6,
-            textColor: 0,
-            lineColor: borderColor,
-            lineWidth: borderWidth
+            fontSize: 9.5,
+            cellPadding: 4,
+            textColor: [0, 0, 0],
+            lineColor: borderGray,
+            lineWidth: 0.3,
+            halign: 'left'
           },
           headStyles: {
-            fillColor: customerHeaderColor,
-            textColor: 255,
-            fontStyle: 'bold'
+            fillColor: primaryColor,
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 10
           },
           columnStyles: {
-            0: { cellWidth: 20, halign: "center" },
-            1: { cellWidth: 132 },
-            2: { cellWidth: 30, halign: "center" }
+            0: { cellWidth: 46 }, // Image column
+            1: { cellWidth: 15, halign: "center" }, // ID column
+            2: { cellWidth: 95 }, // Product Name column
+            3: { cellWidth: 26, halign: "center" } // Quantity column
           },
-          margin: { left: 14, right: 14 },
-          tableLineWidth: borderWidth,
-          tableLineColor: borderColor
+          bodyStyles: { 
+            minCellHeight: 46,
+            fillColor: [255, 255, 255],
+            halign: "left" 
+          },
+          margin: { left: margin, right: margin },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255]
+          }
         });
       }
 
-      doc.save(`Order-Invoice-${orderDate}.pdf`);
+      // Professional Footer
+      const finalY = doc.lastAutoTable.finalY || yPos + 60;
+      const footerY = pageHeight - 25;
+      
+      if (finalY < footerY) {
+        // Footer divider line
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.5);
+        doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+        
+        // Footer text
+        doc.setFontSize(8);
+        doc.setTextColor(...mediumGray);
+        doc.setFont(undefined, 'normal');
+        const generatedDate = new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        doc.text(
+          `Generated on ${generatedDate}`,
+          pageWidth / 2,
+          footerY + 3,
+          { align: 'center' }
+        );
+        
+        // Thank you message
+        doc.setFontSize(9);
+        doc.setTextColor(...primaryColor);
+        doc.setFont(undefined, 'bold');
+        doc.text(
+          'Thank you for your order!',
+          pageWidth / 2,
+          footerY + 10,
+          { align: 'center' }
+        );
+      }
+
+      const sanitizedShopName = shopName.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+      const fileName = `${sanitizedShopName}-Invoice-${orderId}.pdf`;
+      doc.save(fileName);
     } catch (error) {
-      // Error generating invoice PDF - user will see error notification if needed
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -286,15 +462,18 @@ const OrderData = ({
               </Badge>
             )}
             
-            <Button 
-              onClick={handleDownloadInvoice} 
-              variant="outline" 
-              size="sm"
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
+            {!hideDownload && (
+              <Button 
+                onClick={handleDownloadInvoice} 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                disabled={downloading}
+              >
+                <Download className="h-4 w-4" />
+                {downloading ? 'Generating...' : 'Download'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -357,15 +536,18 @@ const OrderData = ({
               </AlertDialog>
             )}
             
-            <Button 
-              onClick={handleDownloadInvoice} 
-              variant="outline" 
-              size="sm"
-              className="gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
+            {!hideDownload && (
+              <Button 
+                onClick={handleDownloadInvoice} 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                disabled={downloading}
+              >
+                <Download className="h-4 w-4" />
+                {downloading ? 'Generating...' : 'Download'}
+              </Button>
+            )}
           </div>
         </div>
       </div>

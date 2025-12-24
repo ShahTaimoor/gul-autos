@@ -127,7 +127,7 @@ class OrderService {
           },
           {
             path: 'userId',
-            select: 'name email'
+            select: 'name email username'
           }
         ],
         sort: { createdAt: -1 },
@@ -218,7 +218,7 @@ class OrderService {
         populate: [
           {
             path: 'userId',
-            select: 'name email'
+            select: 'name email username'
           }
         ],
         select: 'amount userId createdAt',

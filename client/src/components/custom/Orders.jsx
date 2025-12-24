@@ -356,47 +356,263 @@ Phone: ${order.phone}
           { content: "", img: imgData }, // image cell
           p.id?.title || "",
           p.quantity || "",
-          p.id?.price ? `Rs. ${p.id.price}` : "",
+          p.id?.price ? `Rs. ${p.id.price.toLocaleString()}` : "Rs. 0",
         ];
       })
     );
 
-    // 2. Create PDF and add table
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'bold');
-    doc.text(user?.name || 'Shop Name', doc.internal.pageSize.getWidth() / 2, 18, { align: 'center' });
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text(`Amount: Rs. ${order.amount}`, 14, 28);
-    doc.text(`Shipping: ${order.address}, ${order.city}, ${order.phone}`, 14, 34);
+    // 2. Get shop information from order (customer who placed the order)
+    // Use order.userId which contains the customer's information
+    const customerInfo = order.userId || {};
+    const shopName = customerInfo.name || 'Shop Name';
+    const username = customerInfo.username || 'N/A';
+    const city = order.city || 'N/A';
+    const address = order.address || 'N/A';
+    const phone = order.phone ? String(order.phone) : 'N/A';
 
-    // 3. Add table with images
+    // 3. Create PDF with professional design
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    // Color scheme - TCS Red Theme
+    const primaryColor = [220, 38, 38]; // Red-600 (#DC2626) - Primary brand color
+    const primaryDark = [153, 27, 27]; // Red-800 (#991B1B)
+    const darkGray = [51, 51, 51];
+    const mediumGray = [100, 100, 100];
+    const lightGray = [250, 250, 250];
+    const borderGray = [220, 220, 220];
+    const accentGray = [245, 245, 245];
+
+    const orderDate = new Date(order.createdAt);
+    const formattedDate = orderDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric'
+    });
+    const formattedTime = orderDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const orderId = order._id.slice(-8).toUpperCase();
+
+    // Start content from top (no header)
+    let yPos = 15;
+
+    // Shop Information Section - Professional Card Design
+    const infoBoxPadding = 8;
+    
+    // Calculate required height based on actual content
+    const addressLines = doc.splitTextToSize(address, contentWidth - 60);
+    const addressHeight = addressLines.length > 1 ? (addressLines.length * 6.5) : 6.5;
+    // Calculate exact height: title area (8+5+8) + 2 data lines (13) + address (height) + minimal bottom padding (3)
+    const infoBoxHeight = 21 + 13 + addressHeight + 3;
+    
+    // Background box with subtle border
+    doc.setFillColor(...lightGray);
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'FD');
+    
+    // Left accent bar
+    doc.setFillColor(...primaryColor);
+    doc.rect(margin, yPos, 4, infoBoxHeight, 'F');
+    
+    // Section Title
+    let currentY = yPos + infoBoxPadding;
+    doc.setTextColor(...primaryColor);
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.text('SHOP INFORMATION', margin + 10, currentY);
+    
+    // Divider line
+    currentY += 5;
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.3);
+    doc.line(margin + 10, currentY, pageWidth - margin - 10, currentY);
+    
+    currentY += 8;
+    doc.setFontSize(9.5);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    
+    // Two-column layout for information
+    const leftCol = margin + 10;
+    const rightCol = pageWidth / 2 + 5;
+    const lineHeight = 6.5;
+    const labelWidth = 35;
+    const startY = currentY;
+    
+    // First line: Shop Name and Username
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...mediumGray);
+    doc.text('Shop Name:', leftCol, currentY);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    doc.text(shopName, leftCol + labelWidth, currentY);
+    
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...mediumGray);
+    doc.text('Username:', rightCol, currentY);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    doc.text(username, rightCol + 30, currentY);
+    currentY += lineHeight;
+    
+    // Second line: Phone and City
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...mediumGray);
+    doc.text('Phone:', leftCol, currentY);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    doc.text(phone, leftCol + labelWidth, currentY);
+    
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...mediumGray);
+    doc.text('City:', rightCol, currentY);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    doc.text(city, rightCol + 30, currentY);
+    currentY += lineHeight;
+    
+    // Third line: Address spans full width
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...mediumGray);
+    doc.text('Address:', leftCol, currentY);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(...darkGray);
+    doc.text(addressLines, leftCol + labelWidth, currentY);
+    
+    yPos += infoBoxHeight + 10;
+
+    // 4. Add table with images - Professional Design
+    // Section Title for Products
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...primaryColor);
+    doc.text('ORDER ITEMS', margin, yPos - 3);
+    yPos += 5;
+    
     autoTable(doc, {
-      startY: 40,
-      head: [["Image", "Title", "Qty", "Price"]],
+      startY: yPos,
+      head: [[
+        { content: "IMAGE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+        { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+        { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+        { content: "PRICE", styles: { halign: 'right', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
+      ]],
       body: tableRows,
+      theme: "striped",
       didDrawCell: function (data) {
         if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
-          doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 2, data.cell.y + 2, 45, 45);
+          doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 3, data.cell.y + 3, 40, 40);
         }
       },
       columnStyles: {
-        0: { cellWidth: 49 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 20, halign: "left" },
-        3: { cellWidth: 30, halign: "left" },
+        0: { cellWidth: 42 }, // Image column
+        1: { cellWidth: 90 }, // Product Name column
+        2: { cellWidth: 18, halign: "center" }, // Quantity column
+        3: { cellWidth: 42, halign: "right" }, // Price column - increased width
       },
-      styles: { valign: "middle", fontSize: 10, cellPadding: 2, textColor: [0,0,0], halign: "left" },
-      headStyles: { fillColor: [255,255,255], textColor: [0,0,0], fontStyle: 'bold', halign: "left" },
-      bodyStyles: { minCellHeight: 49, halign: "left" },
-      theme: 'grid',
+      styles: { 
+        valign: "middle", 
+        fontSize: 9.5, 
+        cellPadding: 4, 
+        textColor: [0,0,0], 
+        halign: "left",
+        lineColor: borderGray,
+        lineWidth: 0.3
+      },
+      headStyles: { 
+        fillColor: primaryColor, 
+        textColor: [255,255,255], 
+        fontStyle: 'bold', 
+        fontSize: 10,
+        halign: "left" 
+      },
+      bodyStyles: { 
+        minCellHeight: 46, 
+        halign: "left",
+        fillColor: [255, 255, 255]
+      },
+      margin: { left: margin, right: margin },
+      alternateRowStyles: {
+        fillColor: [255, 255, 255]
+      }
     });
 
-    // 4. Share or download PDF
+    // Order Summary Box - Professional Design (Below the table)
+    const tableFinalY = doc.lastAutoTable.finalY || yPos + 60;
+    yPos = tableFinalY + 10;
+    
+    const summaryHeight = 25;
+    doc.setFillColor(...accentGray);
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPos, contentWidth, summaryHeight, 'FD');
+    
+    // Left accent
+    doc.setFillColor(...primaryColor);
+    doc.rect(margin, yPos, 4, summaryHeight, 'F');
+    
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(...darkGray);
+    doc.text('Total Amount:', margin + 10, yPos);
+    doc.setFontSize(16);
+    doc.setTextColor(...primaryColor);
+    doc.text(`Rs. ${order.amount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+
+    // Professional Footer
+    const finalY = yPos + summaryHeight;
+    const footerY = pageHeight - 25;
+    
+    if (finalY < footerY) {
+      // Footer divider line
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.5);
+      doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+      
+      // Footer text
+      doc.setFontSize(8);
+      doc.setTextColor(...mediumGray);
+      doc.setFont(undefined, 'normal');
+      const generatedDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      doc.text(
+        `Generated on ${generatedDate}`,
+        pageWidth / 2,
+        footerY + 3,
+        { align: 'center' }
+      );
+      
+      // Thank you message
+      doc.setFontSize(9);
+      doc.setTextColor(...primaryColor);
+      doc.setFont(undefined, 'bold');
+      doc.text(
+        'Thank you for your order!',
+        pageWidth / 2,
+        footerY + 10,
+        { align: 'center' }
+      );
+    }
+
+    // 5. Create filename with shop name (sanitize for filename)
+    const sanitizedShopName = shopName.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+    const fileName = `${sanitizedShopName}-Order-${order._id.slice(-6)}.pdf`;
+
+    // 6. Share or download PDF
     const pdfBlob = doc.output("blob");
-    const pdfFile = new File([pdfBlob], `Order-${order._id.slice(-6)}.pdf`, { type: "application/pdf" });
+    const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
     if (!download && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
       try {
@@ -414,7 +630,7 @@ Phone: ${order.phone}
     const url = URL.createObjectURL(pdfBlob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Order-${order._id.slice(-6)}.pdf`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -885,7 +1101,9 @@ Phone: ${order.phone}
                                 packerName={selectedOrder.packerName}
                                 hideStatus={true}
                                 hideCOD={true}
-                                user={user}
+                                hideDownload={true}
+                                user={selectedOrder.userId || selectedOrder.user || user}
+                                _id={selectedOrder._id}
                               />
                             </div>
                           )}
