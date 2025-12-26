@@ -5,11 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import OrderData from '@/components/custom/OrderData';
 import { fetchOrders, deleteOrder } from '@/redux/slices/order/orderSlice';
-
-// Helper to get today date in 'yyyy-mm-dd' format for Pakistan timezone
-const getPakistaniDate = () => {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
-};
+import { getPakistaniDate } from '@/utils/orderHelpers';
 
 const MyOrders = () => {
   const dispatch = useDispatch();

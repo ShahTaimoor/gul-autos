@@ -6,7 +6,6 @@ import { Separator } from "../ui/separator";
 import LazyImage from "../ui/LazyImage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { imageService } from "@/services/imageService";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,13 +25,13 @@ import {
   Download,
   User,
   ShoppingBag,
-  CheckCircle,
-  Clock,
   AlertCircle,
   Building,
   Truck,
-  Trash2
+  Trash2,
+  CheckCircle
 } from "lucide-react";
+import { statusColors, statusIcons } from "@/utils/orderHelpers";
 
 
 const OrderData = ({
@@ -53,30 +52,6 @@ const OrderData = ({
   _id,
 }) => {
   const [downloading, setDownloading] = useState(false);
-
-  const statusColors = {
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-
-  const statusIcons = {
-    Pending: Clock,
-    Completed: CheckCircle,
-  };
-
-  const getImageBase64 = async (url) => {
-    try {
-      const blob = await imageService.fetchImageBlob(url);
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      return '';
-    }
-  };
 
   const handleDownloadInvoice = async () => {
     setDownloading(true);
@@ -308,24 +283,12 @@ const OrderData = ({
         );
         doc.text(`Rs. ${totalAmount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
       } else {
-        // Product Table: Customer (role 0) - with images, no price/total
-        const customerTableBody = await Promise.all(
-          products.map(async (product, idx) => {
-            const imgUrl = product?.id?.picture?.secure_url || "/placeholder-product.jpg";
-            let imgData = "";
-            try {
-              imgData = await getImageBase64(imgUrl);
-            } catch {
-              imgData = ""; // fallback if image fails
-            }
-            return [
-              { content: "", img: imgData }, // image cell
-              idx + 1,
-              product?.id?.title || "Unnamed Product",
-              product?.quantity || 0
-            ];
-          })
-        );
+        // Product Table: Customer (role 0) - no images, no price/total
+        const customerTableBody = products.map((product, idx) => [
+          idx + 1,
+          product?.id?.title || "Unnamed Product",
+          product?.quantity || 0
+        ]);
 
         // Section Title for Products
         doc.setFontSize(13);
@@ -337,18 +300,12 @@ const OrderData = ({
         autoTable(doc, {
           startY: yPos,
           head: [[
-            { content: "IMAGE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
             { content: "#", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
             { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
             { content: "QUANTITY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
           ]],
           body: customerTableBody,
           theme: "striped",
-          didDrawCell: function (data) {
-            if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
-              doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 3, data.cell.y + 3, 40, 40);
-            }
-          },
           styles: {
             fontSize: 9.5,
             cellPadding: 4,
@@ -364,13 +321,11 @@ const OrderData = ({
             fontSize: 10
           },
           columnStyles: {
-            0: { cellWidth: 46 }, // Image column
-            1: { cellWidth: 15, halign: "center" }, // ID column
-            2: { cellWidth: 95 }, // Product Name column
-            3: { cellWidth: 26, halign: "center" } // Quantity column
+            0: { cellWidth: 15, halign: "center" }, // ID column
+            1: { cellWidth: 140 }, // Product Name column
+            2: { cellWidth: 35, halign: "center" } // Quantity column
           },
           bodyStyles: { 
-            minCellHeight: 46,
             fillColor: [255, 255, 255],
             halign: "left" 
           },

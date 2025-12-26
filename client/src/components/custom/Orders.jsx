@@ -39,8 +39,6 @@ import {
   Trash2, 
   Filter,
   Eye,
-  Clock,
-  CheckCircle,
   Package,
   User,
   MapPin,
@@ -53,12 +51,15 @@ import {
   Grid3X3,
   List as ListIcon,
   BarChart3,
-  Search
+  Search,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { imageService } from '@/services/imageService';
 import { getViewModeButtonClassName, getPaginationButtonClassName } from '@/utils/classNameHelpers';
+import { getPakistaniDate, getImageBase64, statusColors, statusIcons } from '@/utils/orderHelpers';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,10 +81,6 @@ function capitalizeFirst(str) {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-
-const getPakistaniDate = () => {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Karachi' });
-};
 
 const Orders = () => {
   const dispatch = useDispatch();
@@ -116,30 +113,6 @@ const Orders = () => {
       dispatch(fetchOrdersAdmin({ page, limit, status: statusFilter }));
     }
   });
-
-  const statusColors = {
-    Pending: 'bg-amber-50 text-amber-700 border-amber-200',
-    Completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-
-  const statusIcons = {
-    Pending: Clock,
-    Completed: CheckCircle,
-  };
-
-  const getImageBase64 = async (url) => {
-    try {
-      const blob = await imageService.fetchImageBlob(url);
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      return '';
-    }
-  };
 
   const handlePackerNameChange = (orderId, name) => {
     setPackerNames((prev) => ({
@@ -339,6 +312,235 @@ Phone: ${order.phone}
     setPdfLoading(true);
     await handleSharePDF(order, { download: true });
     setPdfLoading(false);
+  };
+
+  const handleDownloadInvoice = async (order) => {
+    setPdfLoading(true);
+    try {
+      // 1. Prepare table data WITHOUT images
+      const tableRows = order.products.map((p) => [
+        p.id?.title || "",
+        p.quantity || "",
+        p.id?.price ? `Rs. ${p.id.price.toLocaleString()}` : "Rs. 0",
+      ]);
+
+      // 2. Get shop information from order (customer who placed the order)
+      const customerInfo = order.userId || {};
+      const shopName = customerInfo.name || 'Shop Name';
+      const username = customerInfo.username || 'N/A';
+      const city = order.city || 'N/A';
+      const address = order.address || 'N/A';
+      const phone = order.phone ? String(order.phone) : 'N/A';
+
+      // 3. Create PDF with professional design
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Color scheme - TCS Red Theme
+      const primaryColor = [220, 38, 38]; // Red-600 (#DC2626) - Primary brand color
+      const darkGray = [51, 51, 51];
+      const mediumGray = [100, 100, 100];
+      const lightGray = [250, 250, 250];
+      const borderGray = [220, 220, 220];
+      const accentGray = [245, 245, 245];
+
+      const orderDate = new Date(order.createdAt);
+      const orderId = order._id.slice(-8).toUpperCase();
+
+      // Start content from top
+      let yPos = 15;
+
+      // Shop Information Section
+      const infoBoxPadding = 8;
+      const addressLines = doc.splitTextToSize(address, contentWidth - 60);
+      const addressHeight = addressLines.length > 1 ? (addressLines.length * 6.5) : 6.5;
+      const infoBoxHeight = 21 + 13 + addressHeight + 3;
+      
+      doc.setFillColor(...lightGray);
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'FD');
+      
+      doc.setFillColor(...primaryColor);
+      doc.rect(margin, yPos, 4, infoBoxHeight, 'F');
+      
+      let currentY = yPos + infoBoxPadding;
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text('SHOP INFORMATION', margin + 10, currentY);
+      
+      currentY += 5;
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin + 10, currentY, pageWidth - margin - 10, currentY);
+      
+      currentY += 8;
+      doc.setFontSize(9.5);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      
+      const leftCol = margin + 10;
+      const rightCol = pageWidth / 2 + 5;
+      const lineHeight = 6.5;
+      const labelWidth = 35;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Shop Name:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(shopName, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Username:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(username, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Phone:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(phone, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('City:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(city, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Address:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(addressLines, leftCol + labelWidth, currentY);
+      
+      yPos += infoBoxHeight + 10;
+
+      // Product Table WITHOUT images
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...primaryColor);
+      doc.text('ORDER ITEMS', margin, yPos - 3);
+      yPos += 5;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+          { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+          { content: "PRICE", styles: { halign: 'right', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
+        ]],
+        body: tableRows,
+        theme: "striped",
+        columnStyles: {
+          0: { halign: "left" }, // Product Name column - auto width, left aligned
+          1: { cellWidth: 25, halign: "center" }, // Quantity column - fixed width for numbers
+          2: { cellWidth: 40, halign: "right" }, // Price column - fixed width for prices
+        },
+        styles: { 
+          fontSize: 9.5, 
+          cellPadding: 5, 
+          textColor: [0,0,0], 
+          halign: "left",
+          lineColor: borderGray,
+          lineWidth: 0.3
+        },
+        headStyles: { 
+          fillColor: primaryColor, 
+          textColor: [255,255,255], 
+          fontStyle: 'bold', 
+          fontSize: 10
+        },
+        bodyStyles: { 
+          halign: "left",
+          fillColor: [255, 255, 255],
+          cellPadding: 5
+        },
+        margin: { left: margin, right: margin },
+        alternateRowStyles: {
+          fillColor: [255, 255, 255]
+        }
+      });
+
+      // Order Summary Box
+      const tableFinalY = doc.lastAutoTable.finalY || yPos + 60;
+      yPos = tableFinalY + 10;
+      
+      const summaryHeight = 25;
+      doc.setFillColor(...accentGray);
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, yPos, contentWidth, summaryHeight, 'FD');
+      
+      doc.setFillColor(...primaryColor);
+      doc.rect(margin, yPos, 4, summaryHeight, 'F');
+      
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...darkGray);
+      doc.text('Total Amount:', margin + 10, yPos);
+      doc.setFontSize(16);
+      doc.setTextColor(...primaryColor);
+      doc.text(`Rs. ${order.amount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+
+      // Footer
+      const finalY = yPos + summaryHeight;
+      const footerY = pageHeight - 25;
+      
+      if (finalY < footerY) {
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.5);
+        doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+        
+        doc.setFontSize(8);
+        doc.setTextColor(...mediumGray);
+        doc.setFont(undefined, 'normal');
+        const generatedDate = new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        doc.text(
+          `Generated on ${generatedDate}`,
+          pageWidth / 2,
+          footerY + 3,
+          { align: 'center' }
+        );
+        
+        doc.setFontSize(9);
+        doc.setTextColor(...primaryColor);
+        doc.setFont(undefined, 'bold');
+        doc.text(
+          'Thank you for your order!',
+          pageWidth / 2,
+          footerY + 10,
+          { align: 'center' }
+        );
+      }
+
+      const sanitizedShopName = shopName.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+      const fileName = `${sanitizedShopName}-Invoice-${orderId}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast.error('Failed to generate invoice. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   const handleSharePDF = async (order, { download = false } = {}) => {
@@ -1069,26 +1271,38 @@ Phone: ${order.phone}
 
                           {selectedOrder && (
                             <div className="space-y-6 pt-4">
-                              <div className="flex justify-end gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleShare(selectedOrder)}
-                                  className="gap-2 border-gray-300"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                  Share
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePdfClick(selectedOrder)}
-                                  className="gap-2 border-gray-300"
-                                  disabled={pdfLoading}
-                                >
-                                  <FileDown className="w-4 h-4" />
-                                  Download PDF
-                                </Button>
+                              <div className="flex justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon" className="h-9 w-9 border-gray-300">
+                                      <MoreVertical className="h-4 w-4 text-gray-500" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => handleShare(selectedOrder)}>
+                                      <Share2 className="mr-2 h-4 w-4 text-gray-500" />
+                                      Share
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuLabel>Download</DropdownMenuLabel>
+                                    <DropdownMenuItem 
+                                      onClick={() => handlePdfClick(selectedOrder)}
+                                      disabled={pdfLoading}
+                                    >
+                                      <FileDown className="mr-2 h-4 w-4 text-gray-500" />
+                                      {pdfLoading ? 'Generating...' : 'Download PDF (with images)'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleDownloadInvoice(selectedOrder)}
+                                      disabled={pdfLoading}
+                                    >
+                                      <FileDown className="mr-2 h-4 w-4 text-gray-500" />
+                                      {pdfLoading ? 'Generating...' : 'Download Invoice (no images)'}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
 
                               <OrderData
