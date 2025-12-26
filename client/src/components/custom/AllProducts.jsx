@@ -105,6 +105,7 @@ const AllProducts = () => {
   const [excelFile, setExcelFile] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [isUpdatingPrice, setIsUpdatingPrice] = useState(false);
+  const [isUpdatingFeatured, setIsUpdatingFeatured] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedProductFromSearch, setSelectedProductFromSearch] = useState(null);
@@ -724,6 +725,41 @@ const AllProducts = () => {
     }
   }, [dispatch, editingStockValue, currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery]);
 
+  // Handle toggle featured status
+  const handleToggleFeatured = useCallback(async (product) => {
+    setIsUpdatingFeatured(true);
+    try {
+      const formDataObj = new FormData();
+      formDataObj.append('isFeatured', !product.isFeatured);
+
+      await dispatch(updateSingleProduct({ 
+        id: product._id, 
+        inputValues: formDataObj 
+      })).unwrap();
+      
+      // Refresh products list
+      const currentPage = pagination.currentPage;
+      await dispatch(fetchProducts({ 
+        category, 
+        page: currentPage, 
+        limit, 
+        stockFilter,
+        sortBy
+      }));
+
+      // If in search mode, also refresh search results
+      if (hasSearched && searchQuery) {
+        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
+      }
+
+      toast.success(`Product ${!product.isFeatured ? 'marked as featured' : 'unmarked as featured'} successfully!`);
+    } catch (error) {
+      toast.error(error || 'Failed to update featured status');
+    } finally {
+      setIsUpdatingFeatured(false);
+    }
+  }, [dispatch, pagination.currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery, toast]);
+
   const handleLimitChange = useCallback((value) => {
     const newLimit = parseInt(value, 10);
     if (!Number.isNaN(newLimit)) {
@@ -1197,7 +1233,7 @@ const AllProducts = () => {
                 {/* Product Info */}
                 <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-4 space-y-3'}`}>
                   <div className="space-y-1">
-                    <h3 className="font-medium text-sm text-gray-900 line-clamp-2">
+                    <h3 className="font-medium text-sm text-gray-900">
                       {product.title}
                     </h3>
                     
@@ -1331,6 +1367,29 @@ const AllProducts = () => {
                           </div>
                         )}
                       </div>
+                    </div>
+                    {/* Featured Checkbox */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <input
+                        type="checkbox"
+                        id={`featured-${product._id}`}
+                        checked={product.isFeatured || false}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleToggleFeatured(product);
+                        }}
+                        disabled={isUpdatingFeatured}
+                        className="h-4 w-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={product.isFeatured ? 'Unmark as featured' : 'Mark as featured'}
+                      />
+                      <Label 
+                        htmlFor={`featured-${product._id}`} 
+                        className="text-xs text-gray-600 font-medium cursor-pointer flex items-center gap-1"
+                        title={product.isFeatured ? 'Unmark as featured' : 'Mark as featured'}
+                      >
+                        <Star className={`h-3.5 w-3.5 ${product.isFeatured ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
+                        <span className="hidden sm:inline">Featured</span>
+                      </Label>
                     </div>
                   </div>
 

@@ -9,6 +9,17 @@ import LazyImage from '../ui/LazyImage';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
+ * Capitalize first letter of each word
+ */
+const capitalizeWords = (text) => {
+    if (!text) return text;
+    return text.split(' ').map(word => {
+        if (word.length === 0) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+};
+
+/**
  * Highlight keywords in text
  */
 const highlightKeywords = (text, keywords) => {
@@ -456,11 +467,11 @@ const SearchSuggestions = ({
                     {/* Product Info with Highlighted Keywords */}
                     <div className="flex-1 min-w-0">
                       <h4 className="font-medium text-sm md:text-base text-gray-900 line-clamp-2">
-                        {highlightKeywords(product.title, keywords)}
+                        {highlightKeywords(capitalizeWords(product.title), keywords)}
                       </h4>
                       {product.category?.name && (
                         <p className="text-xs text-gray-500 mt-0.5">
-                          in {highlightKeywords(product.category.name, keywords)}
+                          in {highlightKeywords(capitalizeWords(product.category.name), keywords)}
                         </p>
                       )}
                     </div>
@@ -494,7 +505,7 @@ const SearchSuggestions = ({
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-gray-700 font-medium">
                             <Search className="inline h-3 w-3 mr-2 text-gray-400" />
-                            Category: {highlightKeywords(category, keywords)}
+                            Category: {highlightKeywords(capitalizeWords(category), keywords)}
                           </p>
                         </div>
                       </div>

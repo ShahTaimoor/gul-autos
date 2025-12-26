@@ -187,13 +187,10 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
-        <h3 className={`font-medium line-clamp-3 leading-tight ${
+        <h3 className={`font-medium leading-tight ${
           gridType === 'grid3' ? 'text-sm' : 'text-xs'
         }`}>
-          {product.title.split(' ').slice(0, 10).map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          ).join(' ')}
-          {product.title.split(' ').length > 10 ? '...' : ''}
+          {product.title}
         </h3>
         
         
