@@ -186,7 +186,7 @@ const ProductCard = React.memo(({
 
   return (
     <div
-      className={`border rounded-lg lg:mt-2 overflow-hidden hover:shadow-md transition-shadow flex h-full ${
+      className={`border border-gray-200/80 rounded-xl lg:mt-2 overflow-hidden hover:shadow-2xl hover:shadow-gray-300/30 hover:-translate-y-1 transition-all duration-300 flex h-full bg-white group ${
         gridType === 'grid3' ? 'flex-row items-stretch' : 'flex-col'
       }`}
     >
@@ -199,8 +199,8 @@ const ProductCard = React.memo(({
       >
         {/* Featured Badge */}
         {product.isFeatured && (
-          <Badge className="absolute top-2 left-2 z-10 bg-pink-500 hover:bg-pink-600 text-white font-semibold shadow-lg flex items-center justify-center p-1.5">
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+          <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold shadow-lg shadow-red-500/30 flex items-center justify-center p-2 rounded-lg backdrop-blur-sm">
+            <svg className="h-4 w-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
           </Badge>
@@ -210,7 +210,7 @@ const ProductCard = React.memo(({
           ref={imgRef}
           src={product.image || product.picture?.secure_url || '/logo.jpeg'}
           alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 cursor-pointer"
           onClick={handleImageClick}
           fallback="/logo.jpeg"
           quality={85}
@@ -219,18 +219,19 @@ const ProductCard = React.memo(({
 
 
         <div
-          className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center"
           onClick={handleImageClick}
           aria-label="View product image"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-8 w-8 text-white"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
+          <div className="bg-white/20 backdrop-blur-sm rounded-full p-3 transform group-hover:scale-110 transition-transform duration-300">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-white drop-shadow-lg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -241,31 +242,31 @@ const ProductCard = React.memo(({
               strokeLinejoin="round"
               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
             />
-          </svg>
+            </svg>
+          </div>
         </div>
       </div>
 
       <div
-        className={`p-3 flex flex-col flex-grow ${
+        className={`p-4 flex flex-col flex-grow ${
           gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
-        <h3 className={`font-medium leading-tight ${
-          gridType === 'grid3' ? 'text-sm' : 'text-xs'
+        <h3 className={`font-semibold leading-snug mb-3 line-clamp-2 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
+          gridType === 'grid3' ? 'text-sm' : 'text-sm'
         }`}>
           {product.title}
         </h3>
         
-        
         <div className="flex-grow" />
 
-        <div className={`flex flex-row gap-2 ${
-          gridType === 'grid3' ? 'mt-3' : 'mt-2'
+        <div className={`flex flex-row gap-2.5 ${
+          gridType === 'grid3' ? 'mt-3' : 'mt-auto'
         }`}>
           {/* Quantity Controls - 63% mobile, 50% desktop (same width as button) */}
           <div className="flex items-center justify-center w-[63%] lg:w-1/2">
             <div 
-              className="flex w-full items-stretch h-10 sm:h-9 bg-white/40 backdrop-blur-md shadow-md border border-white/30 rounded-full overflow-hidden"
+              className="flex w-full items-stretch h-10 sm:h-9 bg-gray-50 border border-gray-200/60 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
               onTouchStart={(e) => {
                 // Prevent scroll when touching the quantity control area
                 if (e.target.tagName === 'BUTTON') {
@@ -294,7 +295,7 @@ const ProductCard = React.memo(({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-base font-semibold text-gray-600 bg-white hover:bg-gray-900 hover:text-white transition-all duration-200 active:scale-95 border-r border-gray-200/60"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -325,7 +326,7 @@ const ProductCard = React.memo(({
                     e.stopPropagation();
                   }
                 }}
-                className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full pointer-events-auto"
+                className="flex-1 min-w-6 text-center bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 text-sm font-semibold text-gray-900 appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full pointer-events-auto"
                 style={{
                   touchAction: 'manipulation'
                 }}
@@ -353,7 +354,7 @@ const ProductCard = React.memo(({
                   e.preventDefault();
                   e.stopPropagation();
                 }}
-                className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
+                className="w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center text-base font-semibold text-gray-600 bg-white hover:bg-gray-900 hover:text-white transition-all duration-200 active:scale-95"
                 style={{
                   touchAction: 'manipulation',
                   WebkitTouchCallout: 'none',
@@ -441,13 +442,13 @@ const ProductCard = React.memo(({
             }}
             onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
-            className={`text-xs cursor-pointer px-2 md:px-3 h-10 sm:h-9 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[37%] lg:w-1/2 ${
+            className={`text-xs font-semibold cursor-pointer px-3 md:px-4 h-10 sm:h-9 rounded-lg transition-all duration-200 shadow-md hover:shadow-xl flex items-center justify-center gap-1.5 md:gap-2 w-[37%] lg:w-1/2 active:scale-[0.98] ${
               isInCart
-                ? 'bg-black hover:bg-gray-800'
+                ? 'bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white shadow-gray-900/20'
                 : isDisabled
-                  ? 'bg-gray-500 cursor-not-allowed'
-                  : 'bg-primary hover:bg-primary/90 hover:shadow-2xl'
-            } text-white`}
+                  ? 'bg-gray-200 cursor-not-allowed text-gray-400 shadow-none'
+                  : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-white hover:scale-[1.02] shadow-primary/30'
+            }`}
             style={{
               touchAction: 'manipulation',
               WebkitTouchCallout: 'none',
