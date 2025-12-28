@@ -79,17 +79,26 @@ const ProductCard = React.memo(({
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
-    // Prevent focus on input and scroll - blur immediately
+    // Blur ALL input elements (including any previously focused ones from other cards)
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
     }
-    if (document.activeElement === quantityInputRef.current) {
-      document.activeElement?.blur();
+    // Blur currently active element if it's an input
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    // Also blur the button itself to prevent focus
+    if (e.target && e.target.blur) {
+      e.target.blur();
     }
     
     // Restore scroll position immediately
     requestAnimationFrame(() => {
       window.scrollTo(scrollX, scrollY);
+      // Ensure no input has focus after scroll restoration
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        document.activeElement.blur();
+      }
     });
     
     const currentQty = parseInt(quantity) || 0;
@@ -108,17 +117,26 @@ const ProductCard = React.memo(({
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
-    // Prevent focus on input and scroll - blur immediately
+    // Blur ALL input elements (including any previously focused ones from other cards)
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
     }
-    if (document.activeElement === quantityInputRef.current) {
-      document.activeElement?.blur();
+    // Blur currently active element if it's an input
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    // Also blur the button itself to prevent focus
+    if (e.target && e.target.blur) {
+      e.target.blur();
     }
     
     // Restore scroll position immediately
     requestAnimationFrame(() => {
       window.scrollTo(scrollX, scrollY);
+      // Ensure no input has focus after scroll restoration
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        document.activeElement.blur();
+      }
     });
     
     const currentQty = parseInt(quantity) || 0;
@@ -238,14 +256,22 @@ const ProductCard = React.memo(({
                   e.preventDefault();
                   e.stopPropagation();
                   
-                  // Prevent input focus immediately
+                  // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
+                  }
+                  // Blur any currently focused input
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
                   }
                   
                   // Restore scroll position
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Ensure no input has focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                 }}
                 onTouchEnd={(e) => {
@@ -257,9 +283,21 @@ const ProductCard = React.memo(({
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
                   
+                  // Blur ALL input elements before handling
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
+                  }
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
+                  }
+                  
                   // Restore scroll position
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Ensure no input has focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                   
                   handleDecrease(e);
@@ -269,9 +307,13 @@ const ProductCard = React.memo(({
                   const scrollY = window.scrollY;
                   const scrollX = window.scrollX;
                   
-                  // Blur input immediately to prevent focus and unwanted scroll
+                  // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
+                  }
+                  // Blur any currently focused input
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
                   }
                   
                   // Prevent default to stop any focus behavior and scroll
@@ -281,6 +323,10 @@ const ProductCard = React.memo(({
                   // Restore scroll position immediately
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Double check - blur any input that might have gotten focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
@@ -340,14 +386,22 @@ const ProductCard = React.memo(({
                   e.preventDefault();
                   e.stopPropagation();
                   
-                  // Prevent input focus immediately
+                  // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
+                  }
+                  // Blur any currently focused input
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
                   }
                   
                   // Restore scroll position
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Ensure no input has focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                 }}
                 onTouchEnd={(e) => {
@@ -359,9 +413,21 @@ const ProductCard = React.memo(({
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
                   
+                  // Blur ALL input elements before handling
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
+                  }
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
+                  }
+                  
                   // Restore scroll position
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Ensure no input has focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                   
                   handleIncrease(e);
@@ -371,9 +437,13 @@ const ProductCard = React.memo(({
                   const scrollY = window.scrollY;
                   const scrollX = window.scrollX;
                   
-                  // Blur input immediately to prevent focus and unwanted scroll
+                  // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
+                  }
+                  // Blur any currently focused input
+                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                    document.activeElement.blur();
                   }
                   
                   // Prevent default to stop any focus behavior and scroll
@@ -383,6 +453,10 @@ const ProductCard = React.memo(({
                   // Restore scroll position immediately
                   setTimeout(() => {
                     window.scrollTo(scrollX, scrollY);
+                    // Double check - blur any input that might have gotten focus
+                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                      document.activeElement.blur();
+                    }
                   }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
