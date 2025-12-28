@@ -70,10 +70,6 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
-    // Save scroll position before any action
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
-    
     // Always prevent default to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
@@ -87,19 +83,6 @@ const ProductCard = React.memo(({
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
       document.activeElement.blur();
     }
-    // Also blur the button itself to prevent focus
-    if (e.target && e.target.blur) {
-      e.target.blur();
-    }
-    
-    // Restore scroll position immediately
-    requestAnimationFrame(() => {
-      window.scrollTo(scrollX, scrollY);
-      // Ensure no input has focus after scroll restoration
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        document.activeElement.blur();
-      }
-    });
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
@@ -108,10 +91,6 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
-    // Save scroll position before any action
-    const scrollY = window.scrollY;
-    const scrollX = window.scrollX;
-    
     // Always prevent default to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
@@ -125,19 +104,6 @@ const ProductCard = React.memo(({
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
       document.activeElement.blur();
     }
-    // Also blur the button itself to prevent focus
-    if (e.target && e.target.blur) {
-      e.target.blur();
-    }
-    
-    // Restore scroll position immediately
-    requestAnimationFrame(() => {
-      window.scrollTo(scrollX, scrollY);
-      // Ensure no input has focus after scroll restoration
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        document.activeElement.blur();
-      }
-    });
     
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
@@ -249,10 +215,6 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleDecrease}
                 onTouchStart={(e) => {
-                  // Save scroll position
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   e.preventDefault();
                   e.stopPropagation();
                   
@@ -264,21 +226,8 @@ const ProductCard = React.memo(({
                   if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
                     document.activeElement.blur();
                   }
-                  
-                  // Restore scroll position
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Ensure no input has focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
                 }}
                 onTouchEnd={(e) => {
-                  // Save scroll position
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
@@ -291,22 +240,9 @@ const ProductCard = React.memo(({
                     document.activeElement.blur();
                   }
                   
-                  // Restore scroll position
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Ensure no input has focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
-                  
                   handleDecrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Save scroll position before any action
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
@@ -316,18 +252,9 @@ const ProductCard = React.memo(({
                     document.activeElement.blur();
                   }
                   
-                  // Prevent default to stop any focus behavior and scroll
+                  // Prevent default to stop any focus behavior
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  // Restore scroll position immediately
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Double check - blur any input that might have gotten focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
@@ -379,10 +306,6 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleIncrease}
                 onTouchStart={(e) => {
-                  // Save scroll position
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   e.preventDefault();
                   e.stopPropagation();
                   
@@ -394,21 +317,8 @@ const ProductCard = React.memo(({
                   if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
                     document.activeElement.blur();
                   }
-                  
-                  // Restore scroll position
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Ensure no input has focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
                 }}
                 onTouchEnd={(e) => {
-                  // Save scroll position
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
@@ -421,22 +331,9 @@ const ProductCard = React.memo(({
                     document.activeElement.blur();
                   }
                   
-                  // Restore scroll position
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Ensure no input has focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
-                  
                   handleIncrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Save scroll position before any action
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
                   // Blur ALL input elements to prevent focus from going to any input
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
@@ -446,18 +343,9 @@ const ProductCard = React.memo(({
                     document.activeElement.blur();
                   }
                   
-                  // Prevent default to stop any focus behavior and scroll
+                  // Prevent default to stop any focus behavior
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  // Restore scroll position immediately
-                  setTimeout(() => {
-                    window.scrollTo(scrollX, scrollY);
-                    // Double check - blur any input that might have gotten focus
-                    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                      document.activeElement.blur();
-                    }
-                  }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
