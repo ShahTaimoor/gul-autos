@@ -70,18 +70,14 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
-    // Always prevent default to stop scrolling and any default button behavior
+    // Always prevent default FIRST to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
-    // Blur ALL input elements (including any previously focused ones from other cards)
-    if (quantityInputRef.current) {
+    // Only blur the current card's input to avoid affecting other cards
+    if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
       quantityInputRef.current.blur();
-    }
-    // Blur currently active element if it's an input
-    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-      document.activeElement.blur();
     }
     
     const currentQty = parseInt(quantity) || 0;
@@ -91,18 +87,14 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
-    // Always prevent default to stop scrolling and any default button behavior
+    // Always prevent default FIRST to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
-    // Blur ALL input elements (including any previously focused ones from other cards)
-    if (quantityInputRef.current) {
+    // Only blur the current card's input to avoid affecting other cards
+    if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
       quantityInputRef.current.blur();
-    }
-    // Blur currently active element if it's an input
-    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-      document.activeElement.blur();
     }
     
     const currentQty = parseInt(quantity) || 0;
@@ -215,44 +207,20 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleDecrease}
                 onTouchStart={(e) => {
+                  // Prevent default FIRST to stop focus behavior and any scroll
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  // Blur ALL input elements to prevent focus from going to any input
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  // Blur any currently focused input
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
                 }}
                 onTouchEnd={(e) => {
+                  // Prevent default FIRST to stop any scroll or focus behavior
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
                   
-                  // Blur ALL input elements before handling
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
-                  
                   handleDecrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Blur ALL input elements to prevent focus from going to any input
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  // Blur any currently focused input
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
-                  
-                  // Prevent default to stop any focus behavior
+                  // Prevent default FIRST to stop focus behavior and any scroll
                   e.preventDefault();
                   e.stopPropagation();
                 }}
@@ -264,6 +232,7 @@ const ProductCard = React.memo(({
                   userSelect: 'none',
                   WebkitTapHighlightColor: 'transparent'
                 }}
+                tabIndex={-1}
                 disabled={currentQuantity <= 0}
                 aria-label="Decrease quantity"
               >
@@ -277,17 +246,8 @@ const ProductCard = React.memo(({
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => {
-                  // Save scroll position
-                  const scrollY = window.scrollY;
-                  const scrollX = window.scrollX;
-                  
-                  // Select text
+                  // Select text when input is directly focused
                   e.target.select();
-                  
-                  // Restore scroll position to prevent unwanted scrolling
-                  requestAnimationFrame(() => {
-                    window.scrollTo(scrollX, scrollY);
-                  });
                 }}
                 onTouchStart={(e) => {
                   // Allow normal input behavior only if directly touching the input
@@ -306,44 +266,20 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleIncrease}
                 onTouchStart={(e) => {
+                  // Prevent default FIRST to stop focus behavior and any scroll
                   e.preventDefault();
                   e.stopPropagation();
-                  
-                  // Blur ALL input elements to prevent focus from going to any input
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  // Blur any currently focused input
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
                 }}
                 onTouchEnd={(e) => {
+                  // Prevent default FIRST to stop any scroll or focus behavior
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
                   
-                  // Blur ALL input elements before handling
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
-                  
                   handleIncrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Blur ALL input elements to prevent focus from going to any input
-                  if (quantityInputRef.current) {
-                    quantityInputRef.current.blur();
-                  }
-                  // Blur any currently focused input
-                  if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                    document.activeElement.blur();
-                  }
-                  
-                  // Prevent default to stop any focus behavior
+                  // Prevent default FIRST to stop focus behavior and any scroll
                   e.preventDefault();
                   e.stopPropagation();
                 }}
@@ -355,6 +291,7 @@ const ProductCard = React.memo(({
                   userSelect: 'none',
                   WebkitTapHighlightColor: 'transparent'
                 }}
+                tabIndex={-1}
                 disabled={currentQuantity >= product.stock}
                 aria-label="Increase quantity"
               >
