@@ -76,12 +76,12 @@ const ProductCard = React.memo(({
     }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
-    // Prevent focus on input and scroll
-    if (e.target) {
-      e.target.blur();
-    }
+    // Prevent focus on input and scroll - blur immediately
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
+    }
+    if (document.activeElement === quantityInputRef.current) {
+      document.activeElement?.blur();
     }
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
@@ -96,12 +96,12 @@ const ProductCard = React.memo(({
     }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
-    // Prevent focus on input and scroll
-    if (e.target) {
-      e.target.blur();
-    }
+    // Prevent focus on input and scroll - blur immediately
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
+    }
+    if (document.activeElement === quantityInputRef.current) {
+      document.activeElement?.blur();
     }
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
@@ -135,11 +135,10 @@ const ProductCard = React.memo(({
       >
         {/* Featured Badge */}
         {product.isFeatured && (
-          <Badge className="absolute top-2 left-2 z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold shadow-lg flex items-center gap-1">
-            <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+          <Badge className="absolute top-2 left-2 z-10 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg flex items-center justify-center p-1.5">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            Featured
           </Badge>
         )}
 
@@ -215,6 +214,10 @@ const ProductCard = React.memo(({
                 onClick={handleDecrease}
                 onTouchStart={(e) => {
                   e.stopPropagation();
+                  // Prevent input focus immediately
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
+                  }
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
@@ -226,10 +229,12 @@ const ProductCard = React.memo(({
                   handleDecrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Prevent focus on mobile to avoid scroll
-                  if (window.innerWidth < 1024) {
-                    e.preventDefault();
+                  // Blur input immediately to prevent focus and unwanted scroll
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
                   }
+                  // Prevent default to stop any focus behavior, but onClick will still fire
+                  e.preventDefault();
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
@@ -253,13 +258,16 @@ const ProductCard = React.memo(({
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onFocus={(e) => e.target.select()}
                 onTouchStart={(e) => {
-                  // Allow normal input behavior
-                  e.stopPropagation();
+                  // Allow normal input behavior only if directly touching the input
+                  if (e.target === quantityInputRef.current) {
+                    e.stopPropagation();
+                  }
                 }}
-                className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full"
+                className="flex-1 min-w-6 text-center bg-transparent focus:outline-none text-xs text-black appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance]:textfield h-full pointer-events-auto"
                 style={{
                   touchAction: 'manipulation'
                 }}
+                tabIndex={0}
               />
 
               <button
@@ -267,6 +275,10 @@ const ProductCard = React.memo(({
                 onClick={handleIncrease}
                 onTouchStart={(e) => {
                   e.stopPropagation();
+                  // Prevent input focus immediately
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
+                  }
                 }}
                 onTouchEnd={(e) => {
                   e.stopPropagation();
@@ -278,10 +290,12 @@ const ProductCard = React.memo(({
                   handleIncrease(e);
                 }}
                 onMouseDown={(e) => {
-                  // Prevent focus on mobile to avoid scroll
-                  if (window.innerWidth < 1024) {
-                    e.preventDefault();
+                  // Blur input immediately to prevent focus and unwanted scroll
+                  if (quantityInputRef.current) {
+                    quantityInputRef.current.blur();
                   }
+                  // Prevent default to stop any focus behavior, but onClick will still fire
+                  e.preventDefault();
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
