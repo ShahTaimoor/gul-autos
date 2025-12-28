@@ -36,6 +36,15 @@ const ProductCard = React.memo(({
     }
     e.stopPropagation();
     
+    // Blur active input to close keyboard on mobile devices
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    // Also blur the quantity input if it's focused
+    if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
+      quantityInputRef.current.blur();
+    }
+    
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
       clickAudioRef.current.play();
@@ -55,6 +64,12 @@ const ProductCard = React.memo(({
     if (e.cancelable) {
       e.preventDefault(); // Prevent click event from firing after touch
     }
+    
+    // Blur active input to close keyboard on mobile devices
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    
     handleAddClick(e);
   }, [handleAddClick]);
 
