@@ -70,10 +70,15 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
+    // Save scroll position before any action
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    
     // Always prevent default to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
+    
     // Prevent focus on input and scroll - blur immediately
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
@@ -81,6 +86,12 @@ const ProductCard = React.memo(({
     if (document.activeElement === quantityInputRef.current) {
       document.activeElement?.blur();
     }
+    
+    // Restore scroll position immediately
+    requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+    });
+    
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.max(currentQty - 1, 0);
     onQuantityChange(product._id, newValue, product.stock);
@@ -88,10 +99,15 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
+    // Save scroll position before any action
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    
     // Always prevent default to stop scrolling and any default button behavior
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
+    
     // Prevent focus on input and scroll - blur immediately
     if (quantityInputRef.current) {
       quantityInputRef.current.blur();
@@ -99,6 +115,12 @@ const ProductCard = React.memo(({
     if (document.activeElement === quantityInputRef.current) {
       document.activeElement?.blur();
     }
+    
+    // Restore scroll position immediately
+    requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+    });
+    
     const currentQty = parseInt(quantity) || 0;
     const newValue = Math.min(currentQty + 1, product.stock);
     onQuantityChange(product._id, newValue, product.stock);
@@ -209,27 +231,57 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleDecrease}
                 onTouchStart={(e) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   e.preventDefault();
                   e.stopPropagation();
+                  
                   // Prevent input focus immediately
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
+                  
+                  // Restore scroll position
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
                 }}
                 onTouchEnd={(e) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
+                  
+                  // Restore scroll position
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
+                  
                   handleDecrease(e);
                 }}
                 onMouseDown={(e) => {
+                  // Save scroll position before any action
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   // Blur input immediately to prevent focus and unwanted scroll
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
+                  
                   // Prevent default to stop any focus behavior and scroll
                   e.preventDefault();
                   e.stopPropagation();
+                  
+                  // Restore scroll position immediately
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
@@ -251,7 +303,19 @@ const ProductCard = React.memo(({
                 max={product.stock}
                 value={quantity === '' ? '' : quantity}
                 onChange={(e) => handleQuantityChange(e.target.value)}
-                onFocus={(e) => e.target.select()}
+                onFocus={(e) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
+                  // Select text
+                  e.target.select();
+                  
+                  // Restore scroll position to prevent unwanted scrolling
+                  requestAnimationFrame(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  });
+                }}
                 onTouchStart={(e) => {
                   // Allow normal input behavior only if directly touching the input
                   if (e.target === quantityInputRef.current) {
@@ -269,27 +333,57 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleIncrease}
                 onTouchStart={(e) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   e.preventDefault();
                   e.stopPropagation();
+                  
                   // Prevent input focus immediately
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
+                  
+                  // Restore scroll position
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
                 }}
                 onTouchEnd={(e) => {
+                  // Save scroll position
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   e.preventDefault();
                   e.stopPropagation();
                   e.stopImmediatePropagation?.();
+                  
+                  // Restore scroll position
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
+                  
                   handleIncrease(e);
                 }}
                 onMouseDown={(e) => {
+                  // Save scroll position before any action
+                  const scrollY = window.scrollY;
+                  const scrollX = window.scrollX;
+                  
                   // Blur input immediately to prevent focus and unwanted scroll
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
+                  
                   // Prevent default to stop any focus behavior and scroll
                   e.preventDefault();
                   e.stopPropagation();
+                  
+                  // Restore scroll position immediately
+                  setTimeout(() => {
+                    window.scrollTo(scrollX, scrollY);
+                  }, 0);
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
