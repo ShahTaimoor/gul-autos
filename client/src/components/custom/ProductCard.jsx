@@ -70,10 +70,8 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
-    // Only prevent default if the event is cancelable (not during scroll)
-    if (e.cancelable !== false) {
-      e.preventDefault();
-    }
+    // Always prevent default to stop scrolling and any default button behavior
+    e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     // Prevent focus on input and scroll - blur immediately
@@ -90,10 +88,8 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
-    // Only prevent default if the event is cancelable (not during scroll)
-    if (e.cancelable !== false) {
-      e.preventDefault();
-    }
+    // Always prevent default to stop scrolling and any default button behavior
+    e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     // Prevent focus on input and scroll - blur immediately
@@ -213,6 +209,7 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleDecrease}
                 onTouchStart={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   // Prevent input focus immediately
                   if (quantityInputRef.current) {
@@ -220,11 +217,8 @@ const ProductCard = React.memo(({
                   }
                 }}
                 onTouchEnd={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
-                  // Only prevent default if the event is cancelable (not during scroll)
-                  if (e.cancelable) {
-                    e.preventDefault(); // Prevent click event and scroll
-                  }
                   e.stopImmediatePropagation?.();
                   handleDecrease(e);
                 }}
@@ -233,8 +227,9 @@ const ProductCard = React.memo(({
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
-                  // Prevent default to stop any focus behavior, but onClick will still fire
+                  // Prevent default to stop any focus behavior and scroll
                   e.preventDefault();
+                  e.stopPropagation();
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-l-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
@@ -274,6 +269,7 @@ const ProductCard = React.memo(({
                 type="button"
                 onClick={handleIncrease}
                 onTouchStart={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
                   // Prevent input focus immediately
                   if (quantityInputRef.current) {
@@ -281,11 +277,8 @@ const ProductCard = React.memo(({
                   }
                 }}
                 onTouchEnd={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
-                  // Only prevent default if the event is cancelable (not during scroll)
-                  if (e.cancelable) {
-                    e.preventDefault(); // Prevent click event and scroll
-                  }
                   e.stopImmediatePropagation?.();
                   handleIncrease(e);
                 }}
@@ -294,8 +287,9 @@ const ProductCard = React.memo(({
                   if (quantityInputRef.current) {
                     quantityInputRef.current.blur();
                   }
-                  // Prevent default to stop any focus behavior, but onClick will still fire
+                  // Prevent default to stop any focus behavior and scroll
                   e.preventDefault();
+                  e.stopPropagation();
                 }}
                 className="w-10 h-10 sm:w-9 sm:h-9 rounded-r-full flex items-center justify-center text-sm font-bold text-gray-800 transition-all duration-200 hover:bg-black/90 hover:text-white hover:shadow"
                 style={{
