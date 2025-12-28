@@ -29,20 +29,44 @@ const ProductCard = React.memo(({
   }, []);
 
   const handleAddClick = useCallback((e) => {
+    // Force close keyboard on mobile devices FIRST
+    // Use a more aggressive approach for iOS/Android
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+      // Method 1: Set readonly temporarily then blur (works on iOS)
+      if (activeElement.tagName === 'INPUT') {
+        const wasReadOnly = activeElement.hasAttribute('readonly');
+        activeElement.setAttribute('readonly', 'readonly');
+        activeElement.blur();
+        // Remove readonly after a short delay
+        setTimeout(() => {
+          if (!wasReadOnly) {
+            activeElement.removeAttribute('readonly');
+          }
+        }, 100);
+      } else {
+        activeElement.blur();
+      }
+    }
+    
+    // Also blur quantity input if it's different from activeElement
+    if (quantityInputRef.current && quantityInputRef.current !== activeElement) {
+      const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
+      quantityInputRef.current.setAttribute('readonly', 'readonly');
+      quantityInputRef.current.blur();
+      setTimeout(() => {
+        if (!wasReadOnly) {
+          quantityInputRef.current.removeAttribute('readonly');
+        }
+      }, 100);
+    }
+    
     // Prevent default behavior and stop propagation for iPhone compatibility
     // Only prevent default if the event is cancelable
     if (e.cancelable !== false) {
       e.preventDefault();
     }
     e.stopPropagation();
-    
-    // Blur active input to close keyboard on mobile devices
-    if (quantityInputRef.current) {
-      quantityInputRef.current.blur();
-    }
-    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-      document.activeElement.blur();
-    }
     
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
@@ -58,12 +82,31 @@ const ProductCard = React.memo(({
   }, []);
 
   const handleTouchEnd = useCallback((e) => {
-    // Force blur inputs FIRST to close keyboard on mobile devices
-    if (quantityInputRef.current) {
-      quantityInputRef.current.blur();
+    // Force close keyboard on mobile devices FIRST using readonly trick
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+      if (activeElement.tagName === 'INPUT') {
+        const wasReadOnly = activeElement.hasAttribute('readonly');
+        activeElement.setAttribute('readonly', 'readonly');
+        activeElement.blur();
+        setTimeout(() => {
+          if (!wasReadOnly) {
+            activeElement.removeAttribute('readonly');
+          }
+        }, 100);
+      } else {
+        activeElement.blur();
+      }
     }
-    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-      document.activeElement.blur();
+    if (quantityInputRef.current && quantityInputRef.current !== activeElement) {
+      const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
+      quantityInputRef.current.setAttribute('readonly', 'readonly');
+      quantityInputRef.current.blur();
+      setTimeout(() => {
+        if (!wasReadOnly) {
+          quantityInputRef.current.removeAttribute('readonly');
+        }
+      }, 100);
     }
     
     e.stopPropagation();
@@ -321,21 +364,51 @@ const ProductCard = React.memo(({
           <button
             onClick={handleAddClick}
             onMouseDown={(e) => {
-              // Blur input FIRST to close keyboard on mobile before click event
-              if (quantityInputRef.current) {
-                quantityInputRef.current.blur();
+              // Force close keyboard using readonly trick (works on iOS/Android)
+              const activeElement = document.activeElement;
+              if (activeElement && activeElement.tagName === 'INPUT') {
+                const wasReadOnly = activeElement.hasAttribute('readonly');
+                activeElement.setAttribute('readonly', 'readonly');
+                activeElement.blur();
+                setTimeout(() => {
+                  if (!wasReadOnly) {
+                    activeElement.removeAttribute('readonly');
+                  }
+                }, 100);
               }
-              if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                document.activeElement.blur();
+              if (quantityInputRef.current && quantityInputRef.current !== activeElement && quantityInputRef.current.tagName === 'INPUT') {
+                const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
+                quantityInputRef.current.setAttribute('readonly', 'readonly');
+                quantityInputRef.current.blur();
+                setTimeout(() => {
+                  if (!wasReadOnly) {
+                    quantityInputRef.current.removeAttribute('readonly');
+                  }
+                }, 100);
               }
             }}
             onTouchStart={(e) => {
-              // Blur input FIRST to close keyboard on mobile
-              if (quantityInputRef.current) {
-                quantityInputRef.current.blur();
+              // Force close keyboard using readonly trick (works on iOS/Android)
+              const activeElement = document.activeElement;
+              if (activeElement && activeElement.tagName === 'INPUT') {
+                const wasReadOnly = activeElement.hasAttribute('readonly');
+                activeElement.setAttribute('readonly', 'readonly');
+                activeElement.blur();
+                setTimeout(() => {
+                  if (!wasReadOnly) {
+                    activeElement.removeAttribute('readonly');
+                  }
+                }, 100);
               }
-              if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-                document.activeElement.blur();
+              if (quantityInputRef.current && quantityInputRef.current !== activeElement && quantityInputRef.current.tagName === 'INPUT') {
+                const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
+                quantityInputRef.current.setAttribute('readonly', 'readonly');
+                quantityInputRef.current.blur();
+                setTimeout(() => {
+                  if (!wasReadOnly) {
+                    quantityInputRef.current.removeAttribute('readonly');
+                  }
+                }, 100);
               }
               handleTouchStart(e);
             }}
