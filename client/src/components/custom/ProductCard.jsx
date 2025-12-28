@@ -16,6 +16,7 @@ const ProductCard = React.memo(({
   const imgRef = useRef(null);
   const clickAudioRef = useRef(null);
   const quantityInputRef = useRef(null);
+  const addToCartButtonRef = useRef(null);
 
   // Initialize audio only once
   useEffect(() => {
@@ -29,44 +30,53 @@ const ProductCard = React.memo(({
   }, []);
 
   const handleAddClick = useCallback((e) => {
-    // Force close keyboard on mobile devices FIRST
-    // Use a more aggressive approach for iOS/Android
-    const activeElement = document.activeElement;
-    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-      // Method 1: Set readonly temporarily then blur (works on iOS)
-      if (activeElement.tagName === 'INPUT') {
-        const wasReadOnly = activeElement.hasAttribute('readonly');
-        activeElement.setAttribute('readonly', 'readonly');
-        activeElement.blur();
-        // Remove readonly after a short delay
-        setTimeout(() => {
-          if (!wasReadOnly) {
-            activeElement.removeAttribute('readonly');
-          }
-        }, 100);
-      } else {
-        activeElement.blur();
-      }
-    }
-    
-    // Also blur quantity input if it's different from activeElement
-    if (quantityInputRef.current && quantityInputRef.current !== activeElement) {
-      const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
-      quantityInputRef.current.setAttribute('readonly', 'readonly');
-      quantityInputRef.current.blur();
-      setTimeout(() => {
-        if (!wasReadOnly) {
-          quantityInputRef.current.removeAttribute('readonly');
-        }
-      }, 100);
-    }
-    
-    // Prevent default behavior and stop propagation for iPhone compatibility
-    // Only prevent default if the event is cancelable
+    // Prevent default FIRST to stop any default behavior
     if (e.cancelable !== false) {
       e.preventDefault();
     }
     e.stopPropagation();
+    
+    // Force close keyboard - multiple methods for maximum compatibility
+    const activeElement = document.activeElement;
+    
+    // Method 1: Focus the button itself (forces keyboard to close)
+    if (e.target && e.target.focus) {
+      e.target.focus();
+      setTimeout(() => {
+        if (e.target.blur) {
+          e.target.blur();
+        }
+      }, 0);
+    }
+    
+    // Method 2: Set readonly and blur (iOS trick)
+    if (quantityInputRef.current) {
+      const input = quantityInputRef.current;
+      const wasReadOnly = input.hasAttribute('readonly');
+      input.setAttribute('readonly', 'readonly');
+      input.blur();
+      setTimeout(() => {
+        if (!wasReadOnly) {
+          input.removeAttribute('readonly');
+        }
+      }, 200);
+    }
+    
+    // Method 3: Blur active element
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+      if (activeElement.tagName === 'INPUT') {
+        const wasReadOnly = activeElement.hasAttribute('readonly');
+        activeElement.setAttribute('readonly', 'readonly');
+        activeElement.blur();
+        setTimeout(() => {
+          if (!wasReadOnly) {
+            activeElement.removeAttribute('readonly');
+          }
+        }, 200);
+      } else {
+        activeElement.blur();
+      }
+    }
     
     if (clickAudioRef.current) {
       clickAudioRef.current.currentTime = 0;
@@ -189,7 +199,7 @@ const ProductCard = React.memo(({
       >
         {/* Featured Badge */}
         {product.isFeatured && (
-          <Badge className="absolute top-2 left-2 z-10 bg-red-500 hover:bg-red-600 text-white font-semibold shadow-lg flex items-center justify-center p-1.5">
+          <Badge className="absolute top-2 left-2 z-10 bg-pink-500 hover:bg-pink-600 text-white font-semibold shadow-lg flex items-center justify-center p-1.5">
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
@@ -362,54 +372,71 @@ const ProductCard = React.memo(({
 
           {/* Add to Cart Button - 37% mobile, 50% desktop (same width as quantity), icon + "Add" text on mobile */}
           <button
-            onClick={handleAddClick}
-            onMouseDown={(e) => {
-              // Force close keyboard using readonly trick (works on iOS/Android)
-              const activeElement = document.activeElement;
-              if (activeElement && activeElement.tagName === 'INPUT') {
-                const wasReadOnly = activeElement.hasAttribute('readonly');
-                activeElement.setAttribute('readonly', 'readonly');
-                activeElement.blur();
+            ref={addToCartButtonRef}
+            onClick={(e) => {
+              // Close keyboard FIRST before handling click
+              if (quantityInputRef.current) {
+                const input = quantityInputRef.current;
+                const wasReadOnly = input.hasAttribute('readonly');
+                input.setAttribute('readonly', 'readonly');
+                input.blur();
                 setTimeout(() => {
                   if (!wasReadOnly) {
-                    activeElement.removeAttribute('readonly');
+                    input.removeAttribute('readonly');
                   }
                 }, 100);
               }
-              if (quantityInputRef.current && quantityInputRef.current !== activeElement && quantityInputRef.current.tagName === 'INPUT') {
-                const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
-                quantityInputRef.current.setAttribute('readonly', 'readonly');
-                quantityInputRef.current.blur();
+              
+              // Focus button to shift focus away from input
+              if (addToCartButtonRef.current) {
+                addToCartButtonRef.current.focus();
+                setTimeout(() => {
+                  if (addToCartButtonRef.current) {
+                    addToCartButtonRef.current.blur();
+                  }
+                }, 0);
+              }
+              
+              handleAddClick(e);
+            }}
+            onMouseDown={(e) => {
+              // Close keyboard immediately when button is pressed (before click)
+              if (quantityInputRef.current) {
+                const input = quantityInputRef.current;
+                const wasReadOnly = input.hasAttribute('readonly');
+                input.setAttribute('readonly', 'readonly');
+                input.blur();
                 setTimeout(() => {
                   if (!wasReadOnly) {
-                    quantityInputRef.current.removeAttribute('readonly');
+                    input.removeAttribute('readonly');
                   }
                 }, 100);
+              }
+              
+              // Focus button to shift focus
+              if (addToCartButtonRef.current) {
+                addToCartButtonRef.current.focus();
               }
             }}
             onTouchStart={(e) => {
-              // Force close keyboard using readonly trick (works on iOS/Android)
-              const activeElement = document.activeElement;
-              if (activeElement && activeElement.tagName === 'INPUT') {
-                const wasReadOnly = activeElement.hasAttribute('readonly');
-                activeElement.setAttribute('readonly', 'readonly');
-                activeElement.blur();
+              // Close keyboard immediately when button is touched (before click)
+              if (quantityInputRef.current) {
+                const input = quantityInputRef.current;
+                const wasReadOnly = input.hasAttribute('readonly');
+                input.setAttribute('readonly', 'readonly');
+                input.blur();
                 setTimeout(() => {
                   if (!wasReadOnly) {
-                    activeElement.removeAttribute('readonly');
+                    input.removeAttribute('readonly');
                   }
                 }, 100);
               }
-              if (quantityInputRef.current && quantityInputRef.current !== activeElement && quantityInputRef.current.tagName === 'INPUT') {
-                const wasReadOnly = quantityInputRef.current.hasAttribute('readonly');
-                quantityInputRef.current.setAttribute('readonly', 'readonly');
-                quantityInputRef.current.blur();
-                setTimeout(() => {
-                  if (!wasReadOnly) {
-                    quantityInputRef.current.removeAttribute('readonly');
-                  }
-                }, 100);
+              
+              // Focus button to shift focus
+              if (addToCartButtonRef.current) {
+                addToCartButtonRef.current.focus();
               }
+              
               handleTouchStart(e);
             }}
             onTouchEnd={handleTouchEnd}
