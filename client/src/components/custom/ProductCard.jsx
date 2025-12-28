@@ -37,12 +37,11 @@ const ProductCard = React.memo(({
     e.stopPropagation();
     
     // Blur active input to close keyboard on mobile devices
+    if (quantityInputRef.current) {
+      quantityInputRef.current.blur();
+    }
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
       document.activeElement.blur();
-    }
-    // Also blur the quantity input if it's focused
-    if (quantityInputRef.current && quantityInputRef.current === document.activeElement) {
-      quantityInputRef.current.blur();
     }
     
     if (clickAudioRef.current) {
@@ -59,15 +58,18 @@ const ProductCard = React.memo(({
   }, []);
 
   const handleTouchEnd = useCallback((e) => {
+    // Force blur inputs FIRST to close keyboard on mobile devices
+    if (quantityInputRef.current) {
+      quantityInputRef.current.blur();
+    }
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+      document.activeElement.blur();
+    }
+    
     e.stopPropagation();
     // Only prevent default if the event is cancelable (not during scroll)
     if (e.cancelable) {
       e.preventDefault(); // Prevent click event from firing after touch
-    }
-    
-    // Blur active input to close keyboard on mobile devices
-    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-      document.activeElement.blur();
     }
     
     handleAddClick(e);
@@ -318,7 +320,25 @@ const ProductCard = React.memo(({
           {/* Add to Cart Button - 37% mobile, 50% desktop (same width as quantity), icon + "Add" text on mobile */}
           <button
             onClick={handleAddClick}
-            onTouchStart={handleTouchStart}
+            onMouseDown={(e) => {
+              // Blur input FIRST to close keyboard on mobile before click event
+              if (quantityInputRef.current) {
+                quantityInputRef.current.blur();
+              }
+              if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                document.activeElement.blur();
+              }
+            }}
+            onTouchStart={(e) => {
+              // Blur input FIRST to close keyboard on mobile
+              if (quantityInputRef.current) {
+                quantityInputRef.current.blur();
+              }
+              if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+                document.activeElement.blur();
+              }
+              handleTouchStart(e);
+            }}
             onTouchEnd={handleTouchEnd}
             disabled={isDisabled}
             className={`text-xs cursor-pointer px-2 md:px-3 h-10 sm:h-9 rounded-full transition-all shadow-lg backdrop-blur-md border border-white/30 flex items-center justify-center gap-1 md:gap-2 w-[37%] lg:w-1/2 ${
