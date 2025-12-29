@@ -381,30 +381,30 @@ const Category = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="mb-4 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Categories</h1>
-              <p className="text-gray-500 mt-2">Manage your product categories and organize your inventory</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Categories</h1>
+              <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">Manage your product categories and organize your inventory</p>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
                   onClick={startAdding} 
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 flex items-center gap-2 px-6 py-2.5 rounded-lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base w-full sm:w-auto"
                 >
-                  <PlusCircle className="h-5 w-5" />
+                  <PlusCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   Add Category
                 </Button>
               </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4 border-b border-gray-100">
-              <DialogTitle className="text-xl font-semibold text-gray-900">
+          <DialogContent className="sm:max-w-[600px] max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+            <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-100">
+              <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
                 {editingCategory ? 'Update Category' : 'Add New Category'}
               </DialogTitle>
-              <DialogDescription className="text-gray-500">
+              <DialogDescription className="text-gray-500 text-xs sm:text-sm">
                 {editingCategory
                   ? 'Edit the selected category details and image'
                   : 'Create a new product category with name and image'}
@@ -414,7 +414,7 @@ const Category = () => {
             <form
               encType="multipart/form-data"
               onSubmit={handleSubmit}
-              className="space-y-6 pt-4"
+              className="space-y-4 sm:space-y-6 pt-3 sm:pt-4"
             >
               <div className="space-y-3">
                 <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -583,14 +583,14 @@ const Category = () => {
                 )}
               </div>
 
-              <DialogFooter className="pt-6 border-t border-gray-100">
-                <div className="flex gap-3 w-full">
+              <DialogFooter className="pt-4 sm:pt-6 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={cancelEditing} 
                     disabled={loading}
-                    className="flex-1 h-11 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className="flex-1 h-10 sm:h-11 border-gray-300 text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
                   >
                     <X className="mr-2 h-4 w-4" />
                     Cancel
@@ -598,12 +598,13 @@ const Category = () => {
                   <Button 
                     type="submit" 
                     disabled={loading}
-                    className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
+                    className="flex-1 h-10 sm:h-11 bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200 text-sm sm:text-base"
                   >
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
-                        {editingCategory ? 'Updating...' : 'Adding...'}
+                        <span className="hidden sm:inline">{editingCategory ? 'Updating...' : 'Adding...'}</span>
+                        <span className="sm:hidden">{editingCategory ? 'Updating' : 'Adding'}</span>
                       </>
                     ) : (
                       <>
@@ -612,7 +613,8 @@ const Category = () => {
                         ) : (
                           <PlusCircle className="mr-2 h-4 w-4" />
                         )}
-                        {editingCategory ? 'Update Category' : 'Add Category'}
+                        <span className="hidden sm:inline">{editingCategory ? 'Update Category' : 'Add Category'}</span>
+                        <span className="sm:hidden">{editingCategory ? 'Update' : 'Add'}</span>
                       </>
                     )}
                   </Button>
@@ -625,17 +627,17 @@ const Category = () => {
         </div>
 
         {/* Search and Filter Controls */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-5 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {/* Search Bar */}
-            <div className="flex-1 max-w-md">
+            <div className="w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search categories..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-10 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-lg"
+                  className="pl-10 pr-10 h-9 sm:h-10 border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 rounded-lg text-sm"
                 />
                 {searchTerm && (
                   <button
@@ -649,64 +651,66 @@ const Category = () => {
             </div>
 
             {/* Filter Controls */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {/* Status Filter */}
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium text-gray-700">Status:</Label>
-                <Select value={activeStatusFilter} onValueChange={setActiveStatusFilter}>
-                  <SelectTrigger className="w-36 h-9 border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="active">Active Only</SelectItem>
-                    <SelectItem value="inactive">Inactive Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={activeStatusFilter} onValueChange={setActiveStatusFilter}>
+                <SelectTrigger className="h-8 sm:h-9 border-gray-300 text-xs sm:text-sm flex-1 sm:flex-initial sm:w-36 overflow-hidden">
+                  <SelectValue>
+                    <span className="truncate block">
+                      {activeStatusFilter === 'all' ? 'All Categories' : activeStatusFilter === 'active' ? 'Active Only' : 'Inactive Only'}
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
 
               {/* Sort By */}
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium text-gray-700">Sort by:</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-32 h-9 border-gray-300">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="position">Position</SelectItem>
-                    <SelectItem value="created">Created</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="h-8 sm:h-9 border-gray-300 text-xs sm:text-sm flex-1 sm:flex-initial sm:w-32 overflow-hidden">
+                  <SelectValue>
+                    <span className="truncate block">
+                      {sortBy === 'name' ? 'Name' : sortBy === 'position' ? 'Position' : 'Created'}
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="position">Position</SelectItem>
+                  <SelectItem value="created">Created</SelectItem>
+                </SelectContent>
+              </Select>
 
               {/* Sort Order */}
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="h-9 px-3 border-gray-300 hover:bg-gray-50"
+                className="h-8 sm:h-9 px-2 sm:px-3 border-gray-300 hover:bg-gray-50 flex-shrink-0"
               >
                 {sortOrder === 'asc' ? '↑' : '↓'}
               </Button>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center border border-gray-300 rounded-lg p-1 bg-gray-50">
+              <div className="flex items-center border border-gray-300 rounded-lg p-0.5 sm:p-1 bg-gray-50 flex-shrink-0">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('grid')}
-                  className={`h-7 px-2 ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`h-7 sm:h-7 px-2 ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                 >
-                  <Grid3X3 className="h-4 w-4" />
+                  <Grid3X3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setViewMode('list')}
-                  className={`h-7 px-2 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`h-7 sm:h-7 px-2 ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                 >
-                  <List className="h-4 w-4" />
+                  <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>
@@ -716,12 +720,12 @@ const Category = () => {
         {/* Main Content */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/30">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Categories</h2>
-                  <p className="text-sm text-gray-500 mt-1">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/30">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Categories</h2>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">
                     {filteredCategories.length} of {categories.length} categories
                     {searchTerm && ` matching "${searchTerm}"`}
                     {activeStatusFilter !== 'all' && ` (${activeStatusFilter === 'active' ? 'Active' : 'Inactive'} only)`}
@@ -732,31 +736,31 @@ const Category = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setSearchTerm('')}
-                    className="text-gray-600 hover:text-gray-900 border-gray-300"
+                    className="text-gray-600 hover:text-gray-900 border-gray-300 h-8 text-xs sm:text-sm w-full sm:w-auto"
                   >
-                    <X className="mr-2 h-4 w-4" />
+                    <X className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Clear Search
                   </Button>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
-                    className="h-5 w-5 border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 sm:h-5 sm:w-5 border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <Label 
                     htmlFor="select-all"
-                    className="text-sm font-medium text-gray-700 cursor-pointer"
+                    className="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer"
                     onClick={() => handleSelectAll(!isAllSelected)}
                   >
                     Select All {filteredCategories.length > 0 && `(${filteredCategories.length})`}
                   </Label>
                 </div>
                 {selectedCategories.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="px-2.5 py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 border-0">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <Badge variant="secondary" className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 text-xs">
                       {selectedCategories.length} selected
                     </Badge>
                     <Button
@@ -764,28 +768,30 @@ const Category = () => {
                       size="sm"
                       onClick={handleBulkActivate}
                       disabled={loading}
-                      className="h-8 px-3 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200"
+                      className="h-7 sm:h-8 px-2 sm:px-3 text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200 text-xs flex-1 sm:flex-initial"
                     >
                       <Power className="h-3 w-3 mr-1" />
-                      Activate Selected
+                      <span className="hidden sm:inline">Activate Selected</span>
+                      <span className="sm:hidden">Activate</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleBulkDeactivate}
                       disabled={loading}
-                      className="h-8 px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+                      className="h-7 sm:h-8 px-2 sm:px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 text-xs flex-1 sm:flex-initial"
                     >
                       <PowerOff className="h-3 w-3 mr-1" />
-                      Deactivate Selected
+                      <span className="hidden sm:inline">Deactivate Selected</span>
+                      <span className="sm:hidden">Deactivate</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setSelectedCategories([])}
-                      className="h-8 px-3 text-gray-600 border-gray-300 hover:bg-gray-50"
+                      className="h-7 sm:h-8 px-2 sm:px-3 text-gray-600 border-gray-300 hover:bg-gray-50 text-xs flex-1 sm:flex-initial"
                     >
-                      Clear Selection
+                      Clear
                     </Button>
                   </div>
                 )}
@@ -794,7 +800,7 @@ const Category = () => {
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {status === 'loading' && (
               <div className="flex justify-center py-12">
                 <div className="text-center">
@@ -836,7 +842,7 @@ const Category = () => {
                 ) : (
                   <>
                     {viewMode === 'grid' ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                         {filteredCategories.map((category, index) => (
                           <div key={category._id} className={`group relative bg-white border rounded-xl hover:shadow-lg transition-all duration-200 overflow-hidden ${selectedCategories.includes(category._id) ? 'border-blue-500 ring-2 ring-blue-50' : 'border-gray-200'}`}>
                             <div className="absolute top-3 left-3 z-10">
@@ -952,81 +958,83 @@ const Category = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-2 sm:space-y-3">
                         {filteredCategories.map((category, index) => (
-                          <div key={category._id} className={`flex items-center p-4 rounded-xl border hover:shadow-md transition-all duration-200 bg-white ${selectedCategories.includes(category._id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-200'}`}>
-                            <div className="flex-shrink-0 mr-4">
-                              <Checkbox
-                                checked={selectedCategories.includes(category._id)}
-                                onCheckedChange={() => handleCategorySelect(category._id)}
-                                className="h-5 w-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                              />
-                            </div>
-                            <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200 mr-4">
-                              <img
-                                src={category.image}
-                                alt={category.name}
-                                className="w-full h-full object-cover"
-                                loading="eager"
-                                crossOrigin="anonymous"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                decoding="async"
-                                fetchPriority="high"
-                                onError={(e) => {
-                                  if (e.target.src !== '/placeholder-image.png') {
-                                    e.target.src = '/placeholder-image.png';
-                                  }
-                                }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-3 mb-1">
-                                <h3 className="font-semibold text-gray-900 truncate text-base">
-                                  {category.name
-                                    .split(' ')
-                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                    .join(' ')
-                                  }
-                                </h3>
-                                <Badge variant="secondary" className="text-xs font-mono bg-gray-100 text-gray-600 border border-gray-200">
-                                  Pos: {category.position || index + 1}
-                                </Badge>
-                                <Badge 
-                                  variant={category.active ? "default" : "outline"} 
-                                  className={`text-xs px-2 py-0.5 border-0 ${category.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
-                                >
-                                  {category.active ? 'Active' : 'Inactive'}
-                                </Badge>
+                          <div key={category._id} className={`flex flex-col sm:flex-row items-stretch sm:items-center p-3 sm:p-4 rounded-xl border hover:shadow-md transition-all duration-200 bg-white gap-3 sm:gap-0 ${selectedCategories.includes(category._id) ? 'border-blue-500 bg-blue-50/30' : 'border-gray-200'}`}>
+                            <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                              <div className="flex-shrink-0">
+                                <Checkbox
+                                  checked={selectedCategories.includes(category._id)}
+                                  onCheckedChange={() => handleCategorySelect(category._id)}
+                                  className="h-4 w-4 sm:h-5 sm:w-5 border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                />
                               </div>
-                              <p className="text-sm text-gray-500 font-mono">{category.slug}</p>
+                              <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-gray-200">
+                                <img
+                                  src={category.image}
+                                  alt={category.name}
+                                  className="w-full h-full object-cover"
+                                  loading="eager"
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer-when-downgrade"
+                                  decoding="async"
+                                  fetchPriority="high"
+                                  onError={(e) => {
+                                    if (e.target.src !== '/placeholder-image.png') {
+                                      e.target.src = '/placeholder-image.png';
+                                    }
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 mb-1">
+                                  <h3 className="font-semibold text-gray-900 truncate text-sm sm:text-base">
+                                    {category.name
+                                      .split(' ')
+                                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                      .join(' ')
+                                    }
+                                  </h3>
+                                  <Badge variant="secondary" className="text-[10px] sm:text-xs font-mono bg-gray-100 text-gray-600 border border-gray-200">
+                                    Pos: {category.position || index + 1}
+                                  </Badge>
+                                  <Badge 
+                                    variant={category.active ? "default" : "outline"} 
+                                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 border-0 ${category.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                                  >
+                                    {category.active ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-500 font-mono truncate">{category.slug}</p>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 ml-4">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => startEditing(category)}
                                 disabled={loading}
-                                className="h-9 px-3 border-gray-200 hover:bg-gray-50 text-gray-700"
+                                className="h-8 sm:h-9 px-2 sm:px-3 border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm flex-1 sm:flex-initial"
                               >
-                                <Edit className="h-4 w-4 mr-1.5" />
-                                Edit
+                                <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" />
+                                <span className="hidden sm:inline">Edit</span>
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleToggleActive(category)}
                                 disabled={loading}
-                                className={`h-9 px-3 border-gray-200 ${category.active ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                                className={`h-8 sm:h-9 px-2 sm:px-3 border-gray-200 text-xs sm:text-sm flex-1 sm:flex-initial ${category.active ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
                               >
                                 {category.active ? (
                                   <>
-                                    <PowerOff className="h-4 w-4 mr-1.5" />
-                                    Deactivate
+                                    <PowerOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Deactivate</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Power className="h-4 w-4 mr-1.5" />
-                                    Activate
+                                    <Power className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Activate</span>
                                   </>
                                 )}
                               </Button>
@@ -1037,10 +1045,10 @@ const Category = () => {
                                     size="sm"
                                     onClick={() => handleDelete(category)}
                                     disabled={loading}
-                                    className="h-9 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-200"
+                                    className="h-8 sm:h-9 px-2 sm:px-3 text-red-600 hover:text-red-700 hover:bg-red-50 border-gray-200 text-xs sm:text-sm flex-1 sm:flex-initial"
                                   >
-                                    <Trash2 className="h-4 w-4 mr-1.5" />
-                                    Delete
+                                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1.5" />
+                                    <span className="hidden sm:inline">Delete</span>
                                   </Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>

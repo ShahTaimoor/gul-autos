@@ -830,18 +830,18 @@ const AllProducts = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl">
         {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
                 Product Management
               </h1>
-              <p className="text-sm text-gray-600 mt-1">Manage your catalog and inventory</p>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Manage your catalog and inventory</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial">
                 <input
                   id="excelFileImport"
                   type="file"
@@ -858,18 +858,20 @@ const AllProducts = () => {
                     }
                   }}
                   variant="outline"
-                  className="h-9 px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-2 text-sm"
+                  className="h-8 sm:h-9 px-2 sm:px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm w-full sm:w-auto"
                   disabled={importLoading}
                 >
                   {importLoading ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Importing...
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="hidden sm:inline">Importing...</span>
+                      <span className="sm:hidden">Importing</span>
                     </>
                   ) : (
                     <>
-                      <UploadIcon className="h-4 w-4" />
-                      Import
+                      <UploadIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Import</span>
+                      <span className="sm:hidden">Import</span>
                     </>
                   )}
                 </Button>
@@ -877,56 +879,57 @@ const AllProducts = () => {
               <Button
                 onClick={handleExportProducts}
                 variant="outline"
-                className="h-9 px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-2 text-sm"
+                className="h-8 sm:h-9 px-2 sm:px-3 border-gray-300 hover:bg-gray-100 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-initial"
               >
-                <Download className="h-4 w-4" />
-                Export
+                <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Export</span>
+                <span className="sm:hidden">Export</span>
               </Button>
             </div>
           </div>
           
           {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white rounded border border-gray-200 p-3">
-              <div className="flex items-center gap-2">
-                <PackageSearch className="h-4 w-4 text-gray-600" />
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">{totalItems}</p>
-                  <p className="text-xs text-gray-600">Total Products</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="bg-white rounded border border-gray-200 p-2 sm:p-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <PackageSearch className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">{totalItems}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 truncate">Total Products</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded border border-gray-200 p-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-green-600" />
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">
+            <div className="bg-white rounded border border-gray-200 p-2 sm:p-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                     {products.filter(p => p.stock > 0).length}
                   </p>
-                  <p className="text-xs text-gray-600">In Stock</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 truncate">In Stock</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded border border-gray-200 p-3">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-orange-600" />
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">
+            <div className="bg-white rounded border border-gray-200 p-2 sm:p-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                     {products.filter(p => p.stock === 0).length}
                   </p>
-                  <p className="text-xs text-gray-600">Out of Stock</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 truncate">Out of Stock</p>
                 </div>
               </div>
             </div>
             
-            <div className="bg-white rounded border border-gray-200 p-3">
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-gray-600" />
-                <div>
-                  <p className="text-lg font-semibold text-gray-900">{categories?.length || 0}</p>
-                  <p className="text-xs text-gray-600">Categories</p>
+            <div className="bg-white rounded border border-gray-200 p-2 sm:p-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">{categories?.length || 0}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-600 truncate">Categories</p>
                 </div>
               </div>
             </div>
@@ -934,11 +937,12 @@ const AllProducts = () => {
         </div>
         
         {/* Search and Filter Section */}
-        <div className="bg-white rounded border border-gray-200 p-3 mb-6">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Search Input with Button */}
-            <div className="relative flex-1 min-w-[200px] flex items-center gap-2">
-              <div className="relative flex-1 [&>div>div>div>svg[class*='left']]:hidden">
+        <div className="bg-white rounded border border-gray-200 p-2 sm:p-3 mb-4 sm:mb-6">
+          {/* Mobile Layout: Search + Grid in one row, Filters in another row */}
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
+            {/* Search Input with Grid Toggles (Mobile) / Search Button (Desktop) */}
+            <div className="relative flex-1 min-w-0 flex items-center gap-2">
+              <div className="relative flex-1 min-w-0 [&>div>div>div>svg[class*='left']]:hidden">
                 <SearchSuggestions
                   placeholder="Search products..."
                   onSelectProduct={handleSearchSelect}
@@ -946,20 +950,48 @@ const AllProducts = () => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   showButton={false}
-                  inputClassName="h-9 text-sm pl-3 pr-10 border-gray-300 rounded"
+                  inputClassName="h-8 sm:h-9 text-xs sm:text-sm pl-3 pr-10 border-gray-300 rounded"
                   className="w-full"
                 />
               </div>
+              {/* Grid Type Toggle - Show on Mobile */}
+              <div className="flex items-center gap-1.5 flex-shrink-0 sm:hidden">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGridType('grid2')}
+                  className={`h-8 w-8 p-0 rounded ${
+                    gridType === 'grid2' 
+                      ? 'bg-red-600 text-white hover:bg-red-700' 
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  <Grid3X3 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGridType('grid3')}
+                  className={`h-8 w-8 p-0 rounded ${
+                    gridType === 'grid3' 
+                      ? 'bg-red-600 text-white hover:bg-red-700' 
+                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                  }`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {/* Search Button - Show on Desktop */}
               <Button
                 onClick={() => handleSearchTrigger(searchQuery)}
-                className="h-9 px-4 bg-red-600 hover:bg-red-700 text-white rounded whitespace-nowrap"
+                className="hidden sm:flex h-9 px-4 bg-red-600 hover:bg-red-700 text-white rounded whitespace-nowrap text-sm flex-shrink-0"
               >
                 Search
               </Button>
             </div>
             
-            {/* Grid Type Toggle */}
-            <div className="flex items-center gap-1.5">
+            {/* Grid Type Toggle - Show on Desktop */}
+            <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -986,77 +1018,80 @@ const AllProducts = () => {
               </Button>
             </div>
             
-            {/* Filter Dropdown */}
-            <Select value={category} onValueChange={handleCategorySelect}>
-              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[120px]">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
-                  <SelectValue>
-                    <span>{getCategoryDisplayName()}</span>
-                  </SelectValue>
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <div className="p-2">
-                  <Input
-                    placeholder="Search categories..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    className="mb-2 h-8 text-xs"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-                {filteredCategories.map((cat) => (
-                  <SelectItem key={cat._id} value={cat._id} className="text-sm">
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            {/* Stock Filter Dropdown */}
-            <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
-              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[140px]">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-gray-500" />
-                  <SelectValue>
-                    <span>{getStockDisplayName()}</span>
-                  </SelectValue>
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Products</SelectItem>
-                <SelectItem value="active">In Stock</SelectItem>
-                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Sort Dropdown */}
-            <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
-              <SelectTrigger className="h-9 border-gray-300 text-sm rounded min-w-[140px]">
-                <div className="flex items-center gap-2">
-                  <SortAsc className="h-4 w-4 text-gray-500" />
-                  <SelectValue>
-                    <span>{getSortDisplayName()}</span>
-                  </SelectValue>
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="az">Name A-Z</SelectItem>
-                <SelectItem value="za">Name Z-A</SelectItem>
-                <SelectItem value="price-low">Price Low-High</SelectItem>
-                <SelectItem value="price-high">Price High-Low</SelectItem>
-                <SelectItem value="newest">Newest First</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
-                <SelectItem value="stock-high">Stock High-Low</SelectItem>
-                <SelectItem value="stock-low">Stock Low-High</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Filter Dropdowns - One row on mobile, inline on desktop */}
+            <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
+              {/* Filter Dropdown */}
+              <Select value={category} onValueChange={handleCategorySelect}>
+                <SelectTrigger className="h-8 sm:h-9 border-gray-300 text-xs sm:text-sm rounded flex-1 sm:flex-initial sm:min-w-[120px] overflow-hidden">
+                  <div className="flex items-center gap-1 sm:gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                    <SelectValue className="flex-1 min-w-0">
+                      <span className="truncate block">{getCategoryDisplayName()}</span>
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="p-2">
+                    <Input
+                      placeholder="Search categories..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="mb-2 h-8 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  {filteredCategories.map((cat) => (
+                    <SelectItem key={cat._id} value={cat._id} className="text-sm">
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {/* Stock Filter Dropdown */}
+              <Select value={stockFilter} onValueChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
+                <SelectTrigger className="h-8 sm:h-9 border-gray-300 text-xs sm:text-sm rounded flex-1 sm:flex-initial sm:min-w-[140px] overflow-hidden">
+                  <div className="flex items-center gap-1 sm:gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                    <SelectValue className="flex-1 min-w-0">
+                      <span className="truncate block">{getStockDisplayName()}</span>
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Products</SelectItem>
+                  <SelectItem value="active">In Stock</SelectItem>
+                  <SelectItem value="out-of-stock">Out of Stock</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Sort Dropdown */}
+              <Select value={sortBy} onValueChange={(value) => { setSortBy(value); setCurrentPage(1); }}>
+                <SelectTrigger className="h-8 sm:h-9 border-gray-300 text-xs sm:text-sm rounded flex-1 sm:flex-initial sm:min-w-[140px] overflow-hidden">
+                  <div className="flex items-center gap-1 sm:gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    <SortAsc className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
+                    <SelectValue className="flex-1 min-w-0">
+                      <span className="truncate block">{getSortDisplayName()}</span>
+                    </SelectValue>
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="az">Name A-Z</SelectItem>
+                  <SelectItem value="za">Name Z-A</SelectItem>
+                  <SelectItem value="price-low">Price Low-High</SelectItem>
+                  <SelectItem value="price-high">Price High-Low</SelectItem>
+                  <SelectItem value="newest">Newest First</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="stock-high">Stock High-Low</SelectItem>
+                  <SelectItem value="stock-low">Stock Low-High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           {/* Search Results Info */}
           {hasSearched && searchQuery && (
-            <div className="mt-2 text-xs text-gray-600">
+            <div className="mt-2 text-[10px] sm:text-xs text-gray-600">
               {searchStatus === 'loading' ? (
                 'Searching...'
               ) : uniqueSearchResultsCount > 0 ? (
@@ -1072,24 +1107,24 @@ const AllProducts = () => {
         <div className="space-y-4">
           
           {/* Results Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 onClick={handleSelectAll}
-                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
                 title={selectedProducts.length === sortedProducts.length ? 'Deselect all' : 'Select all'}
               >
                 {selectedProducts.length === sortedProducts.length && sortedProducts.length > 0 ? (
-                  <CheckSquare className="h-4 w-4 text-blue-600" />
+                  <CheckSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                 ) : (
-                  <Square className="h-4 w-4 text-gray-400" />
+                  <Square className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
                 )}
               </button>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                 Products ({sortedProducts.length})
               </h2>
               {selectedProducts.length > 0 && (
-                <Badge variant="default" className="px-2 py-0.5 bg-blue-600 text-xs">
+                <Badge variant="default" className="px-1.5 sm:px-2 py-0.5 bg-blue-600 text-[10px] sm:text-xs">
                   {selectedProducts.length} selected
                 </Badge>
               )}
@@ -1097,49 +1132,53 @@ const AllProducts = () => {
             
             {/* Bulk Actions */}
             {selectedProducts.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkStockUpdate(0)}
                   disabled={isBulkUpdating}
-                  className="border-gray-300 text-red-600 hover:bg-red-50 h-8 text-xs px-2"
+                  className="border-gray-300 text-red-600 hover:bg-red-50 h-7 sm:h-8 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-1 sm:flex-initial"
                 >
-                  Mark Out of Stock
+                  <span className="hidden sm:inline">Mark Out of Stock</span>
+                  <span className="sm:hidden">Out Stock</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkStockUpdate(1)}
                   disabled={isBulkUpdating}
-                  className="border-gray-300 text-green-600 hover:bg-green-50 h-8 text-xs px-2"
+                  className="border-gray-300 text-green-600 hover:bg-green-50 h-7 sm:h-8 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-1 sm:flex-initial"
                 >
-                  Mark In Stock
+                  <span className="hidden sm:inline">Mark In Stock</span>
+                  <span className="sm:hidden">In Stock</span>
                 </Button>
                 <Button
                   variant="default"
                   size="sm"
                   onClick={() => handleBulkMarkFeatured(true)}
                   disabled={isBulkUpdating}
-                  className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs px-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white h-7 sm:h-8 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-1 sm:flex-initial"
                 >
-                  <Star className="h-3 w-3 mr-1" />
-                  Featured
+                  <Star className="h-3 w-3 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                  <span className="hidden sm:inline">Featured</span>
+                  <span className="sm:hidden">Star</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleBulkMarkFeatured(false)}
                   disabled={isBulkUpdating}
-                  className="border-gray-300 h-8 text-xs px-2"
+                  className="border-gray-300 h-7 sm:h-8 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-1 sm:flex-initial"
                 >
-                  Remove Featured
+                  <span className="hidden sm:inline">Remove Featured</span>
+                  <span className="sm:hidden">Remove</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedProducts([])}
-                  className="text-gray-600 h-8 text-xs px-2"
+                  className="text-gray-600 h-7 sm:h-8 text-[10px] sm:text-xs px-1.5 sm:px-2 flex-1 sm:flex-initial"
                 >
                   Clear
                 </Button>
@@ -1183,10 +1222,9 @@ const AllProducts = () => {
                 {/* Featured Badge */}
                 {product.isFeatured && (
                   <div className="absolute top-2 right-2 z-10">
-                    <Badge className="bg-yellow-500 text-white px-2 py-0.5 text-xs font-medium border-0">
-                      <Star className="h-3 w-3 mr-1" />
-                      Featured
-                    </Badge>
+                    <div className="p-1.5  rounded-full shadow-sm">
+                      <Star className="h-4 w-4 text-red-500 fill-red-500" />
+                    </div>
                   </div>
                 )}
 
@@ -1231,21 +1269,21 @@ const AllProducts = () => {
                 </div>
 
                 {/* Product Info */}
-                <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-4 space-y-3'}`}>
+                <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-3 sm:p-4 space-y-2 sm:space-y-3'}`}>
                   <div className="space-y-1">
-                    <h3 className="font-medium text-sm text-gray-900">
+                    <h3 className="font-medium text-xs sm:text-sm text-gray-900 line-clamp-2">
                       {product.title}
                     </h3>
                     
-                    <p className="text-gray-600 text-xs line-clamp-2">
+                    <p className="text-gray-600 text-[10px] sm:text-xs line-clamp-2">
                       {product.description}
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between pt-1 gap-2">
+                    <div className="space-y-1 flex-1 min-w-0">
                       {editingPriceId === product._id ? (
-                        <div className="flex items-center gap-2 relative z-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 relative z-0">
                           <Input
                             type="number"
                             value={editingPriceValue}
@@ -1257,7 +1295,7 @@ const AllProducts = () => {
                                 handleCancelEditPrice();
                               }
                             }}
-                            className="h-8 text-sm font-semibold border-blue-500 focus:ring-1 focus:ring-blue-500 w-24"
+                            className="h-7 sm:h-8 text-xs sm:text-sm font-semibold border-blue-500 focus:ring-1 focus:ring-blue-500 w-20 sm:w-24"
                             autoFocus
                             disabled={isUpdatingPrice}
                           />
@@ -1268,7 +1306,7 @@ const AllProducts = () => {
                               handleSavePrice(product._id);
                             }}
                             disabled={isUpdatingPrice}
-                            className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 bg-green-600 hover:bg-green-700"
                             type="button"
                           >
                             ✓
@@ -1281,15 +1319,15 @@ const AllProducts = () => {
                               handleCancelEditPrice();
                             }}
                             disabled={isUpdatingPrice}
-                            className="h-8 w-8 p-0"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                             type="button"
                           >
                             ✕
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-gray-900">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                          <span className="text-sm sm:text-lg font-bold text-gray-900 truncate">
                             PKR {product.price?.toLocaleString()}
                           </span>
                           <button
@@ -1297,17 +1335,17 @@ const AllProducts = () => {
                               e.stopPropagation();
                               handleStartEditPrice(product);
                             }}
-                            className="p-1 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-0.5 sm:p-1 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                             title="Edit price"
                           >
-                            <Edit className="h-3.5 w-3.5 text-gray-400 hover:text-blue-600" />
+                            <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400 hover:text-blue-600" />
                           </button>
                         </div>
                       )}
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1.5 h-1.5 rounded-full ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <div className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full flex-shrink-0 ${product.stock > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         {editingStockId === product._id ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
                             <Input
                               type="number"
                               value={editingStockValue}
@@ -1319,7 +1357,7 @@ const AllProducts = () => {
                                   handleCancelEditStock();
                                 }
                               }}
-                              className="h-8 text-xs font-semibold border-blue-500 focus:ring-1 focus:ring-blue-500 w-20"
+                              className="h-7 sm:h-8 text-[10px] sm:text-xs font-semibold border-blue-500 focus:ring-1 focus:ring-blue-500 w-16 sm:w-20"
                               autoFocus
                               disabled={isUpdatingStock}
                             />
@@ -1330,7 +1368,7 @@ const AllProducts = () => {
                                 handleSaveStock(product._id);
                               }}
                               disabled={isUpdatingStock}
-                              className="h-7 w-7 p-0 bg-green-600 hover:bg-green-700"
+                              className="h-6 w-6 sm:h-7 sm:w-7 p-0 bg-green-600 hover:bg-green-700"
                               type="button"
                             >
                               ✓
@@ -1343,15 +1381,15 @@ const AllProducts = () => {
                                 handleCancelEditStock();
                               }}
                               disabled={isUpdatingStock}
-                              className="h-7 w-7 p-0"
+                              className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                               type="button"
                             >
                               ✕
                             </Button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 font-medium">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
                               Stock: {product.stock}
                             </span>
                             <button
@@ -1359,47 +1397,42 @@ const AllProducts = () => {
                                 e.stopPropagation();
                                 handleStartEditStock(product);
                               }}
-                              className="p-1 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                              className="p-0.5 sm:p-1 hover:bg-gray-100 rounded-md transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                               title="Edit stock"
                             >
-                              <Edit className="h-3 w-3 text-gray-400 hover:text-blue-600" />
+                              <Edit className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-400 hover:text-blue-600" />
                             </button>
                           </div>
                         )}
                       </div>
                     </div>
-                    {/* Featured Checkbox */}
-                    <div className="flex items-center gap-2 ml-4">
-                      <input
-                        type="checkbox"
-                        id={`featured-${product._id}`}
-                        checked={product.isFeatured || false}
-                        onChange={(e) => {
+                    {/* Featured Star */}
+                    <div className="flex items-center ml-2 sm:ml-4 flex-shrink-0">
+                      <button
+                        onClick={(e) => {
                           e.stopPropagation();
                           handleToggleFeatured(product);
                         }}
                         disabled={isUpdatingFeatured}
-                        className="h-4 w-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={product.isFeatured ? 'Unmark as featured' : 'Mark as featured'}
-                      />
-                      <Label 
-                        htmlFor={`featured-${product._id}`} 
-                        className="text-xs text-gray-600 font-medium cursor-pointer flex items-center gap-1"
+                        className="p-1 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title={product.isFeatured ? 'Unmark as featured' : 'Mark as featured'}
                       >
-                        <Star className={`h-3.5 w-3.5 ${product.isFeatured ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
-                        <span className="hidden sm:inline">Featured</span>
-                      </Label>
+                        <Star className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${
+                          product.isFeatured 
+                            ? 'fill-red-500 text-red-500' 
+                            : 'text-gray-400 hover:text-red-400'
+                        }`} />
+                      </button>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                  <div className="flex items-center gap-1.5 sm:gap-2 pt-2 border-t border-gray-200">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(product)}
-                      className="flex-1 h-8 text-xs border-gray-300 hover:bg-gray-100"
+                      className="flex-1 h-7 sm:h-8 text-[10px] sm:text-xs border-gray-300 hover:bg-gray-100"
                     >
                       Edit
                     </Button>
@@ -1408,23 +1441,23 @@ const AllProducts = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(product._id)}
-                      className="h-8 px-2 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 border-gray-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     </Button>
 
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleStockToggle(product)}
-                        className={`h-8 px-2 ${
+                        className={`h-7 w-7 sm:h-8 sm:w-8 p-0 ${
                           product.stock > 0 
                             ? 'text-orange-600 hover:bg-orange-50' 
                             : 'text-green-600 hover:bg-green-50'
                         }`}
                         title={product.stock > 0 ? 'Mark Out of Stock' : 'Mark In Stock'}
                       >
-                         <TrendingUp className="h-3.5 w-3.5" />
+                         <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                       </Button>
                   </div>
                 </div>
@@ -1434,19 +1467,19 @@ const AllProducts = () => {
         </div>
 
         {/* Pagination */}
-        <div className="bg-white rounded border border-gray-200 p-4 mt-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="text-sm text-gray-600">
+        <div className="bg-white rounded border border-gray-200 p-3 sm:p-4 mt-4 sm:mt-6">
+          <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="text-xs sm:text-sm text-gray-600">
               Showing <span className="font-medium text-gray-900">{pagination.startItem}</span> to{' '}
               <span className="font-medium text-gray-900">{pagination.endItem}</span> of{' '}
               <span className="font-medium text-gray-900">{totalItems}</span> products
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
                 <span>Rows:</span>
                 <Select value={String(limit)} onValueChange={handleLimitChange}>
-                  <SelectTrigger className="w-[100px] h-9 border-gray-200 rounded-lg">
+                  <SelectTrigger className="w-[80px] sm:w-[100px] h-8 sm:h-9 border-gray-200 rounded-lg text-xs sm:text-sm">
                     <SelectValue placeholder="24 items" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1559,13 +1592,13 @@ const AllProducts = () => {
 
         {/* Professional Create Product Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center flex-shrink-0">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Create New Product</h2>
-                  <p className="text-gray-500 text-sm mt-0.5">Add a new product to your catalog</p>
+              <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center flex-shrink-0">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Create New Product</h2>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Add a new product to your catalog</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -1574,14 +1607,14 @@ const AllProducts = () => {
                     setShowCreateForm(false);
                     setFormData({ title: '', description: '', price: '', stock: '' });
                   }}
-                  className="text-gray-500 hover:text-gray-900 rounded-full h-8 w-8 p-0"
+                  className="text-gray-500 hover:text-gray-900 rounded-full h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0 ml-2"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 overflow-y-auto flex-1">
+              <div className="p-3 sm:p-6 overflow-y-auto flex-1">
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -1683,13 +1716,13 @@ const AllProducts = () => {
 
         {/* Professional Edit Product Modal */}
         {showEditModal && selectedProduct && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col">
               {/* Modal Header */}
-              <div className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center flex-shrink-0">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">Edit Product</h2>
-                  <p className="text-gray-500 text-sm mt-0.5">Update product details</p>
+              <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-3 sm:py-4 flex justify-between items-center flex-shrink-0">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Edit Product</h2>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-0.5">Update product details</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -1708,14 +1741,14 @@ const AllProducts = () => {
                     });
                     setEditPreviewImage('');
                   }}
-                  className="text-gray-500 hover:text-gray-900 rounded-full h-8 w-8 p-0"
+                  className="text-gray-500 hover:text-gray-900 rounded-full h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0 ml-2"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 overflow-y-auto flex-1">
+              <div className="p-3 sm:p-6 overflow-y-auto flex-1">
                 <form onSubmit={handleEditSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">

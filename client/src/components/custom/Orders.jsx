@@ -844,59 +844,59 @@ Phone: ${order.phone}
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="px-4 py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
+      <div className="px-2 sm:px-4 py-4 sm:py-6 md:px-6 lg:px-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Stats Cards Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-1.5 sm:gap-2 md:gap-4">
           {/* Total Orders Card */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-2 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-900">{totalOrdersCount}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1 truncate">Total Orders</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 truncate">{totalOrdersCount}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="h-6 w-6 text-blue-600" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-2">
+                <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
             </div>
           </div>
 
           {/* Pending Orders Card */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-2 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Pending Orders</p>
-                <p className="text-3xl font-bold text-orange-600">{pendingOrders}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1 truncate">Pending Orders</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-orange-600 truncate">{pendingOrders}</p>
               </div>
-              <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
-                <Clock className="h-6 w-6 text-orange-600" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-orange-50 rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-2">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-orange-600" />
               </div>
             </div>
           </div>
 
           {/* Completed Orders Card */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-2 sm:p-4 md:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
-                <p className="text-3xl font-bold text-green-600">{completedOrders}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-[9px] sm:text-xs md:text-sm font-medium text-gray-500 mb-0.5 sm:mb-1 truncate">Completed</p>
+                <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-green-600 truncate">{completedOrders}</p>
               </div>
-              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-green-50 rounded-lg flex items-center justify-center flex-shrink-0 ml-1 sm:ml-2">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-green-600" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters and Controls Section */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-          <div className="space-y-4">
-            {/* Top Row: Status Tabs and View Toggle */}
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-3 sm:p-6">
+          <div className="space-y-3 sm:space-y-4">
+            {/* Top Row: Status Tabs */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
               {/* Status Filter Tabs */}
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                 <button
                   onClick={() => setStatusFilter('All')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-initial ${
                     statusFilter === 'All'
                       ? 'bg-gray-900 text-white border-2 border-gray-900'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
@@ -906,7 +906,7 @@ Phone: ${order.phone}
                 </button>
                 <button
                   onClick={() => setStatusFilter('Pending')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-initial ${
                     statusFilter === 'Pending'
                       ? 'bg-gray-900 text-white border-2 border-gray-900'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
@@ -916,7 +916,7 @@ Phone: ${order.phone}
                 </button>
                 <button
                   onClick={() => setStatusFilter('Completed')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-colors flex-1 sm:flex-initial ${
                     statusFilter === 'Completed'
                       ? 'bg-gray-900 text-white border-2 border-gray-900'
                       : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
@@ -925,48 +925,24 @@ Phone: ${order.phone}
                   Completed
                 </button>
               </div>
-
-              {/* View Toggle */}
-              <div className="flex gap-1 border border-gray-300 rounded-md bg-white p-1">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Grid3X3 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <ListIcon className="h-4 w-4" />
-                </button>
-              </div>
             </div>
 
             {/* Bottom Row: Search and Filter Inputs */}
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
               {/* Shop Name Search */}
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="shopNameSearch" className="text-xs font-medium text-gray-700">
                   Shop Name
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
                   <Input
                     id="shopNameSearch"
                     type="text"
                     placeholder="Search shop..."
                     value={shopNameSearch}
                     onChange={(e) => setShopNameSearch(e.target.value)}
-                    className="w-48 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full sm:w-48 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -977,104 +953,140 @@ Phone: ${order.phone}
                   Mobile
                 </Label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
                   <Input
                     id="mobileSearch"
                     type="text"
                     placeholder="Search mobile..."
                     value={mobileSearch}
                     onChange={(e) => setMobileSearch(e.target.value)}
-                    className="w-48 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full sm:w-48 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
 
-              {/* From Date */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="fromDate" className="text-xs font-medium text-gray-700">
-                  From Date
-                </Label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  <Input
-                    id="fromDate"
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    max={today}
-                    className="w-40 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+              {/* Date Range - From and To in one row */}
+              <div className="flex flex-row gap-2 col-span-2 sm:col-span-2 lg:col-span-1">
+                {/* From Date */}
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <Label htmlFor="fromDate" className="text-xs font-medium text-gray-700">
+                    From Date
+                  </Label>
+                  <div className="relative">
+                    <CalendarDays className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 pointer-events-none" />
+                    <Input
+                      id="fromDate"
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      max={today}
+                      className="w-full sm:w-40 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* To Date */}
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <Label htmlFor="toDate" className="text-xs font-medium text-gray-700">
+                    To Date
+                  </Label>
+                  <div className="relative">
+                    <CalendarDays className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 pointer-events-none" />
+                    <Input
+                      id="toDate"
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      min={fromDate}
+                      max={today}
+                      className="w-full sm:w-40 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* To Date */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="toDate" className="text-xs font-medium text-gray-700">
-                  To Date
-                </Label>
-                <div className="relative">
-                  <CalendarDays className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  <Input
-                    id="toDate"
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    min={fromDate}
-                    max={today}
-                    className="w-40 pl-9 h-10 text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Items Per Page */}
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs font-medium text-gray-700">
-                  Per Page
-                </Label>
-                <Select value={limit.toString()} onValueChange={handleLimitChange}>
-                  <SelectTrigger className="w-20 h-10 text-sm border-gray-300 rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="12">12</SelectItem>
-                    <SelectItem value="24">24</SelectItem>
-                    <SelectItem value="36">36</SelectItem>
-                    <SelectItem value="48">48</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Bulk Actions Button */}
-              {filteredOrders.length > 0 && (
+              {/* View Toggle, Items Per Page and Bulk Actions */}
+              <div className="flex flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+                {/* View Toggle */}
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-medium text-gray-700 opacity-0">
-                    Actions
+                    View
                   </Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="destructive" 
-                        className="gap-2 bg-red-600 hover:bg-red-700 h-10 px-4 rounded-lg"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Bulk Actions
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={handleDeleteAllOrders}
-                        className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete All ({filteredOrders.length})
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex gap-1 border border-gray-300 rounded-md bg-white p-0.5 sm:p-1">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1.5 sm:p-2 rounded transition-colors ${
+                        viewMode === 'grid'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Grid3X3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`p-1.5 sm:p-2 rounded transition-colors ${
+                        viewMode === 'table'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      <ListIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </button>
+                  </div>
                 </div>
-              )}
+
+                {/* Items Per Page */}
+                <div className="flex flex-col gap-1.5 flex-1">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Per Page
+                  </Label>
+                  <Select value={limit.toString()} onValueChange={handleLimitChange}>
+                    <SelectTrigger className="w-full sm:w-20 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12</SelectItem>
+                      <SelectItem value="24">24</SelectItem>
+                      <SelectItem value="36">36</SelectItem>
+                      <SelectItem value="48">48</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Bulk Actions Button */}
+                {filteredOrders.length > 0 && (
+                  <div className="flex flex-col gap-1.5 flex-1">
+                    <Label className="text-xs font-medium text-gray-700 opacity-0">
+                      Actions
+                    </Label>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          className="gap-1.5 sm:gap-2 bg-red-600 hover:bg-red-700 h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-xs sm:text-sm w-full"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Bulk Actions</span>
+                          <span className="sm:hidden">Bulk</span>
+                          <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={handleDeleteAllOrders}
+                          className="text-red-600 focus:text-red-700 focus:bg-red-50 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete All ({filteredOrders.length})
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1086,17 +1098,17 @@ Phone: ${order.phone}
           </div>
         ) : filteredOrders.length === 0 ? (
           <Card className="border border-gray-200 shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center h-64 text-center space-y-4">
-              <div className="rounded-full bg-gray-100 p-4">
-                <List className="h-8 w-8 text-gray-400" />
+            <CardContent className="flex flex-col items-center justify-center h-48 sm:h-64 text-center space-y-3 sm:space-y-4 p-4 sm:p-6">
+              <div className="rounded-full bg-gray-100 p-3 sm:p-4">
+                <List className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-base sm:text-lg font-medium text-gray-900">
                   {statusFilter === 'All' 
                     ? 'No orders found'
                     : `No ${statusFilter.toLowerCase()} orders found from ${fromDate} to ${toDate}`}
                 </h3>
-                <p className="text-gray-500 mt-1">
+                <p className="text-sm sm:text-base text-gray-500 mt-1">
                   {statusFilter === 'All' 
                     ? 'There are no orders in the system'
                     : 'Check back later for new orders'}
@@ -1106,20 +1118,19 @@ Phone: ${order.phone}
           </Card>
         ) : viewMode === 'grid' ? (
           /* Grid View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {filteredOrders.map((order) => {
               const StatusIcon = statusIcons[order.status] || AlertCircle;
               return (
                 <Card key={order._id} className="hover:shadow-lg transition-all duration-200 border border-gray-200 shadow-sm">
-                  <CardHeader className="pb-3 border-b border-gray-100 bg-gray-50/50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-lg bg-blue-100 p-2">
-                          <Package className="h-4 w-4 text-blue-600" />
+                  <CardHeader className="pb-2 sm:pb-3 border-b border-gray-100 bg-gray-50/50 px-3 sm:px-6 pt-3 sm:pt-6">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <div className="rounded-lg bg-blue-100 p-1.5 sm:p-2 flex-shrink-0">
+                          <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                         </div>
-                        <div>
-                         
-                          <p className="text-xs text-gray-500 font-medium">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] sm:text-xs text-gray-500 font-medium truncate">
                             {new Date(order.createdAt).toLocaleString('en-US', {
                               timeZone: 'Asia/Karachi',
                               weekday: 'short',
@@ -1132,33 +1143,34 @@ Phone: ${order.phone}
                           </p>
                         </div>
                       </div>
-                      <Badge className={`${statusColors[order.status]} border px-2.5 py-0.5`}>
-                        <StatusIcon className="h-3 w-3 mr-1.5" />
-                        {order.status}
+                      <Badge className={`${statusColors[order.status]} border px-1.5 sm:px-2.5 py-0.5 text-[10px] sm:text-xs flex-shrink-0`}>
+                        <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1 sm:mr-1.5" />
+                        <span className="hidden sm:inline">{order.status}</span>
+                        <span className="sm:hidden">{order.status.slice(0, 1)}</span>
                       </Badge>
                     </div>
                   </CardHeader>
 
-                  <CardContent className="space-y-4 pt-4">
+                  <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 px-3 sm:px-6">
                     {/* Order Summary */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Amount</p>
-                        <p className="text-lg font-bold text-gray-900">Rs. {order.amount.toLocaleString()}</p>
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
+                      <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide font-semibold">Amount</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-900 truncate">Rs. {order.amount.toLocaleString()}</p>
                       </div>
-                      <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Items</p>
-                        <p className="text-lg font-bold text-gray-900">{order.products.length}</p>
+                      <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide font-semibold">Items</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-900">{order.products.length}</p>
                       </div>
                     </div>
 
                     {/* Products Preview */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Products</p>
-                      <ScrollArea className="h-32 rounded-lg border border-gray-200 bg-gray-50/50">
-                        <div className="p-3 space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">Products</p>
+                      <ScrollArea className="h-28 sm:h-32 rounded-lg border border-gray-200 bg-gray-50/50">
+                        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
                           {order.products.slice(0, 3).map((item, index) => (
-                            <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border border-gray-100 shadow-sm">
+                            <div key={index} className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-white rounded border border-gray-100 shadow-sm">
                               <img
                                 {...imageService.getSafeImageProps(
                                   item?.id?.picture?.secure_url,
@@ -1166,18 +1178,18 @@ Phone: ${order.phone}
                                   '/placeholder-product.jpg',
                                   'eager'
                                 )}
-                                className="w-8 h-8 rounded-md object-cover border border-gray-200"
+                                className="w-7 h-7 sm:w-8 sm:h-8 rounded-md object-cover border border-gray-200 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate text-gray-900">{item.id?.name}</p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs sm:text-sm font-medium truncate text-gray-900">{item.id?.name}</p>
+                                <p className="text-[10px] sm:text-xs text-gray-500">
                                   Qty: {item.quantity} × Rs. {item.id?.price}
                                 </p>
                               </div>
                             </div>
                           ))}
                           {order.products.length > 3 && (
-                            <p className="text-xs text-gray-500 text-center py-1">
+                            <p className="text-[10px] sm:text-xs text-gray-500 text-center py-1">
                               +{order.products.length - 3} more products
                             </p>
                           )}
@@ -1186,22 +1198,22 @@ Phone: ${order.phone}
                     </div>
 
                     {/* Customer Info */}
-                    <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-700 font-medium">
+                    <div className="space-y-1.5 sm:space-y-2 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm text-gray-700 font-medium truncate">
                           {order.userId?.name ? capitalizeFirst(order.userId.name) : 'Customer'}
                         </span>
                       </div>
-                      <div className="space-y-1 pl-6 border-l-2 border-gray-200">
-                      <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-600 truncate">{order.phone}</p>
+                      <div className="space-y-1 pl-5 sm:pl-6 border-l-2 border-gray-200">
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                          <p className="text-[10px] sm:text-xs text-gray-600 truncate">{order.phone}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-600 truncate">{order.city}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <p className="text-[10px] sm:text-xs text-gray-600 truncate">{order.city}</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-gray-600 truncate" title={order.address}>{order.address}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <p className="text-[10px] sm:text-xs text-gray-600 truncate" title={order.address}>{order.address}</p>
                         </div>
                        
                       </div>
@@ -1209,36 +1221,36 @@ Phone: ${order.phone}
 
                     {/* Packer Name Input */}
                     {order.status === 'Pending' && (
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Packer Name</label>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <label className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">Packer Name</label>
                         <Input
                           placeholder="Enter packer name"
                           value={packerNames[order._id] || ''}
                           onChange={(e) => handlePackerNameChange(order._id, e.target.value)}
-                          className="text-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          className="text-xs sm:text-sm h-8 sm:h-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
                       </div>
                     )}
 
                     {/* Packer Info */}
                     {order.status === 'Completed' && order.packerName && (
-                      <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5" />
-                        <div>
-                          <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Packed by</span>
-                          <p className="text-sm text-emerald-900 font-medium">{order.packerName}</p>
+                      <div className="p-2 sm:p-3 bg-emerald-50 rounded-lg border border-emerald-200 flex items-start gap-2 sm:gap-3">
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-[10px] sm:text-xs font-bold text-emerald-800 uppercase tracking-wide">Packed by</span>
+                          <p className="text-xs sm:text-sm text-emerald-900 font-medium truncate">{order.packerName}</p>
                         </div>
                       </div>
                     )}
 
                     {/* Status Update */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <label className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</label>
                       <Select
                         value={order.status || 'Pending'}
                         onValueChange={(newStatus) => handleStatusUpdate(order._id, newStatus)}
                       >
-                        <SelectTrigger className="w-full border-gray-300">
+                        <SelectTrigger className="w-full h-8 sm:h-10 border-gray-300 text-xs sm:text-sm">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1249,22 +1261,23 @@ Phone: ${order.phone}
                     </div>
                   </CardContent>
 
-                  <CardFooter className="pt-4 border-t border-gray-100 bg-gray-50/30">
-                    <div className="flex gap-2 w-full">
+                  <CardFooter className="pt-3 sm:pt-4 border-t border-gray-100 bg-gray-50/30 px-3 sm:px-6 pb-3 sm:pb-6">
+                    <div className="flex gap-1.5 sm:gap-2 w-full">
                       <Dialog onOpenChange={(open) => open && setSelectedOrder(order)}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" className="flex-1 gap-2 border-gray-300 hover:bg-gray-50 text-gray-700">
-                            <Eye className="h-4 w-4" />
-                            Details
+                          <Button variant="outline" className="flex-1 gap-1.5 sm:gap-2 border-gray-300 hover:bg-gray-50 text-gray-700 h-8 sm:h-10 text-xs sm:text-sm">
+                            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Details</span>
+                            <span className="sm:hidden">View</span>
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-                          <DialogHeader className="border-b pb-4">
-                            <DialogTitle className="flex items-center gap-2 text-xl">
-                              <Package className="h-6 w-6 text-blue-600" />
-                              Order Details <span className="text-gray-400 font-normal">#{order._id.slice(-6)}</span>
+                        <DialogContent className="sm:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-2 sm:mx-4">
+                          <DialogHeader className="border-b pb-3 sm:pb-4 px-3 sm:px-6 pt-3 sm:pt-6">
+                            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                              <span className="truncate">Order Details <span className="text-gray-400 font-normal">#{order._id.slice(-6)}</span></span>
                             </DialogTitle>
-                            <DialogDescription>
+                            <DialogDescription className="text-xs sm:text-sm">
                               Complete information for this order placed on {new Date(order.createdAt).toLocaleDateString()}
                             </DialogDescription>
                           </DialogHeader>
@@ -1326,8 +1339,8 @@ Phone: ${order.phone}
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200">
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="outline" size="icon" className="border-gray-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200 h-8 w-8 sm:h-10 sm:w-10">
+                            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -1362,17 +1375,17 @@ Phone: ${order.phone}
         ) : (
           /* Table View */
           <Card className="border border-gray-200 shadow-sm overflow-hidden">
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-x-auto">
               <Table>
                 <TableHeader className="bg-gray-50/50">
                   <TableRow>
-                    <TableHead className="font-semibold text-gray-600">Customer Name</TableHead>
-                    <TableHead className="font-semibold text-gray-600">Contact Info</TableHead>
-                    <TableHead className="font-semibold text-gray-600">Products</TableHead>
-                    <TableHead className="font-semibold text-gray-600">Amount</TableHead>
-                    <TableHead className="font-semibold text-gray-600">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-600">Date</TableHead>
-                    <TableHead className="text-right font-semibold text-gray-600">Actions</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Customer Name</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Contact Info</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Products</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Amount</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Status</TableHead>
+                    <TableHead className="font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Date</TableHead>
+                    <TableHead className="text-right font-semibold text-gray-600 text-xs sm:text-sm whitespace-nowrap">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1380,39 +1393,42 @@ Phone: ${order.phone}
                     const StatusIcon = statusIcons[order.status] || AlertCircle;
                     return (
                       <TableRow key={order._id} className="hover:bg-gray-50/50">
-                        <TableCell className="font-medium text-gray-900">
-                          {order.userId?.name ? capitalizeFirst(order.userId.name) : 'Customer'}
+                        <TableCell className="font-medium text-gray-900 text-xs sm:text-sm">
+                          <span className="truncate block max-w-[120px] sm:max-w-none">
+                            {order.userId?.name ? capitalizeFirst(order.userId.name) : 'Customer'}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-gray-900">{order.phone}</p>
-                            <p className="text-xs text-gray-500 truncate max-w-40" title={order.address}>{order.address}</p>
+                          <div className="space-y-0.5 sm:space-y-1">
+                            <p className="text-xs sm:text-sm font-medium text-gray-900 truncate max-w-[100px] sm:max-w-none">{order.phone}</p>
+                            <p className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[100px] sm:max-w-40" title={order.address}>{order.address}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="bg-gray-100 text-gray-700 border border-gray-200 font-normal">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Badge variant="secondary" className="bg-gray-100 text-gray-700 border border-gray-200 font-normal text-[10px] sm:text-xs">
                               {order.products.length} items
                             </Badge>
                           </div>
                         </TableCell>
-                        <TableCell className="font-bold text-gray-900">
-                          Rs. {order.amount.toLocaleString()}
+                        <TableCell className="font-bold text-gray-900 text-xs sm:text-sm">
+                          <span className="truncate block">Rs. {order.amount.toLocaleString()}</span>
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${statusColors[order.status]} border font-medium`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {order.status}
+                          <Badge className={`${statusColors[order.status]} border font-medium text-[10px] sm:text-xs`}>
+                            <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                            <span className="hidden sm:inline">{order.status}</span>
+                            <span className="sm:hidden">{order.status.slice(0, 1)}</span>
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-[10px] sm:text-sm text-gray-500 whitespace-nowrap">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreVertical className="h-4 w-4 text-gray-500" />
+                              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48">
@@ -1452,18 +1468,19 @@ Phone: ${order.phone}
 
         {/* Pagination */}
         {orders.length > 0 && pagination.totalPages > 1 && (
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-4 sm:mt-8">
             <Card className="border border-gray-200 shadow-sm">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
+              <CardContent className="p-2 sm:p-3">
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={pagination.goToPreviousPage}
                     disabled={!pagination.hasPreviousPage}
-                    className="border-gray-300"
+                    className="border-gray-300 h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                   >
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
                   
                   {pagination.getVisiblePages().map((pg, index) => (
@@ -1473,7 +1490,7 @@ Phone: ${order.phone}
                       size="sm"
                       onClick={() => typeof pg === 'number' && pagination.setCurrentPage(pg)}
                       disabled={pg === '...'}
-                      className={getPaginationButtonClassName(pg, pagination.currentPage)}
+                      className={`${getPaginationButtonClassName(pg, pagination.currentPage)} h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3`}
                     >
                       {pg}
                     </Button>
@@ -1484,7 +1501,7 @@ Phone: ${order.phone}
                     size="sm"
                     onClick={pagination.goToNextPage}
                     disabled={!pagination.hasNextPage}
-                    className="border-gray-300"
+                    className="border-gray-300 h-8 sm:h-9 text-xs sm:text-sm px-2 sm:px-3"
                   >
                     Next
                   </Button>

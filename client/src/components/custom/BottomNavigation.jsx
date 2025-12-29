@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus } from "lucide-react";
+import { Home, ShoppingCart, User, Package, Grid3x3, MessageCircle, Download, ChevronLeft, ChevronRight, LogOut, Heart, LayoutGrid, Plus, LayoutDashboard } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
@@ -259,7 +259,13 @@ const BottomNavigation = () => {
       show: user !== null,
       isCenter: false
     },
-   
+    {
+      path: "/admin/dashboard",
+      icon: LayoutDashboard,
+      label: "Admin",
+      show: user !== null && (user.role === 1 || user.role === 2),
+      isCenter: false
+    },
     {
       path: "/profile",
       icon: User,
@@ -290,6 +296,7 @@ const BottomNavigation = () => {
 
   const isActive = (path) => {
     if (path === "/" && location.pathname === "/") return true;
+    if (path === "/admin/dashboard" && location.pathname.startsWith("/admin")) return true;
     if (path !== "/" && location.pathname.startsWith(path)) return true;
     return false;
   };
