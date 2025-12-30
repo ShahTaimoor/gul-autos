@@ -1,8 +1,9 @@
 const Joi = require('joi');
 
 const addItemSchema = Joi.object({
-  productId: Joi.string().required().messages({
+  productId: Joi.string().required().pattern(/^[0-9a-fA-F]{24}$/).messages({
     'string.empty': 'Product ID is required',
+    'string.pattern.base': 'Product ID must be a valid MongoDB ObjectId',
     'any.required': 'Product ID is required'
   }),
   quantity: Joi.number().integer().min(1).required().messages({
@@ -14,15 +15,17 @@ const addItemSchema = Joi.object({
 });
 
 const removeItemSchema = Joi.object({
-  productId: Joi.string().required().messages({
+  productId: Joi.string().required().pattern(/^[0-9a-fA-F]{24}$/).messages({
     'string.empty': 'Product ID is required',
+    'string.pattern.base': 'Product ID must be a valid MongoDB ObjectId',
     'any.required': 'Product ID is required'
   })
 });
 
 const updateItemQuantitySchema = Joi.object({
-  productId: Joi.string().required().messages({
+  productId: Joi.string().required().pattern(/^[0-9a-fA-F]{24}$/).messages({
     'string.empty': 'Product ID is required',
+    'string.pattern.base': 'Product ID must be a valid MongoDB ObjectId',
     'any.required': 'Product ID is required'
   }),
   quantity: Joi.number().integer().min(1).required().messages({

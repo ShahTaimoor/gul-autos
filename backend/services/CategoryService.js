@@ -2,6 +2,7 @@ const slugify = require('slugify');
 const { categoryRepository } = require('../repositories');
 const { uploadImageOnCloudinary, deleteImageOnCloudinary } = require('../utils/cloudinary');
 const { BadRequestError, NotFoundError } = require('../errors');
+const logger = require('../utils/logger');
 
 class CategoryService {
   async normalizePositions() {
@@ -17,7 +18,7 @@ class CategoryService {
         }
       }
     } catch (error) {
-      console.error('Error normalizing positions:', error);
+      logger.error('Error normalizing positions:', { error: error.message, stack: error.stack });
     }
   }
 

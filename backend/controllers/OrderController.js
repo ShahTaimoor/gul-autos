@@ -37,12 +37,14 @@ class OrderController {
   async getOrdersByUserId(req, res, next) {
     try {
       const userId = req.user.id;
+      const { page, limit } = req.query;
 
-      const orders = await orderService.getOrdersByUserId(userId);
+      const result = await orderService.getOrdersByUserId(userId, page, limit);
 
       return res.status(200).json({
         success: true,
-        data: orders
+        data: result.orders,
+        pagination: result.pagination
       });
     } catch (error) {
       next(error);

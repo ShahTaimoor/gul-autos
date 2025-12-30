@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
 import {
   Card,
@@ -70,6 +70,10 @@ const CreateProducts = () => {
     mediaLoading,
     fetchMedia,
   } = useMedia();
+  
+  // Refs for file inputs
+  const pictureInputRef = useRef(null);
+  const excelFileInputRef = useRef(null);
 
   // Initial input values
   const initialValues = {
@@ -87,6 +91,8 @@ const CreateProducts = () => {
   
   // Debounce category search to avoid too many API calls
   const debouncedCategorySearch = useDebounce(categorySearch, 300);
+  // Debounce media search to avoid too many API calls
+  const debouncedMediaSearchTerm = useDebounce(mediaSearchTerm, 400);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -183,9 +189,10 @@ const CreateProducts = () => {
       
       if (result.success) {
         setExcelFile(null);
-        // Reset file input
-        const fileInput = document.getElementById('excelFile');
-        if (fileInput) fileInput.value = '';
+        // Reset file input using ref
+        if (excelFileInputRef.current) {
+          excelFileInputRef.current.value = '';
+        }
         toast.success(`Successfully imported ${result.count || 0} products from Excel`);
       }
     } catch (error) {
@@ -233,10 +240,9 @@ const CreateProducts = () => {
             revokePreviewUrl(previewUrl);
             setPreviewUrl(null);
           }
-          // Reset file input to allow re-uploading
-          const fileInput = document.getElementById('picture');
-          if (fileInput) {
-            fileInput.value = '';
+          // Reset file input to allow re-uploading using ref
+          if (pictureInputRef.current) {
+            pictureInputRef.current.value = '';
           }
           toast.success('Product created successfully!');
         }
@@ -267,13 +273,13 @@ const CreateProducts = () => {
     };
   }, [previewUrl]);
 
-  // Fetch products and media for media picker with pagination
+  // Fetch products and media for media picker with pagination (debounced)
   useEffect(() => {
     if (showMediaPicker) {
       // Fetch ALL products for media picker (no limit)
       dispatch(fetchProducts({ 
         category: 'all', 
-        searchTerm: mediaSearchTerm, 
+        searchTerm: debouncedMediaSearchTerm, 
         page: 1, 
         limit: 1000, // Fetch all products
         stockFilter: 'active'
@@ -281,7 +287,7 @@ const CreateProducts = () => {
       // Also fetch uploaded media
       fetchMedia(1000);
     }
-  }, [dispatch, showMediaPicker, mediaSearchTerm, fetchMedia]);
+  }, [dispatch, showMediaPicker, debouncedMediaSearchTerm, fetchMedia]);
 
   // Filter products for media picker - only show products with images
   const allProductsWithImages = products?.filter(product => 
@@ -593,6 +599,7 @@ const CreateProducts = () => {
                         {/* Upload File Button */}
                         <div className="block w-full">
                           <input
+                            ref={pictureInputRef}
                             id="picture"
                             name="picture"
                             type="file"
@@ -605,9 +612,8 @@ const CreateProducts = () => {
                             type="button"
                             variant="outline"
                             onClick={() => {
-                              const fileInput = document.getElementById('picture');
-                              if (fileInput && !isConverting) {
-                                fileInput.click();
+                              if (pictureInputRef.current && !isConverting) {
+                                pictureInputRef.current.click();
                               }
                             }}
                             className="w-full h-10 sm:h-12 flex items-center justify-center gap-2 sm:gap-3 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 cursor-pointer text-sm"
@@ -709,10 +715,9 @@ const CreateProducts = () => {
                                       revokePreviewUrl(previewUrl);
                                       setPreviewUrl(null);
                                     }
-                                    // Reset file input to allow re-uploading the same file
-                                    const fileInput = document.getElementById('picture');
-                                    if (fileInput) {
-                                      fileInput.value = '';
+                                    // Reset file input to allow re-uploading the same file using ref
+                                    if (pictureInputRef.current) {
+                                      pictureInputRef.current.value = '';
                                     }
                                   }}
                                   className="text-xs sm:text-sm font-medium text-red-600 hover:text-red-500 transition-colors duration-200"
@@ -844,6 +849,7 @@ const CreateProducts = () => {
                               >
                                 <span className="underline">Upload Excel file</span>
                                 <input
+                                  ref={excelFileInputRef}
                                   id="excelFile"
                                   name="excelFile"
                                   type="file"
@@ -884,8 +890,10 @@ const CreateProducts = () => {
                               type="button"
                               onClick={() => {
                                 setExcelFile(null);
-                                const fileInput = document.getElementById('excelFile');
-                                if (fileInput) fileInput.value = '';
+                                // Reset file input using ref
+                                if (excelFileInputRef.current) {
+                                  excelFileInputRef.current.value = '';
+                                }
                               }}
                               className="text-red-600 hover:text-red-500 transition-colors duration-200 flex-shrink-0"
                             >

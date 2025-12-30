@@ -4,7 +4,6 @@ import { useSelector } from "react-redux";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
 import { Badge } from "../ui/badge";
-import axios from "axios";
 import {
   Sheet,
   SheetTrigger,
@@ -20,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { removeFromCart, updateCartQuantity } from "../../redux/slices/cart/cartSlice";
-import { logout } from "../../redux/slices/auth/authSlice";
+import { logoutUser } from "../../redux/slices/auth/authSlice";
 import CartImage from "../ui/CartImage";
 import Checkout from "../../pages/Checkout";
 import { useAuthDrawer } from "../../contexts/AuthDrawerContext";
@@ -211,31 +210,20 @@ const BottomNavigation = () => {
     });
   };
 
-  const handleLogout = () => {
-    // Always clear local data first
-    window.localStorage.removeItem('user');
-    dispatch(logout());
-    
+  const handleLogout = async () => {
     // Clear cookies on client side as fallback
     clearCookies();
     
-    // Then try to logout from server
-    axios
-      .get(`${import.meta.env.VITE_API_URL}/logout`, {
-        withCredentials: true,
-        headers: { "Content-Type": "application/json" },
-      })
-      .then((response) => {
-        // Clear cookies again after server response
-        clearCookies();
-        navigate('/');
-      })
-      .catch((error) => {
-        // Clear cookies again even if API fails
-        clearCookies();
-        // Even if API fails, user is already logged out locally
-        navigate('/');
-      });
+    // Use Redux async thunk to handle logout (includes API call)
+    try {
+      await dispatch(logoutUser()).unwrap();
+    } catch (error) {
+      // Even if logout API fails, user is already logged out locally
+    } finally {
+      // Clear cookies again after logout attempt
+      clearCookies();
+      navigate('/');
+    }
   };
 
   // Don't render on desktop - but ensure it shows on mobile

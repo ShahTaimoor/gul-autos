@@ -30,9 +30,19 @@ const userSchema = new mongoose.Schema(
         username: {
             type: String,
             trim: true
+        },
+        isDeleted: {
+            type: Boolean,
+            default: false
         }
     },
     { timestamps: true }
 );
+
+// Indexes for frequently used fields
+userSchema.index({ name: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ isDeleted: 1 });
+userSchema.index({ name: 1, isDeleted: 1 }); // Compound index for common queries
 
 module.exports = mongoose.model('User', userSchema);

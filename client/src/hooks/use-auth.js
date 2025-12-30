@@ -51,8 +51,7 @@ export const useAuth = () => {
    * Handle logout
    */
   const handleLogout = useCallback(async () => {
-    // Always clear local data first
-    localStorage.removeItem('user');
+    // Clear Redux state
     dispatch(logout());
     clearCookies();
 

@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const axiosInstance = axios.create({
   baseURL: API_URL,
   withCredentials: true,
-  timeout: 10000, // 10 second timeout
+  timeout: 60000, // 60 second timeout for API calls (increased from 10s to handle slow networks and large uploads)
 });
 
 // Store reference will be set after store is created
@@ -98,7 +98,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         // Attempt to refresh token using same instance (cookies attached)
-        const refreshResponse = await axiosInstance.post('/refresh-token', null, { withCredentials: true, timeout: 8000 });
+        const refreshResponse = await axiosInstance.post('/refresh-token', null, { withCredentials: true, timeout: 30000 });
 
         if (refreshResponse?.data?.success) {
           processQueue(null);

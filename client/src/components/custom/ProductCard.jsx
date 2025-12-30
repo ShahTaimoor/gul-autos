@@ -17,6 +17,7 @@ const ProductCard = React.memo(({
   const clickAudioRef = useRef(null);
   const quantityInputRef = useRef(null);
   const addToCartButtonRef = useRef(null);
+  const touchHandledRef = useRef({ decrease: false, increase: false });
 
   // Initialize audio only once
   useEffect(() => {
@@ -120,8 +121,9 @@ const ProductCard = React.memo(({
     }
     
     e.stopPropagation();
-    // Only prevent default if the event is cancelable (not during scroll)
-    if (e.cancelable) {
+    // Only prevent default if the event is cancelable (not passive)
+    // Note: React's synthetic touch events are passive by default, so preventDefault may not work
+    if (e.cancelable !== false && e.type !== 'touchend') {
       e.preventDefault(); // Prevent click event from firing after touch
     }
     
@@ -140,8 +142,11 @@ const ProductCard = React.memo(({
   }, [onQuantityChange, product._id, product.stock]);
 
   const handleDecrease = useCallback((e) => {
-    // Always prevent default FIRST to stop scrolling and any default button behavior
-    e.preventDefault();
+    // Prevent default only if event is cancelable and not a touch event
+    // Touch events are passive by default in React, so preventDefault won't work
+    if (e.cancelable !== false && e.type !== 'touchend' && e.type !== 'touchstart') {
+      e.preventDefault();
+    }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
@@ -157,8 +162,11 @@ const ProductCard = React.memo(({
   }, [quantity, onQuantityChange, product._id, product.stock]);
 
   const handleIncrease = useCallback((e) => {
-    // Always prevent default FIRST to stop scrolling and any default button behavior
-    e.preventDefault();
+    // Prevent default only if event is cancelable and not a touch event
+    // Touch events are passive by default in React, so preventDefault won't work
+    if (e.cancelable !== false && e.type !== 'touchend' && e.type !== 'touchstart') {
+      e.preventDefault();
+    }
     e.stopPropagation();
     e.stopImmediatePropagation?.();
     
@@ -199,7 +207,7 @@ const ProductCard = React.memo(({
       >
         {/* Featured Badge */}
         {product.isFeatured && (
-          <div className="absolute top-0 left-0 z-10 font-semibold flex items-center justify-center p-2 rounded-lg">
+          <div className="absolute top-0 right-0 z-10 font-semibold flex items-center justify-center p-2 rounded-lg">
             <svg className="h-4 w-4 drop-shadow-sm text-red-500" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
@@ -276,19 +284,27 @@ const ProductCard = React.memo(({
             >
               <button
                 type="button"
-                onClick={handleDecrease}
-                onTouchStart={(e) => {
-                  // Prevent default FIRST to stop focus behavior and any scroll
-                  e.preventDefault();
-                  e.stopPropagation();
+                onClick={(e) => {
+                  // If touch was already handled, prevent click from firing
+                  if (touchHandledRef.current.decrease) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    touchHandledRef.current.decrease = false;
+                    return;
+                  }
+                  handleDecrease(e);
                 }}
                 onTouchEnd={(e) => {
-                  // Prevent default FIRST to stop any scroll or focus behavior
-                  e.preventDefault();
+                  // Mark that touch was handled to prevent click event
+                  touchHandledRef.current.decrease = true;
+                  // Stop propagation to prevent parent handlers
                   e.stopPropagation();
-                  e.stopImmediatePropagation?.();
-                  
+                  // Call handler directly
                   handleDecrease(e);
+                  // Reset flag after a short delay
+                  setTimeout(() => {
+                    touchHandledRef.current.decrease = false;
+                  }, 300);
                 }}
                 onMouseDown={(e) => {
                   // Prevent default FIRST to stop focus behavior and any scroll
@@ -335,19 +351,27 @@ const ProductCard = React.memo(({
 
               <button
                 type="button"
-                onClick={handleIncrease}
-                onTouchStart={(e) => {
-                  // Prevent default FIRST to stop focus behavior and any scroll
-                  e.preventDefault();
-                  e.stopPropagation();
+                onClick={(e) => {
+                  // If touch was already handled, prevent click from firing
+                  if (touchHandledRef.current.increase) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    touchHandledRef.current.increase = false;
+                    return;
+                  }
+                  handleIncrease(e);
                 }}
                 onTouchEnd={(e) => {
-                  // Prevent default FIRST to stop any scroll or focus behavior
-                  e.preventDefault();
+                  // Mark that touch was handled to prevent click event
+                  touchHandledRef.current.increase = true;
+                  // Stop propagation to prevent parent handlers
                   e.stopPropagation();
-                  e.stopImmediatePropagation?.();
-                  
+                  // Call handler directly
                   handleIncrease(e);
+                  // Reset flag after a short delay
+                  setTimeout(() => {
+                    touchHandledRef.current.increase = false;
+                  }, 300);
                 }}
                 onMouseDown={(e) => {
                   // Prevent default FIRST to stop focus behavior and any scroll

@@ -1,5 +1,6 @@
 const multer = require('multer');
 const { isValidImage } = require('../utils/imageProcessor');
+const logger = require('../utils/logger');
 
 const storage = multer.memoryStorage();
 
@@ -17,8 +18,10 @@ const fileFilter = async (req, file, cb) => {
       return cb(new Error('Unsupported image format. Please use JPEG, PNG, or WebP'), false);
     }
 
-    // Log the file type for debugging
-    console.log(`📁 Uploading ${file.mimetype} file: ${(file.size / 1024).toFixed(2)}KB`);
+    // Log the file type for debugging (only in development)
+    if (process.env.NODE_ENV !== 'production') {
+      logger.debug(`Uploading ${file.mimetype} file: ${(file.size / 1024).toFixed(2)}KB`);
+    }
 
     cb(null, true);
   } catch (error) {
@@ -31,7 +34,8 @@ const upload = multer({
   fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 1
+    files: 1,
+    fieldSize: 10 * 1024 * 1024 // 10MB for field data
   }
 });
 

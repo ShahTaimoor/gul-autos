@@ -127,13 +127,11 @@ export const fetchLowStockCount = createAsyncThunk(
     'products/fetchLowStockCount',
     async (_, thunkAPI) => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL;
-            const res = await fetch(`${API_URL}/low-stock-count`, {
-                credentials: 'include',
+            const axiosInstance = (await import('../auth/axiosInstance')).default;
+            const response = await axiosInstance.get('/low-stock-count', {
                 headers: { 'Content-Type': 'application/json' }
             });
-            const data = await res.json();
-            return data.count || 0;
+            return response.data.count || 0;
         } catch (error) {
             return thunkAPI.rejectWithValue(error.message || 'Failed to fetch low stock count');
         }

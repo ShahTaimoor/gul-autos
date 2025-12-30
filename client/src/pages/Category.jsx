@@ -129,14 +129,25 @@ const Category = () => {
     }
   };
 
-  const addNewCategory = () => {
-    if (!inputValues.name.trim()) {
+  const addNewCategory = async () => {
+    // Validate with Zod
+    const { categorySchema } = await import('@/schemas/categorySchemas');
+    const result = categorySchema.safeParse({
+      name: inputValues.name,
+      picture: inputValues.picture
+    });
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     const formData = new FormData();
     formData.append('name', inputValues.name);
-    formData.append('picture', inputValues.picture);
+    if (inputValues.picture) {
+      formData.append('picture', inputValues.picture);
+    }
 
     setLoading(true);
     dispatch(AddCategory(formData))
@@ -157,8 +168,17 @@ const Category = () => {
       });
   };
 
-  const updateExistingCategory = () => {
-    if (!editingCategory?.name?.trim()) {
+  const updateExistingCategory = async () => {
+    // Validate with Zod
+    const { categorySchema } = await import('@/schemas/categorySchemas');
+    const result = categorySchema.safeParse({
+      name: editingCategory.name,
+      picture: editingCategory.picture
+    });
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 

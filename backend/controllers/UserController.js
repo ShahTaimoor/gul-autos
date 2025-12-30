@@ -102,7 +102,7 @@ class UserController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        maxAge: 365 * 24 * 60 * 60 * 1000
+        maxAge: result.cookieMaxAge || 365 * 24 * 60 * 60 * 1000
       };
 
       return res
@@ -161,12 +161,18 @@ class UserController {
 
   async getAllUsers(req, res, next) {
     try {
-      const result = await userService.getAllUsers();
+      const { page, limit } = req.query;
+      const result = await userService.getAllUsers(page, limit);
 
       return res.status(200).json({
         success: true,
         users: result.users,
-        total: result.total
+        pagination: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages
+        }
       });
     } catch (error) {
       next(error);

@@ -37,9 +37,15 @@ app.use(compressionConfig);
 // Rate limiting is applied only to login endpoints (see userRoutes.js)
 // Removed global rate limiting to allow unrestricted access to other routes
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with increased limits for slow networks
+app.use(express.json({ 
+    limit: '10mb'
+}));
+app.use(express.urlencoded({ 
+    extended: true, 
+    limit: '10mb',
+    parameterLimit: 10000
+}));
 
 // MongoDB injection protection - Apply before routes
 app.use(mongoSanitizeConfig);
@@ -85,6 +91,20 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Request timeout middleware for slow networks
+app.use((req, res, next) => {
+  // Set request timeout to 2 minutes (120 seconds) for slow internet connections
+  req.setTimeout(120000, () => {
+    if (!res.headersSent) {
+      res.status(408).json({
+        success: false,
+        message: 'Request timeout - please check your internet connection and try again'
+      });
+    }
+  });
+  next();
+});
+
 // Logging middleware - Apply after security but before routes
 if (process.env.NODE_ENV === 'production') {
   app.use(morganMiddleware); // JSON format for production
@@ -117,7 +137,22 @@ app.use(errorHandler)
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     logger.info(`Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    console.log(`Server is running on port ${PORT}`);
+});
+
+// Configure server timeouts for slow networks
+server.timeout = 120000; // 120 seconds (2 minutes) - increased for slow internet connections
+server.keepAliveTimeout = 65000; // 65 seconds - must be greater than client timeout
+server.headersTimeout = 66000; // 66 seconds - must be greater than keepAliveTimeout
+
+// Handle server errors
+server.on('error', (error) => {
+    logger.error('Server error:', { error: error.message, stack: error.stack });
+});
+
+// Handle timeout errors
+server.on('timeout', (socket) => {
+    logger.warn('Server timeout - client connection timed out');
+    socket.destroy();
 });

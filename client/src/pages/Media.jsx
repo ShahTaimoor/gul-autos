@@ -332,7 +332,7 @@ const Media = () => {
             
             if (imageUrl) {
               try {
-                const blob = await imageService.fetchImageBlob(imageUrl, 10000);
+                const blob = await imageService.fetchImageBlob(imageUrl, 30000);
                 const fileName = `${media.name?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `uploaded_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {
@@ -431,7 +431,7 @@ const Media = () => {
             
             if (imageUrl) {
               try {
-                const blob = await imageService.fetchImageBlob(imageUrl, 10000);
+                const blob = await imageService.fetchImageBlob(imageUrl, 30000);
                 const fileName = `${product.title?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || `product_${i + batchIndex + 1}`}.jpg`;
                 return { fileName, blob, success: true };
               } catch (error) {

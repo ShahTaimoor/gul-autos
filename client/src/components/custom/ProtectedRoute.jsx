@@ -50,8 +50,13 @@ const ProtectedRoute = ({ children }) => {
           dispatch(setTokenExpired());
         }
       } catch (error) {
-        // Don't logout on network errors - just log for debugging
-        console.error('Token verification error:', error);
+        // Don't logout on network errors
+        // Error logging should be handled by error boundary or monitoring service
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Token verification error:', error);
+        }
       }
     }
   }, [user, isAuthenticated, dispatch]);

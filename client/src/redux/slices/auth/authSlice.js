@@ -2,13 +2,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from './authService';
 
-const userFromStorage = localStorage.getItem('user')
-  ? JSON.parse(localStorage.getItem('user'))
-  : null;
-
+// User data is stored only in Redux state (not in localStorage)
+// Authentication is handled via HTTP-only cookies
 const initialState = {
-  user: userFromStorage,
-  isAuthenticated: !!userFromStorage,
+  user: null,
+  isAuthenticated: false,
   status: 'idle',
   error: null,
   tokenExpired: false,
@@ -93,6 +91,20 @@ export const adminLogin = createAsyncThunk(
   }
 );
 
+export const logoutUser = createAsyncThunk(
+  'auth/logoutUser',
+  async (_, thunkAPI) => {
+    try {
+      const { authService } = await import('@/services/authService');
+      await authService.logout();
+      return true;
+    } catch (error) {
+      // Even if logout API fails, we still want to clear local state
+      return true;
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -101,13 +113,11 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.tokenExpired = false;
-      localStorage.removeItem('user');
     },
     setTokenExpired: (state, action) => {
       state.tokenExpired = true;
       state.user = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('user');
     },
     clearTokenExpired: (state) => {
       state.tokenExpired = false;
@@ -123,7 +133,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.tokenExpired = false;
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(login.rejected, (state, action) => {
         state.status = 'failed';
@@ -135,7 +144,6 @@ const authSlice = createSlice({
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.status = 'failed';
@@ -167,7 +175,6 @@ const authSlice = createSlice({
       .addCase(updateUsername.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.user = { ...state.user, ...action.payload.user };
-        localStorage.setItem('user', JSON.stringify(state.user));
       })
       .addCase(updateUsername.rejected, (state, action) => {
         state.status = 'failed';
@@ -181,7 +188,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.tokenExpired = false;
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(signupOrLogin.rejected, (state, action) => {
         state.status = 'failed';
@@ -195,11 +201,26 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.tokenExpired = false;
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(adminLogin.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      .addCase(logoutUser.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.status = 'idle';
+        state.user = null;
+        state.isAuthenticated = false;
+        state.tokenExpired = false;
+      })
+      .addCase(logoutUser.rejected, (state) => {
+        // Even if logout fails, clear local state
+        state.status = 'idle';
+        state.user = null;
+        state.isAuthenticated = false;
+        state.tokenExpired = false;
       });
   },
 });

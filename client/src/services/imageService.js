@@ -9,7 +9,7 @@ export const imageService = {
    * @param {number} timeout - Request timeout in milliseconds
    * @returns {Promise<Blob>} Image blob
    */
-  fetchImageBlob: async (imageUrl, timeout = 10000) => {
+  fetchImageBlob: async (imageUrl, timeout = 30000) => {
     const response = await fetch(imageUrl, {
       signal: AbortSignal.timeout(timeout),
       mode: 'cors',

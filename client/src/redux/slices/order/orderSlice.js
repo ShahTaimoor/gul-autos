@@ -6,13 +6,11 @@ export const fetchPendingOrderCount = createAsyncThunk(
   'orders/fetchPendingOrderCount',
   async (_, thunkAPI) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
-      const res = await fetch(`${API_URL}/pending-orders-count`, {
-        credentials: 'include',
+      const axiosInstance = (await import('../auth/axiosInstance')).default;
+      const response = await axiosInstance.get('/pending-orders-count', {
         headers: { 'Content-Type': 'application/json' }
       });
-      const data = await res.json();
-      return data.count;
+      return response.data.count;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message || 'Failed to fetch pending order count');
     }

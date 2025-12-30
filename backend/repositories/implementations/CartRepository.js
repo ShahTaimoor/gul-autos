@@ -2,12 +2,23 @@ const Cart = require('../../models/Cart');
 const ICartRepository = require('../interfaces/ICartRepository');
 
 class CartRepository extends ICartRepository {
-  async findOne(query) {
-    return await Cart.findOne(query);
+  // Helper method to merge isDeleted filter
+  _mergeQuery(query, includeDeleted = false) {
+    const mergedQuery = { ...query };
+    if (!includeDeleted) {
+      mergedQuery.isDeleted = { $ne: true };
+    }
+    return mergedQuery;
   }
 
-  async findOneWithPopulate(query, populateOptions) {
-    const queryBuilder = Cart.findOne(query);
+  async findOne(query, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await Cart.findOne(mergedQuery);
+  }
+
+  async findOneWithPopulate(query, populateOptions, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    const queryBuilder = Cart.findOne(mergedQuery);
     if (populateOptions) {
       populateOptions.forEach(option => {
         queryBuilder.populate(option);
@@ -27,6 +38,11 @@ class CartRepository extends ICartRepository {
 
   async updateOne(query, updateData) {
     return await Cart.findOneAndUpdate(query, updateData, { new: true });
+  }
+
+  async deleteOne(query) {
+    // Soft delete: set isDeleted to true
+    return await Cart.findOneAndUpdate(query, { isDeleted: true }, { new: true });
   }
 }
 

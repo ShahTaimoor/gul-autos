@@ -52,19 +52,25 @@ const AuthDrawer = () => {
     }
   }, [open]);
 
-  // Validation function
-  const validateForm = useCallback(() => {
-    const errors = { shopName: '', password: '' };
+  // Validation function using Zod
+  const validateForm = useCallback(async () => {
+    const { authSchema } = await import('@/schemas/authSchemas');
+    const result = authSchema.safeParse(inputValue);
     
-    if (!inputValue.shopName.trim()) {
-      errors.shopName = 'Shop name is required';
+    if (!result.success) {
+      const errors = { shopName: '', password: '', phone: '', address: '', city: '', username: '' };
+      result.error.errors.forEach((err) => {
+        if (err.path.length > 0) {
+          const field = err.path[0];
+          if (errors.hasOwnProperty(field)) {
+            errors[field] = err.message;
+          }
+        }
+      });
+      return errors;
     }
     
-    if (!inputValue.password || inputValue.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters long';
-    }
-    
-    return errors;
+    return { shopName: '', password: '', phone: '', address: '', city: '', username: '' };
   }, [inputValue]);
 
   const handleChange = useCallback((e) => {
@@ -80,9 +86,9 @@ const AuthDrawer = () => {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    // Client-side validation
-    const validationErrors = validateForm();
-    if (validationErrors.shopName || validationErrors.password) {
+    // Client-side validation with Zod
+    const validationErrors = await validateForm();
+    if (validationErrors.shopName || validationErrors.password || validationErrors.phone || validationErrors.address || validationErrors.city || validationErrors.username) {
       setErrorMsg(validationErrors);
       return;
     }

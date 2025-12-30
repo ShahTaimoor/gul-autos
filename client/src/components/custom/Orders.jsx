@@ -536,7 +536,7 @@ Phone: ${order.phone}
       const fileName = `${sanitizedShopName}-Invoice-${orderId}.pdf`;
       doc.save(fileName);
     } catch (error) {
-      console.error('Error generating invoice:', error);
+      // Error logging should be handled by error boundary or monitoring service
       toast.error('Failed to generate invoice. Please try again.');
     } finally {
       setPdfLoading(false);

@@ -43,6 +43,10 @@ const mediaSchema = new mongoose.Schema({
   description: {
     type: String,
     trim: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
@@ -52,5 +56,7 @@ const mediaSchema = new mongoose.Schema({
 mediaSchema.index({ name: 'text', originalName: 'text', description: 'text' });
 mediaSchema.index({ uploadedBy: 1 });
 mediaSchema.index({ createdAt: -1 });
+mediaSchema.index({ isDeleted: 1 });
+mediaSchema.index({ uploadedBy: 1, isDeleted: 1 }); // Compound index for user media
 
 module.exports = mongoose.model('Media', mediaSchema);

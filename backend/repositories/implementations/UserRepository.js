@@ -2,24 +2,38 @@ const User = require('../../models/User');
 const IUserRepository = require('../interfaces/IUserRepository');
 
 class UserRepository extends IUserRepository {
-  async findById(id) {
-    return await User.findById(id).lean();
+  // Helper method to merge isDeleted filter
+  _mergeQuery(query, includeDeleted = false) {
+    const mergedQuery = { ...query };
+    if (!includeDeleted) {
+      mergedQuery.isDeleted = { $ne: true };
+    }
+    return mergedQuery;
   }
 
-  async findByIdWithPassword(id) {
-    return await User.findById(id).select('+password');
-  }
-
-  async findOne(query) {
+  async findById(id, includeDeleted = false) {
+    const query = this._mergeQuery({ _id: id }, includeDeleted);
     return await User.findOne(query).lean();
   }
 
-  async findOneWithPassword(query) {
+  async findByIdWithPassword(id, includeDeleted = false) {
+    const query = this._mergeQuery({ _id: id }, includeDeleted);
     return await User.findOne(query).select('+password');
   }
 
-  async find(query = {}) {
-    return await User.find(query).select('-password').lean();
+  async findOne(query, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await User.findOne(mergedQuery).lean();
+  }
+
+  async findOneWithPassword(query, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await User.findOne(mergedQuery).select('+password');
+  }
+
+  async find(query = {}, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await User.find(mergedQuery).select('-password').lean();
   }
 
   async create(userData) {
@@ -36,11 +50,13 @@ class UserRepository extends IUserRepository {
   }
 
   async deleteById(id) {
-    return await User.findByIdAndDelete(id).lean();
+    // Soft delete: set isDeleted to true
+    return await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true }).lean();
   }
 
-  async countDocuments(query = {}) {
-    return await User.countDocuments(query);
+  async countDocuments(query = {}, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await User.countDocuments(mergedQuery);
   }
 }
 

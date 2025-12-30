@@ -1,10 +1,24 @@
+const mongoose = require('mongoose');
 const { cartRepository, productRepository } = require('../repositories');
 const { BadRequestError, NotFoundError } = require('../errors');
 
 class CartService {
   async getCart(userId) {
+    // Validate userId
+    if (!userId) {
+      throw new BadRequestError('User ID is required');
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Invalid user ID format');
+    }
+
+    // Convert userId to ObjectId for consistency
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+
     const cart = await cartRepository.findOneWithPopulate(
-      { user: userId },
+      { user: userObjectId },
       [{ path: 'items.product' }]
     );
 
@@ -83,6 +97,14 @@ class CartService {
   }
 
   async addItem(userId, productId, quantity) {
+    // Validate userId
+    if (!userId) {
+      throw new BadRequestError('User ID is required');
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Invalid user ID format');
+    }
+
     const product = await productRepository.findById(productId);
 
     if (!product) {
@@ -93,9 +115,14 @@ class CartService {
       throw new BadRequestError(`Product "${product.title}" is out of stock`);
     }
 
-    let cart = await cartRepository.findOne({ user: userId });
+    // Convert userId to ObjectId for consistency
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+
+    let cart = await cartRepository.findOne({ user: userObjectId });
     if (!cart) {
-      cart = await cartRepository.create({ user: userId, items: [] });
+      cart = await cartRepository.create({ user: userObjectId, items: [] });
     }
 
     const itemIndex = cart.items.findIndex(i => i.product.toString() === productId);
@@ -118,7 +145,7 @@ class CartService {
     await cartRepository.save(cart);
 
     const updatedCart = await cartRepository.findOneWithPopulate(
-      { user: userId },
+      { user: userObjectId },
       [{ path: 'items.product' }]
     );
 
@@ -134,7 +161,20 @@ class CartService {
   }
 
   async removeItem(userId, productId) {
-    let cart = await cartRepository.findOne({ user: userId });
+    // Validate userId
+    if (!userId) {
+      throw new BadRequestError('User ID is required');
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Invalid user ID format');
+    }
+
+    // Convert userId to ObjectId for consistency
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+
+    let cart = await cartRepository.findOne({ user: userObjectId });
     if (!cart) {
       return { items: [] };
     }
@@ -144,7 +184,7 @@ class CartService {
     await cartRepository.save(cart);
 
     const updatedCart = await cartRepository.findOneWithPopulate(
-      { user: userId },
+      { user: userObjectId },
       [{ path: 'items.product' }]
     );
 
@@ -160,7 +200,20 @@ class CartService {
   }
 
   async emptyCart(userId) {
-    let cart = await cartRepository.findOne({ user: userId });
+    // Validate userId
+    if (!userId) {
+      throw new BadRequestError('User ID is required');
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Invalid user ID format');
+    }
+
+    // Convert userId to ObjectId for consistency
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+
+    let cart = await cartRepository.findOne({ user: userObjectId });
     if (cart) {
       cart.items = [];
       cart.updatedAt = new Date();
@@ -170,7 +223,20 @@ class CartService {
   }
 
   async updateItemQuantity(userId, productId, quantity) {
-    let cart = await cartRepository.findOne({ user: userId });
+    // Validate userId
+    if (!userId) {
+      throw new BadRequestError('User ID is required');
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw new BadRequestError('Invalid user ID format');
+    }
+
+    // Convert userId to ObjectId for consistency
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) 
+      ? new mongoose.Types.ObjectId(userId) 
+      : userId;
+
+    let cart = await cartRepository.findOne({ user: userObjectId });
     if (!cart) {
       throw new NotFoundError('Cart not found');
     }
@@ -201,7 +267,7 @@ class CartService {
     await cartRepository.save(cart);
 
     const updatedCart = await cartRepository.findOneWithPopulate(
-      { user: userId },
+      { user: userObjectId },
       [{ path: 'items.product' }]
     );
 

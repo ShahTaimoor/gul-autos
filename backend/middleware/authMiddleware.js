@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { userRepository } = require('../repositories');
+const logger = require('../utils/logger');
 
 // Enhanced middleware to check if user is authorized with access token
 const isAuthorized = async (req, res, next) => {
@@ -24,7 +25,7 @@ const isAuthorized = async (req, res, next) => {
             });
         }
 
-        const user = await User.findById(decodedToken.id);
+        const user = await userRepository.findById(decodedToken.id);
         if (!user) {
             return res.status(401).json({ 
                 success: false, 
@@ -32,10 +33,15 @@ const isAuthorized = async (req, res, next) => {
             });
         }
 
-        req.user = user;
+        // Normalize user object to have both _id and id for compatibility
+        req.user = {
+            ...user,
+            id: user._id || user.id,
+            _id: user._id || user.id
+        };
         next();
     } catch (error) {
-        console.error('Error in isAuthorized middleware:', error.message);
+        logger.error('Error in isAuthorized middleware:', { message: error.message, stack: error.stack });
         
         // Check if it's a token expiration error
         if (error.name === 'TokenExpiredError') {
@@ -68,7 +74,7 @@ const isAdmin = (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error in isAdmin middleware:', error.message);
+        logger.error('Error in isAdmin middleware:', { message: error.message, stack: error.stack });
         return res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 };
@@ -88,7 +94,7 @@ const isSuperAdmin = (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error in isSuperAdmin middleware:', error.message);
+        logger.error('Error in isSuperAdmin middleware:', { message: error.message, stack: error.stack });
         return res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 };
@@ -108,7 +114,7 @@ const isAdminOrSuperAdmin = (req, res, next) => {
 
         next();
     } catch (error) {
-        console.error('Error in isAdminOrSuperAdmin middleware:', error.message);
+        logger.error('Error in isAdminOrSuperAdmin middleware:', { message: error.message, stack: error.stack });
         return res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 };

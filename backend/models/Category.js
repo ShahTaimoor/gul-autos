@@ -31,8 +31,18 @@ const categorySchema = new mongoose.Schema({
     active: {
         type: Boolean,
         default: true
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 
 }, { timestamps: true })
+
+// Indexes for frequently used fields
+categorySchema.index({ name: 1 });
+categorySchema.index({ slug: 1 });
+categorySchema.index({ isDeleted: 1 });
+categorySchema.index({ active: 1, isDeleted: 1 }); // Compound index for active categories
 
 module.exports = mongoose.model('Category', categorySchema);

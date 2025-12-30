@@ -100,8 +100,12 @@ class OrderService {
     ]);
   }
 
-  async getOrdersByUserId(userId) {
-    return await orderRepository.find(
+  async getOrdersByUserId(userId, page = 1, limit = 20) {
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.max(1, Math.min(parseInt(limit) || 20, 100)); // Max 100 per page
+    const skip = (pageNum - 1) * limitNum;
+
+    const orders = await orderRepository.find(
       { userId },
       {
         populate: [
@@ -109,9 +113,24 @@ class OrderService {
             path: 'products.id',
             select: 'title price category picture'
           }
-        ]
+        ],
+        sort: { createdAt: -1 },
+        skip,
+        limit: limitNum
       }
     );
+
+    const total = await orderRepository.countDocuments({ userId });
+
+    return {
+      orders,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    };
   }
 
   async getAllOrders(page = 1, limit = 10) {

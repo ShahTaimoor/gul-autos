@@ -2,11 +2,21 @@ const Media = require('../../models/Media');
 const IMediaRepository = require('../interfaces/IMediaRepository');
 
 class MediaRepository extends IMediaRepository {
-  async findById(id) {
-    return await Media.findById(id).lean();
+  // Helper method to merge isDeleted filter
+  _mergeQuery(query, includeDeleted = false) {
+    const mergedQuery = { ...query };
+    if (!includeDeleted) {
+      mergedQuery.isDeleted = { $ne: true };
+    }
+    return mergedQuery;
   }
 
-  async find(query, options = {}) {
+  async findById(id, includeDeleted = false) {
+    const query = this._mergeQuery({ _id: id }, includeDeleted);
+    return await Media.findOne(query).lean();
+  }
+
+  async find(query, options = {}, includeDeleted = false) {
     const {
       populate = [],
       select,
@@ -15,7 +25,8 @@ class MediaRepository extends IMediaRepository {
       limit = null
     } = options;
 
-    let queryBuilder = Media.find(query);
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    let queryBuilder = Media.find(mergedQuery);
 
     if (select) {
       queryBuilder = queryBuilder.select(select);
@@ -46,15 +57,18 @@ class MediaRepository extends IMediaRepository {
   }
 
   async deleteById(id) {
-    return await Media.findByIdAndDelete(id).lean();
+    // Soft delete: set isDeleted to true
+    return await Media.findByIdAndUpdate(id, { isDeleted: true }, { new: true }).lean();
   }
 
   async deleteMany(filter) {
-    return await Media.deleteMany(filter);
+    // Soft delete: set isDeleted to true for all matching documents
+    return await Media.updateMany(filter, { isDeleted: true });
   }
 
-  async countDocuments(query) {
-    return await Media.countDocuments(query);
+  async countDocuments(query, includeDeleted = false) {
+    const mergedQuery = this._mergeQuery(query, includeDeleted);
+    return await Media.countDocuments(mergedQuery);
   }
 }
 

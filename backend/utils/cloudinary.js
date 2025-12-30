@@ -1,10 +1,13 @@
 const cloudinary = require('cloudinary').v2;
 require('dotenv').config();
+const logger = require('../utils/logger');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  timeout: 60000, // 60 seconds timeout for slow networks
+  secure: true
 });
 
 const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
@@ -20,7 +23,9 @@ const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
       const isAlreadyWebP = metadata.format === 'webp';
       
       if (isAlreadyWebP) {
-        console.log(`📁 Image is already WebP format: ${(buffer.length / 1024).toFixed(2)}KB`);
+        if (process.env.NODE_ENV !== 'production') {
+          logger.debug(`Image is already WebP format: ${(buffer.length / 1024).toFixed(2)}KB`);
+        }
         webpBuffer = buffer;
       } else {
         // Convert to WebP with optimization
@@ -32,11 +37,13 @@ const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
           ...options
         });
         
-        console.log(`🔄 Converting image to WebP: ${(buffer.length / 1024).toFixed(2)}KB → ${(webpBuffer.length / 1024).toFixed(2)}KB`);
+        if (process.env.NODE_ENV !== 'production') {
+          logger.debug(`Converting image to WebP: ${(buffer.length / 1024).toFixed(2)}KB → ${(webpBuffer.length / 1024).toFixed(2)}KB`);
+        }
       }
     } catch (metadataError) {
       // If metadata extraction fails, assume it needs conversion
-      console.log('⚠️ Could not determine image format, attempting conversion...');
+      logger.warn('Could not determine image format, attempting conversion...');
       webpBuffer = await convertToWebP(buffer, {
         quality: 80,
         width: 1200,
@@ -53,17 +60,18 @@ const uploadImageOnCloudinary = async (buffer, folderName, options = {}) => {
       format: 'webp',
       quality: 'auto:good',
       fetch_format: 'auto',
-      flags: 'lossy'
+      flags: 'lossy',
+      timeout: 60000 // 60 seconds timeout for slow networks
     });
 
-    console.log(`✅ WebP upload successful: ${result.secure_url}`);
+    logger.info('WebP upload successful', { url: result.secure_url });
 
     return {
       secure_url: result.secure_url,
       public_id: result.public_id
     };
   } catch (error) {
-    console.error('❌ Cloudinary upload error:', error);
+    logger.error('Cloudinary upload error:', { error: error.message, stack: error.stack });
     throw new Error('Cloudinary upload failed');
   }
 };
@@ -83,7 +91,8 @@ const uploadResponsiveWebP = async (buffer, folderName, options = {}) => {
         format: 'webp',
         quality: 'auto:good',
         fetch_format: 'auto',
-        flags: 'lossy'
+        flags: 'lossy',
+        timeout: 60000 // 60 seconds timeout for slow networks
       });
       
       uploadResults[size] = {
@@ -92,19 +101,19 @@ const uploadResponsiveWebP = async (buffer, folderName, options = {}) => {
       };
     }
     
-    console.log('✅ Responsive WebP images uploaded successfully');
+    logger.info('Responsive WebP images uploaded successfully');
     return uploadResults;
   } catch (error) {
-    console.error('❌ Responsive WebP upload error:', error);
+    logger.error('Responsive WebP upload error:', { error: error.message, stack: error.stack });
     throw new Error('Responsive WebP upload failed');
   }
 };
 
 const deleteImageOnCloudinary = async (public_id) => {
   try {
-    return await cloudinary.uploader.destroy(public_id);
+    return await cloudinary.uploader.destroy(public_id, { timeout: 30000 });
   } catch (error) {
-    console.error('Cloudinary delete error:', error);
+    logger.error('Cloudinary delete error:', { error: error.message, stack: error.stack });
     throw new Error('Cloudinary deletion failed');
   }
 };

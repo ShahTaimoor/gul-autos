@@ -52,6 +52,10 @@ const productSchema = new mongoose.Schema({
         trim: true,
         lowercase: true
     }],
+    isDeleted: {
+        type: Boolean,
+        default: false
+    }
 
 }, { timestamps: true })
 
@@ -80,5 +84,9 @@ productSchema.index({
     },
     name: 'text_search_index'
 });
+
+// Soft delete index
+productSchema.index({ isDeleted: 1 });
+productSchema.index({ category: 1, isDeleted: 1 }); // Compound index for filtered queries
 
 module.exports = mongoose.model('Product', productSchema)

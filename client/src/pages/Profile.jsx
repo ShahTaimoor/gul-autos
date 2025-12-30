@@ -42,7 +42,17 @@ const Profile = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // Validate with Zod
+    const { profileSchema } = await import('@/schemas/profileSchemas');
+    const result = profileSchema.safeParse(formData);
+    
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
+      return;
+    }
+    
     dispatch(updateProfile(formData))
       .unwrap()
       .then(() => {

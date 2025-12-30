@@ -1,16 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const { userRepository } = require('../repositories');
+const { userRepository, blacklistedTokenRepository } = require('../repositories');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../errors');
-
-// Simple refresh-token blacklist model (TTL via expiresAt)
-const blacklistedTokenSchema = new mongoose.Schema({
-  token: { type: String, required: true, unique: true, index: true },
-  expiresAt: { type: Date, required: true },
-});
-blacklistedTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-const BlacklistedToken = mongoose.models.BlacklistedToken || mongoose.model('BlacklistedToken', blacklistedTokenSchema);
 
 class UserService {
   async signupOrLogin(shopName, password, phone, address, city, username, rememberMe) {
@@ -138,24 +129,33 @@ class UserService {
       throw new NotFoundError('User not found');
     }
 
-    const blacklisted = await BlacklistedToken.findOne({ token: refreshToken });
+    const blacklisted = await blacklistedTokenRepository.findOne({ token: refreshToken });
     if (blacklisted) {
       throw new BadRequestError('Refresh token invalidated');
     }
 
+    // Admin users (role 1 or 2) get 1 day token expiration
+    // Regular users get 365 days
+    const isAdmin = user.role === 1 || user.role === 2;
+    const accessTokenExpiry = isAdmin ? '1d' : '365d';
+    const cookieMaxAge = isAdmin ? 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+
     const newAccessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '365d' }
+      { expiresIn: accessTokenExpiry }
     );
 
-    return { accessToken: newAccessToken };
+    return { 
+      accessToken: newAccessToken,
+      cookieMaxAge 
+    };
   }
 
   async logout(refreshToken) {
     if (refreshToken) {
       try {
-        await BlacklistedToken.create({
+        await blacklistedTokenRepository.create({
           token: refreshToken,
           expiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000)
         });
@@ -188,11 +188,20 @@ class UserService {
     };
   }
 
-  async getAllUsers() {
-    const users = await userRepository.find({});
+  async getAllUsers(page = 1, limit = 50) {
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.max(1, Math.min(parseInt(limit) || 50, 100)); // Max 100 per page
+    const skip = (pageNum - 1) * limitNum;
+
+    const users = await userRepository.find({}, { skip, limit: limitNum });
+    const total = await userRepository.countDocuments({});
+
     return {
       users,
-      total: users.length
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
     };
   }
 
@@ -275,16 +284,24 @@ class UserService {
   }
 
   generateTokens(user, rememberMe = false) {
+    // Admin users (role 1 or 2) get 1 day token expiration
+    // Regular users get 365 days
+    const isAdmin = user.role === 1 || user.role === 2;
+    const accessTokenExpiry = isAdmin ? '1d' : '365d';
+    const refreshTokenExpiry = isAdmin ? '1d' : '365d';
+    const cookieMaxAge = isAdmin ? 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+    const refreshCookieMaxAge = isAdmin ? 24 * 60 * 60 * 1000 : (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
+
     const accessToken = jwt.sign(
       { id: user._id || user.id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '365d' }
+      { expiresIn: accessTokenExpiry }
     );
 
     const refreshToken = jwt.sign(
       { id: user._id || user.id, type: 'refresh' },
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '365d' }
+      { expiresIn: refreshTokenExpiry }
     );
 
     return {
@@ -294,13 +311,13 @@ class UserService {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        maxAge: 365 * 24 * 60 * 60 * 1000,
+        maxAge: cookieMaxAge,
       },
       refreshCookieOptions: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        maxAge: (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+        maxAge: refreshCookieMaxAge,
       }
     };
   }

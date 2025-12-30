@@ -380,7 +380,7 @@ const OrderData = ({
       const fileName = `${sanitizedShopName}-Invoice-${orderId}.pdf`;
       doc.save(fileName);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      // Error logging should be handled by error boundary or monitoring service
       alert('Failed to generate PDF. Please try again.');
     } finally {
       setDownloading(false);
