@@ -59,14 +59,17 @@ const AuthDrawer = () => {
     
     if (!result.success) {
       const errors = { shopName: '', password: '', phone: '', address: '', city: '', username: '' };
-      result.error.errors.forEach((err) => {
-        if (err.path.length > 0) {
-          const field = err.path[0];
-          if (errors.hasOwnProperty(field)) {
-            errors[field] = err.message;
+      // Safely access error.errors
+      if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+        result.error.errors.forEach((err) => {
+          if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+            const field = err.path[0];
+            if (errors.hasOwnProperty(field)) {
+              errors[field] = err.message;
+            }
           }
-        }
-      });
+        });
+      }
       return errors;
     }
     

@@ -110,7 +110,7 @@ class UserService {
     return this._sanitizeUser(user);
   }
 
-  async refreshToken(refreshToken) {
+  async refreshToken(refreshToken, rememberMe = false) {
     if (!refreshToken) {
       throw new BadRequestError('Refresh token not provided');
     }
@@ -129,26 +129,50 @@ class UserService {
       throw new NotFoundError('User not found');
     }
 
+    // Check if token is blacklisted
     const blacklisted = await blacklistedTokenRepository.findOne({ token: refreshToken });
     if (blacklisted) {
       throw new BadRequestError('Refresh token invalidated');
+    }
+
+    // TOKEN ROTATION: Blacklist the old refresh token
+    try {
+      await blacklistedTokenRepository.create({
+        token: refreshToken,
+        expiresAt: new Date(decoded.exp * 1000) // Use token's expiration time
+      });
+    } catch (error) {
+      // Ignore duplicate key errors (token already blacklisted)
+      // This can happen in race conditions
     }
 
     // Admin users (role 1 or 2) get 1 day token expiration
     // Regular users get 365 days
     const isAdmin = user.role === 1 || user.role === 2;
     const accessTokenExpiry = isAdmin ? '1d' : '365d';
+    const refreshTokenExpiry = isAdmin ? '1d' : '365d';
     const cookieMaxAge = isAdmin ? 24 * 60 * 60 * 1000 : 365 * 24 * 60 * 60 * 1000;
+    const refreshCookieMaxAge = isAdmin ? 24 * 60 * 60 * 1000 : (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000;
 
+    // Generate new access token
     const newAccessToken = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: accessTokenExpiry }
     );
 
+    // TOKEN ROTATION: Generate new refresh token
+    const newRefreshToken = jwt.sign(
+      { id: user._id, type: 'refresh' },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: refreshTokenExpiry }
+    );
+
     return { 
       accessToken: newAccessToken,
-      cookieMaxAge 
+      refreshToken: newRefreshToken,
+      cookieMaxAge,
+      refreshCookieMaxAge
     };
   }
 
@@ -181,11 +205,8 @@ class UserService {
       throw new NotFoundError('User not found');
     }
 
-    return {
-      id: user._id,
-      name: user.name,
-      role: user.role
-    };
+    // Return full sanitized user object for state restoration
+    return this._sanitizeUser(user);
   }
 
   async getAllUsers(page = 1, limit = 50) {

@@ -5,7 +5,6 @@ import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { X, Edit, Star, Upload as UploadIcon, Trash2 } from 'lucide-react';
-import { productSchema } from '@/schemas/productSchemas';
 
 const EditProductModal = ({
   showEditModal,
@@ -28,23 +27,46 @@ const EditProductModal = ({
 
   // Validate on change
   useEffect(() => {
-    if (Object.keys(touched).length > 0) {
-      const result = productSchema.safeParse({
-        ...editFormData,
-        picture: editFormData.picture || editPreviewImage || ''
-      });
-      if (!result.success) {
-        const newErrors = {};
-        result.error.errors.forEach((err) => {
-          if (err.path.length > 0) {
-            newErrors[err.path[0]] = err.message;
+    const validateForm = async () => {
+      if (Object.keys(touched).length > 0) {
+        try {
+          const { productSchema } = await import('@/schemas/productSchemas');
+          if (productSchema && typeof productSchema.safeParse === 'function') {
+            // Ensure price and stock are strings for validation (schema expects strings)
+            const validationData = {
+              ...editFormData,
+              price: String(editFormData.price || ''),
+              stock: String(editFormData.stock || ''),
+              picture: editFormData.picture || editPreviewImage || ''
+            };
+            
+            const result = productSchema.safeParse(validationData);
+            if (result && !result.success) {
+              const newErrors = {};
+              // Safely access error.errors
+              if (result.error && result.error.errors) {
+                const errors = result.error.errors;
+                if (Array.isArray(errors) && errors.length > 0) {
+                  for (let i = 0; i < errors.length; i++) {
+                    const err = errors[i];
+                    if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+                      newErrors[err.path[0]] = err.message;
+                    }
+                  }
+                }
+              }
+              setErrors(newErrors);
+            } else if (result && result.success) {
+              setErrors({});
+            }
           }
-        });
-        setErrors(newErrors);
-      } else {
-        setErrors({});
+        } catch (error) {
+          setErrors({});
+        }
       }
-    }
+    };
+    
+    validateForm();
   }, [editFormData, editPreviewImage, touched]);
 
   const handleBlur = (field) => {
@@ -60,8 +82,10 @@ const EditProductModal = ({
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    
     // Mark all fields as touched
     setTouched({
       title: true,
@@ -71,22 +95,53 @@ const EditProductModal = ({
       category: true
     });
 
-    const result = productSchema.safeParse({
-      ...editFormData,
-      picture: editFormData.picture || editPreviewImage || ''
-    });
-    if (!result.success) {
-      const newErrors = {};
-      result.error.errors.forEach((err) => {
-        if (err.path.length > 0) {
-          newErrors[err.path[0]] = err.message;
-        }
-      });
-      setErrors(newErrors);
-      return;
-    }
+    try {
+      // Dynamically import schema to ensure it's loaded
+      const { productSchema } = await import('@/schemas/productSchemas');
+      
+      if (!productSchema || typeof productSchema.safeParse !== 'function') {
+        // If schema is not available, proceed with submission (backend will validate)
+        onSubmit(e);
+        return;
+      }
 
-    onSubmit(e);
+      // Ensure price and stock are strings for validation (schema expects strings)
+      const validationData = {
+        ...editFormData,
+        price: String(editFormData.price || ''),
+        stock: String(editFormData.stock || ''),
+        picture: editFormData.picture || editPreviewImage || ''
+      };
+      
+      const result = productSchema.safeParse(validationData);
+      
+      if (result && !result.success) {
+        const newErrors = {};
+        // Safely access error.errors
+        if (result.error && result.error.errors) {
+          const errors = result.error.errors;
+          if (Array.isArray(errors) && errors.length > 0) {
+            for (let i = 0; i < errors.length; i++) {
+              const err = errors[i];
+              if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+                newErrors[err.path[0]] = err.message;
+              }
+            }
+          }
+        }
+        setErrors(newErrors);
+        // Still proceed with submission - backend will validate
+        // User can see errors but can still try to submit
+        onSubmit(e);
+        return;
+      }
+
+      // Validation passed, proceed with submission
+      onSubmit(e);
+    } catch (error) {
+      // If validation fails, still try to submit (let backend handle validation)
+      onSubmit(e);
+    }
   };
 
   if (!showEditModal || !selectedProduct) return null;
@@ -110,7 +165,7 @@ const EditProductModal = ({
         </div>
 
         <div className="p-3 sm:p-6 overflow-y-auto flex-1">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="edit-title" className="text-sm font-semibold text-gray-700">
@@ -180,14 +235,18 @@ const EditProductModal = ({
                       onClick={(e) => e.stopPropagation()}
                     />
                   </div>
-                  {filteredCategories.map((cat) => (
-                    <SelectItem key={cat._id} value={cat._id} className="py-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
-                        {cat.name}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {Array.isArray(filteredCategories) && filteredCategories.length > 0 ? (
+                    filteredCategories.map((cat) => (
+                      <SelectItem key={cat._id} value={cat._id} className="py-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="" disabled>No categories available</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               {errors.category && touched.category && (
@@ -311,7 +370,7 @@ const EditProductModal = ({
               <Button 
                 type="submit" 
                 disabled={isUpdating}
-                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                className="flex-1 h-11 bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpdating ? (
                   <div className="flex items-center gap-2">

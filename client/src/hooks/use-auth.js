@@ -28,14 +28,20 @@ const clearCookies = () => {
 
 /**
  * Verify token (can be used outside Router context)
- * @returns {Promise<boolean>} True if token is valid
+ * @returns {Promise<{ok: boolean, user: object|null}>} Verification result with user data if valid
  */
 export const verifyToken = async () => {
   try {
     const result = await authService.verifyToken();
-    return result.ok;
+    return {
+      ok: result.ok,
+      user: result.data?.user || null
+    };
   } catch (error) {
-    return false;
+    return {
+      ok: false,
+      user: null
+    };
   }
 };
 

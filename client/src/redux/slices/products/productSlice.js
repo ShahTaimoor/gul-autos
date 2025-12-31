@@ -236,15 +236,103 @@ export const productsSlice = createSlice({
   state.status = 'succeeded';
   const updatedProduct = action.payload.product;
 
+  if (!updatedProduct || !updatedProduct._id) {
+    return;
+  }
+
+  // Get the image URL from the updated product
+  const imageUrl = updatedProduct.picture?.secure_url || updatedProduct.image || null;
+  
+  // Get existing image URL to compare
+  const existingProduct = state.products.find(p => {
+    const compareIds = (id1, id2) => {
+      if (!id1 || !id2) return false;
+      return String(id1) === String(id2);
+    };
+    return compareIds(p._id, updatedProduct._id);
+  });
+  const existingImageUrl = existingProduct?.image || existingProduct?.picture?.secure_url || null;
+  
+  // Check if image actually changed
+  const imageChanged = existingImageUrl !== imageUrl;
+  
+  // Transform the updated product - ensure picture object and image field are both set
   const transformedProduct = {
     ...updatedProduct,
-    image: updatedProduct.picture?.secure_url || null
+    // Ensure picture object is properly structured
+    picture: updatedProduct.picture || (imageUrl ? { secure_url: imageUrl } : null),
+    // Set image field for backward compatibility
+    image: imageUrl,
+    // Add timestamp to force image reload - always update timestamp if image changed
+    _imageUpdated: imageChanged ? Date.now() : (existingProduct?._imageUpdated || Date.now())
   };
 
-  // Find and update the product in the current list
-  const index = state.products.findIndex(p => p._id === updatedProduct._id);
-  if (index !== -1) {
-    state.products[index] = transformedProduct;
+  // Helper function to compare IDs (handle string vs ObjectId)
+  const compareIds = (id1, id2) => {
+    if (!id1 || !id2) return false;
+    return String(id1) === String(id2);
+  };
+
+  // Find and update the product in the products list
+  // Merge with existing product to preserve all fields
+  const productsIndex = state.products.findIndex(p => compareIds(p._id, updatedProduct._id));
+  if (productsIndex !== -1) {
+    // Create a new object to ensure React detects the change
+    const existingProduct = state.products[productsIndex];
+    // Create a completely new object to force React re-render
+    const updatedProductObj = {
+      ...existingProduct,
+      ...transformedProduct,
+      // Ensure category is preserved if it exists in the updated product
+      category: transformedProduct.category || existingProduct.category,
+      // Force update picture and image fields
+      picture: transformedProduct.picture,
+      image: transformedProduct.image,
+      _imageUpdated: transformedProduct._imageUpdated
+    };
+    // Replace the entire array to ensure reference change
+    state.products = [
+      ...state.products.slice(0, productsIndex),
+      updatedProductObj,
+      ...state.products.slice(productsIndex + 1)
+    ];
+  }
+
+  // Also update in searchResults if it exists
+  if (state.searchResults && Array.isArray(state.searchResults)) {
+    const searchIndex = state.searchResults.findIndex(p => compareIds(p._id, updatedProduct._id));
+    if (searchIndex !== -1) {
+      // Create a new object to ensure React detects the change
+      const existingProduct = state.searchResults[searchIndex];
+      const updatedSearchProduct = {
+        ...existingProduct,
+        ...transformedProduct,
+        // Ensure category is preserved if it exists in the updated product
+        category: transformedProduct.category || existingProduct.category,
+        // Force update picture and image fields
+        picture: transformedProduct.picture,
+        image: transformedProduct.image,
+        _imageUpdated: transformedProduct._imageUpdated
+      };
+      // Replace the entire array to ensure reference change
+      state.searchResults = [
+        ...state.searchResults.slice(0, searchIndex),
+        updatedSearchProduct,
+        ...state.searchResults.slice(searchIndex + 1)
+      ];
+    }
+  }
+
+  // Update singleProducts if it's the same product
+  if (state.singleProducts && compareIds(state.singleProducts._id, updatedProduct._id)) {
+    state.singleProducts = {
+      ...state.singleProducts,
+      ...transformedProduct,
+      category: transformedProduct.category || state.singleProducts.category,
+      picture: transformedProduct.picture,
+      image: transformedProduct.image,
+      _imageUpdated: transformedProduct._imageUpdated
+    };
   }
 })
             .addCase(updateSingleProduct.rejected, (state, action) => {

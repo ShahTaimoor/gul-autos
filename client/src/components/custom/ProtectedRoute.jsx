@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { clearTokenExpired, logout, setTokenExpired } from '@/redux/slices/auth/authSlice';
+import { clearTokenExpired, logout, setTokenExpired, restoreUser } from '@/redux/slices/auth/authSlice';
 import { fetchCart } from '@/redux/slices/cart/cartSlice';
 import { verifyToken } from '@/hooks/use-auth';
 
@@ -14,6 +14,31 @@ const ProtectedRoute = ({ children }) => {
   // Track when user logged in to avoid immediate token checks
   const loginTimeRef = useRef(null);
   const lastCheckTimeRef = useRef(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(!isAuthenticated);
+
+  // Check authentication on mount if not authenticated (page refresh scenario)
+  useEffect(() => {
+    const checkAuthOnMount = async () => {
+      if (!isAuthenticated && !user) {
+        try {
+          const result = await verifyToken();
+          if (result.ok && result.user) {
+            // Restore user state from token
+            dispatch(restoreUser(result.user));
+            loginTimeRef.current = Date.now();
+          }
+        } catch (error) {
+          // Token invalid or error - user will be redirected
+        } finally {
+          setIsCheckingAuth(false);
+        }
+      } else {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuthOnMount();
+  }, [dispatch, isAuthenticated, user]);
 
   // Track login time when user becomes authenticated
   useEffect(() => {
@@ -44,10 +69,13 @@ const ProtectedRoute = ({ children }) => {
       }
       
       try {
-        const isValid = await verifyToken();
+        const result = await verifyToken();
         lastCheckTimeRef.current = Date.now();
-        if (!isValid) {
+        if (!result.ok) {
           dispatch(setTokenExpired());
+        } else if (result.user && (!user || user._id !== result.user._id || user.id !== result.user.id)) {
+          // Update user if it changed
+          dispatch(restoreUser(result.user));
         }
       } catch (error) {
         // Don't logout on network errors
@@ -95,6 +123,11 @@ const ProtectedRoute = ({ children }) => {
   }, [user, isAuthenticated, checkAuthentication]);
 
   const publicPaths = ['/', '/products', '/all-products', '/search', '/success'];
+
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return null; // or a loading spinner
+  }
 
   // Handle token expiration - stay on current page
   if (tokenExpired) {

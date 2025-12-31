@@ -76,13 +76,25 @@ const LazyImage = ({
   }, [quality]);
 
   // Load image when in view (or immediately if loading="eager")
+  // Also reload if src changes (for cache-busting)
   useEffect(() => {
-    if (src && !currentSrc) {
+    if (src) {
       // If loading is eager, load immediately without waiting for inView
-      if (loading === 'eager' || inView) {
+      // Also reload if src changed (for updated images)
+      if (loading === 'eager' || inView || (currentSrc && currentSrc !== src)) {
         const webpUrl = supportsWebP ? getWebPUrl(src) : src;
+        // Reset loading state when src changes to show loading indicator
+        if (currentSrc !== webpUrl) {
+          setImageLoaded(false);
+          setImageError(false);
+        }
         setCurrentSrc(webpUrl);
       }
+    } else if (currentSrc) {
+      // Clear src if it becomes null/undefined
+      setCurrentSrc(null);
+      setImageLoaded(false);
+      setImageError(false);
     }
   }, [inView, src, currentSrc, supportsWebP, getWebPUrl, loading]);
 
@@ -160,6 +172,7 @@ const LazyImage = ({
           ref={imgRef}
           src={currentSrc}
           alt={alt}
+          key={currentSrc}
           className={cn(
             'transition-opacity duration-300',
             imageLoaded ? 'opacity-100' : 'opacity-0',

@@ -105,6 +105,20 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+export const getCurrentUser = createAsyncThunk(
+  'auth/getCurrentUser',
+  async (_, thunkAPI) => {
+    try {
+      const response = await authService.getCurrentUser();
+      return response;
+    } catch (error) {
+      // If getCurrentUser fails, user is not authenticated
+      // Don't throw error, just return null to indicate no user
+      return thunkAPI.rejectWithValue(null);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -121,6 +135,12 @@ const authSlice = createSlice({
     },
     clearTokenExpired: (state) => {
       state.tokenExpired = false;
+    },
+    restoreUser: (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+      state.tokenExpired = false;
+      state.status = 'succeeded';
     },
   },
   extraReducers: (builder) => {
@@ -221,9 +241,24 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.tokenExpired = false;
+      })
+      .addCase(getCurrentUser.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(getCurrentUser.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.tokenExpired = false;
+      })
+      .addCase(getCurrentUser.rejected, (state) => {
+        // User is not authenticated, keep state as is (don't set to failed)
+        state.status = 'idle';
+        state.user = null;
+        state.isAuthenticated = false;
       });
   },
 });
 
-export const { logout, setTokenExpired, clearTokenExpired } = authSlice.actions;
+export const { logout, setTokenExpired, clearTokenExpired, restoreUser } = authSlice.actions;
 export default authSlice.reducer;

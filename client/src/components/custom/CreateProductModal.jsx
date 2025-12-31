@@ -23,11 +23,14 @@ const CreateProductModal = ({
       const result = productSchema.safeParse(formData);
       if (!result.success) {
         const newErrors = {};
-        result.error.errors.forEach((err) => {
-          if (err.path.length > 0) {
-            newErrors[err.path[0]] = err.message;
-          }
-        });
+        // Safely access error.errors
+        if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+          result.error.errors.forEach((err) => {
+            if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+              newErrors[err.path[0]] = err.message;
+            }
+          });
+        }
         setErrors(newErrors);
       } else {
         setErrors({});
@@ -62,11 +65,14 @@ const CreateProductModal = ({
     const result = productSchema.safeParse(formData);
     if (!result.success) {
       const newErrors = {};
-      result.error.errors.forEach((err) => {
-        if (err.path.length > 0) {
-          newErrors[err.path[0]] = err.message;
-        }
-      });
+      // Safely access error.errors
+      if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+        result.error.errors.forEach((err) => {
+          if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+            newErrors[err.path[0]] = err.message;
+          }
+        });
+      }
       setErrors(newErrors);
       return;
     }

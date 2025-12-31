@@ -75,12 +75,20 @@ const ProductCardAdmin = ({
         onClick={() => onPreviewImage(product.image || product.picture?.secure_url)}
       >
         <LazyImage
-          src={product.image || product.picture?.secure_url}
+          src={(() => {
+            const imageUrl = product.image || product.picture?.secure_url;
+            if (!imageUrl) return imageUrl;
+            // Always add cache-busting parameter with timestamp to force reload
+            const separator = imageUrl.includes('?') ? '&' : '?';
+            const timestamp = product._imageUpdated || Date.now();
+            return `${imageUrl}${separator}_t=${timestamp}`;
+          })()}
           alt={product.title}
           className="w-full h-full object-cover"
           fallback="/logo.jpeg"
           quality={90}
           loading="eager"
+          key={`${product._id}-${product._imageUpdated || product.picture?.secure_url || product.image || 'default'}`}
         />
         
         {!product.isFeatured && (

@@ -90,7 +90,10 @@ const categoriesSlice = createSlice({
 
             .addCase(AddCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(AllCategory.pending, (state) => { state.status = 'loading'; })
-            .addCase(AllCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })
+            .addCase(AllCategory.fulfilled, (state, action) => { 
+                state.status = 'succeeded'; 
+                state.categories = Array.isArray(action.payload?.data) ? action.payload.data : []; 
+            })
             .addCase(AllCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(SingleCategory.pending, (state) => { state.status = 'loading'; })
             .addCase(SingleCategory.fulfilled, (state, action) => { state.status = 'succeeded'; state.categories = action.payload.data; })

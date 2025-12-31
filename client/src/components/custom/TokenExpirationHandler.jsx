@@ -53,8 +53,8 @@ const TokenExpirationHandler = () => {
         // This helps with mobile browser tab switching
         const checkAuth = async () => {
           try {
-            const isValid = await verifyToken();
-            if (!isValid) {
+            const result = await verifyToken();
+            if (!result.ok) {
               dispatch(setTokenExpired());
             }
           } catch (error) {

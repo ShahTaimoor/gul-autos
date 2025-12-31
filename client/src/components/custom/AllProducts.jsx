@@ -96,11 +96,12 @@ const AllProducts = () => {
   // Memoized combined categories - backend handles filtering, so we just combine with "All"
   const combinedCategories = useMemo(() => [
     { _id: 'all', name: 'All', image: 'https://cdn.pixabay.com/photo/2023/07/19/12/16/car-8136751_1280.jpg' },
-    ...(categories || [])
+    ...(Array.isArray(categories) ? categories : [])
   ], [categories]);
 
   // Categories are now filtered by backend - no client-side filtering needed
-  const filteredCategories = combinedCategories;
+  // Ensure filteredCategories is always an array
+  const filteredCategories = Array.isArray(combinedCategories) ? combinedCategories : [];
 
   // Form state
   const [formData, setFormData] = useState({
@@ -110,15 +111,18 @@ const AllProducts = () => {
     stock: ''
   });
 
+  
   // Fetch categories - initial load
   useEffect(() => {
     dispatch(AllCategory(''));
   }, [dispatch]);
 
+
   // Fetch categories from backend when search term changes (debounced)
   useEffect(() => {
     dispatch(AllCategory(debouncedCategorySearch));
   }, [dispatch, debouncedCategorySearch]);
+
 
   // Fetch categories for edit modal when search term changes (debounced)
   useEffect(() => {
@@ -127,21 +131,25 @@ const AllProducts = () => {
     }
   }, [dispatch, debouncedEditCategorySearch, showEditModal]);
 
+
   // Fetch products when filters change
   useEffect(() => {
     dispatch(fetchProducts({ category, page: currentPage, limit, stockFilter, sortBy }));
   }, [dispatch, category, currentPage, limit, stockFilter, sortBy]);
+
 
   // Scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
+
   // Products are fully filtered and sorted on the backend
   // Show search results if searching, otherwise show regular products
   const sortedProducts = useMemo(() => {
     let productList = [];
     
+
     // If a specific product was selected from search suggestions, show only that product
     if (selectedProductFromSearch) {
       productList = [selectedProductFromSearch].filter(product => product && product._id);
@@ -151,10 +159,12 @@ const AllProducts = () => {
       productList = products.filter(product => product && product._id);
     }
     
+
     // Remove duplicates by _id to prevent React key warnings
     const uniqueProducts = [];
     const seenIds = new Set();
     
+
     for (const product of productList) {
       const productId = product._id?.toString();
       if (productId && !seenIds.has(productId)) {
@@ -162,17 +172,21 @@ const AllProducts = () => {
         uniqueProducts.push(product);
       }
     }
+  
     
     return uniqueProducts;
   }, [products, searchResults, hasSearched, selectedProductFromSearch]);
+
 
   // Get deduplicated search results count for accurate display
   const uniqueSearchResultsCount = useMemo(() => {
     if (!hasSearched || !searchResults || searchResults.length === 0) return 0;
     
+
     const seenIds = new Set();
     let count = 0;
     
+
     for (const product of searchResults) {
       const productId = product._id?.toString();
       if (productId && !seenIds.has(productId)) {
@@ -180,15 +194,18 @@ const AllProducts = () => {
         count++;
       }
     }
+  
     
     return count;
   }, [searchResults, hasSearched]);
+
 
   // Handle form submission
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
     
+
     // Validate with Zod
     const { productSchema } = await import('@/schemas/productSchemas');
     const result = productSchema.safeParse({
@@ -198,13 +215,17 @@ const AllProducts = () => {
       isFeatured: false
     });
     
+
     if (!result.success) {
       const errors = {};
-      result.error.errors.forEach((err) => {
-        if (err.path.length > 0) {
-          errors[err.path[0]] = err.message;
-        }
-      });
+      // Safely access error.errors
+      if (result.error && result.error.errors && Array.isArray(result.error.errors)) {
+        result.error.errors.forEach((err) => {
+          if (err && err.path && Array.isArray(err.path) && err.path.length > 0 && err.message) {
+            errors[err.path[0]] = err.message;
+          }
+        });
+      }
       // Show first error
       const firstError = Object.values(errors)[0];
       if (firstError) {
@@ -213,6 +234,7 @@ const AllProducts = () => {
       return;
     }
     
+
     setIsSubmitting(true);
     try {
       const formDataObj = new FormData();
@@ -225,6 +247,7 @@ const AllProducts = () => {
       await dispatch(AddProduct(formDataObj)).unwrap();
       setShowCreateForm(false);
 
+
       setFormData({ title: '', description: '', price: '', stock: '' });
       toast.success('Product created successfully!');
     } catch (error) {
@@ -233,6 +256,7 @@ const AllProducts = () => {
       setIsSubmitting(false);
     }
   }, [dispatch, formData, isSubmitting, toast]);
+
 
   // Handle product deletion
   const handleDelete = useCallback(async (productId) => {
@@ -246,6 +270,7 @@ const AllProducts = () => {
     }
   }, [dispatch, toast]);
 
+
   // Handle edit product - open modal instead of navigating
   const handleEdit = useCallback(async (product) => {
     try {
@@ -258,9 +283,10 @@ const AllProducts = () => {
         setEditFormData({
           title: prod.title || '',
           description: prod.description || '',
-          price: prod.price || '',
-          stock: prod.stock || '',
-          category: prod.category?._id || '',
+          // Convert numbers to strings for form inputs
+          price: prod.price !== undefined && prod.price !== null ? String(prod.price) : '',
+          stock: prod.stock !== undefined && prod.stock !== null ? String(prod.stock) : '',
+          category: prod.category?._id || prod.category || '',
           picture: '',
           isFeatured: prod.isFeatured || false,
         });
@@ -270,54 +296,69 @@ const AllProducts = () => {
     }
   }, [dispatch]);
 
+
   // Handle edit form submission
   const handleEditSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (isUpdating || !selectedProduct) return;
+    e.stopPropagation();
     
-    // Validate with Zod
-    const { productSchema } = await import('@/schemas/productSchemas');
-    const result = productSchema.safeParse({
-      ...editFormData,
-      picture: editFormData.picture || editPreviewImage || ''
-    });
-    
-    if (!result.success) {
-      const errors = {};
-      result.error.errors.forEach((err) => {
-        if (err.path.length > 0) {
-          errors[err.path[0]] = err.message;
-        }
-      });
-      // Show first error
-      const firstError = Object.values(errors)[0];
-      if (firstError) {
-        toast.error(firstError);
-      }
+    if (isUpdating) {
       return;
     }
     
+    if (!selectedProduct) {
+      toast.error('No product selected');
+      return;
+    }
+    
+    // Validation is already done in EditProductModal, so we can proceed directly
     setIsUpdating(true);
     try {
       // Create FormData for file upload
       const formDataObj = new FormData();
-      Object.keys(editFormData).forEach(key => {
-        if (key === 'picture') {
-          // Only append if it's a File object (new image uploaded)
-          if (editFormData[key] instanceof File) {
-            formDataObj.append(key, editFormData[key]);
-          }
-        } else if (key === 'isFeatured') {
-          formDataObj.append(key, editFormData[key]);
-        } else if (editFormData[key] !== '' && editFormData[key] !== null && editFormData[key] !== undefined) {
-          formDataObj.append(key, editFormData[key]);
+      
+      // Always append required fields - ensure proper data types
+      if (editFormData.title) {
+        formDataObj.append('title', String(editFormData.title).trim());
+      }
+      if (editFormData.description) {
+        formDataObj.append('description', String(editFormData.description).trim());
+      }
+      if (editFormData.price !== '' && editFormData.price !== null && editFormData.price !== undefined) {
+        // Ensure price is a number
+        const price = parseFloat(editFormData.price);
+        if (!isNaN(price)) {
+          formDataObj.append('price', price);
         }
-      });
+      }
+      if (editFormData.stock !== '' && editFormData.stock !== null && editFormData.stock !== undefined) {
+        // Ensure stock is an integer
+        const stock = parseInt(editFormData.stock, 10);
+        if (!isNaN(stock)) {
+          formDataObj.append('stock', stock);
+        }
+      }
+      if (editFormData.category) {
+        formDataObj.append('category', String(editFormData.category));
+      }
+      if (editFormData.isFeatured !== undefined && editFormData.isFeatured !== null) {
+        formDataObj.append('isFeatured', Boolean(editFormData.isFeatured));
+      }
+      
+      // Handle picture - only append if it's a File object (new image uploaded)
+      if (editFormData.picture instanceof File) {
+        formDataObj.append('picture', editFormData.picture);
+      }
 
-      const result = await dispatch(updateSingleProduct({ 
+      await dispatch(updateSingleProduct({ 
         id: selectedProduct._id, 
         inputValues: formDataObj 
       })).unwrap();
+
+      // Redux slice will update the product in the state automatically
+      // No need to refetch - the update happens immediately
+      // Force a small delay to ensure Redux state is updated before closing modal
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       setShowEditModal(false);
       setSelectedProduct(null);
@@ -331,31 +372,21 @@ const AllProducts = () => {
         isFeatured: false,
       });
       setEditPreviewImage('');
-      
-      // Refresh products list
-      const currentPage = pagination.currentPage;
-      await dispatch(fetchProducts({ 
-        category, 
-        page: currentPage, 
-        limit, 
-        stockFilter,
-        sortBy
-      }));
-
-      // If in search mode, also refresh search results
-      if (hasSearched && searchQuery) {
-        await dispatch(searchProducts({ query: searchQuery, limit: 100 }));
-      }
-      
+    
       toast.success('Product updated successfully!');
     } catch (error) {
-      toast.error(error || 'Failed to update product. Please try again.');
+      // Extract error message properly
+      const errorMessage = error?.response?.data?.message || error?.message || error || 'Failed to update product. Please try again.';
+      toast.error(errorMessage);
+      // Don't close modal on error so user can fix and retry
     } finally {
       setIsUpdating(false);
     }
-  }, [dispatch, editFormData, editPreviewImage, isUpdating, selectedProduct, currentPage, category, limit, stockFilter, sortBy, hasSearched, searchQuery, toast]);
+  }, [dispatch, editFormData, editPreviewImage, isUpdating, selectedProduct, pagination, category, limit, stockFilter, sortBy, hasSearched, searchQuery, toast]);
+
 
   // Handle edit form change
+
   const handleEditChange = useCallback((e) => {
     const { name, value, type, files, checked } = e.target;
     if (type === 'file') {

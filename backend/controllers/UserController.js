@@ -96,8 +96,10 @@ class UserController {
   async refreshToken(req, res, next) {
     try {
       const { refreshToken } = req.cookies;
-      const result = await userService.refreshToken(refreshToken);
+      const { rememberMe } = req.body || {};
+      const result = await userService.refreshToken(refreshToken, rememberMe);
 
+      // Cookie options for access token
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -105,8 +107,17 @@ class UserController {
         maxAge: result.cookieMaxAge || 365 * 24 * 60 * 60 * 1000
       };
 
+      // Cookie options for refresh token (TOKEN ROTATION)
+      const refreshCookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        maxAge: result.refreshCookieMaxAge || (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000
+      };
+
       return res
         .cookie('accessToken', result.accessToken, cookieOptions)
+        .cookie('refreshToken', result.refreshToken, refreshCookieOptions) // TOKEN ROTATION: Set new refresh token
         .status(200)
         .json({
           success: true,
