@@ -224,82 +224,82 @@ const AdminProfile = () => {
   const roleInfo = getRoleInfo(user.role);
 
   return (
-    <div className="container mt-20 mx-auto p-4 max-w-5xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-4xl">
       <Card className="overflow-hidden border border-gray-200 dark:border-gray-800 shadow-lg">
-        {/* Gradient Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 h-40 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              backgroundSize: '60px 60px'
-            }}></div>
-          </div>
-          <div className="absolute -bottom-20 left-8">
-            <Avatar className="w-40 h-40 border-4 border-white dark:border-gray-800 shadow-xl bg-white dark:bg-gray-900">
+        {/* Clean Header with Solid Colors */}
+        <div className="bg-slate-900 h-14 sm:h-16 md:h-20 relative">
+          <div className="absolute -bottom-6 sm:-bottom-8 md:-bottom-10 left-4 sm:left-6 md:left-8">
+            <Avatar className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 border-2 sm:border-4 border-white dark:border-gray-800 shadow-lg bg-white dark:bg-gray-900">
               <AvatarImage src={user?.avatar} className="object-cover" />
-              <AvatarFallback className="text-4xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 text-slate-700 dark:text-slate-200">
+              <AvatarFallback className="text-lg sm:text-xl md:text-2xl font-bold bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
                 {user?.name?.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </div>
         </div>
 
-        <CardHeader className="pt-24 pb-6 px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  {user?.name}
-                </CardTitle>
-                {usernameData.newUsername === user?.name && (
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                <Mail className="h-4 w-4" />
-                <p className="text-sm">{user?.email}</p>
+        {/* User Info Section */}
+        <CardHeader className="pt-8 sm:pt-10 md:pt-12 pb-2 sm:pb-3 px-4 sm:px-6 md:px-8 bg-white dark:bg-gray-900">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="space-y-0.5 sm:space-y-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {user?.name}
+                  </CardTitle>
+                  {usernameData.newUsername === user?.name && (
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 dark:text-gray-400">
+                  <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <p className="text-xs sm:text-sm truncate">{user?.email}</p>
+                </div>
               </div>
             </div>
-            <div className={`px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-2 w-fit shadow-sm ${roleInfo.color}`}>
-              <roleInfo.icon className="h-4 w-4" />
-              {roleInfo.label}
+            <div className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 w-fit shadow-sm ${roleInfo.color}`}>
+              <roleInfo.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="whitespace-nowrap">{roleInfo.label}</span>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="px-8 pb-8">
+        {/* Tabs Section */}
+        <CardContent className="px-4 sm:px-6 md:px-8 pb-3 sm:pb-4 bg-white dark:bg-gray-900">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl h-12">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800 p-0.5 sm:p-1 rounded-lg h-10 sm:h-11 mb-3 sm:mb-4">
               <TabsTrigger 
                 value="username" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700 data-[state=active]:shadow-md data-[state=active]:text-gray-900 data-[state=active]:dark:text-gray-100 rounded-lg transition-all"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 data-[state=active]:dark:text-gray-100 rounded-md transition-all font-medium px-2 sm:px-3"
               >
-                <User className="h-4 w-4" />
-                <span className="font-medium">Change Username</span>
+                <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden min-[375px]:inline">Change Username</span>
+                <span className="min-[375px]:hidden">Username</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="password" 
-                className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700 data-[state=active]:shadow-md data-[state=active]:text-gray-900 data-[state=active]:dark:text-gray-100 rounded-lg transition-all"
+                className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:dark:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-gray-900 data-[state=active]:dark:text-gray-100 rounded-md transition-all font-medium px-2 sm:px-3"
               >
-                <Lock className="h-4 w-4" />
-                <span className="font-medium">Change Password</span>
+                <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="hidden min-[375px]:inline">Change Password</span>
+                <span className="min-[375px]:hidden">Password</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="username" className="space-y-6 mt-8">
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Update Username
+            <TabsContent value="username" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 sm:gap-2">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span>Update Username</span>
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     This will be your visible display name. Choose a username that represents you professionally.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="newUsername" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                  <label htmlFor="newUsername" className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 block">
                     New Username
                   </label>
                   <div className="relative">
@@ -311,16 +311,16 @@ const AdminProfile = () => {
                       value={usernameData.newUsername}
                       onChange={handleUsernameChange}
                       required
-                      className={`h-12 border-2 transition-all ${
+                      className={`h-10 sm:h-11 border-2 transition-all text-sm ${
                         errors.username 
                           ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20' 
                           : 'border-gray-300 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-400/20'
                       }`}
                     />
                     {errors.username && (
-                      <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-red-600 dark:text-red-400 text-xs mt-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>{errors.username}</span>
+                      <div className="absolute -bottom-5 left-0 flex items-center gap-1 text-red-600 dark:text-red-400 text-[10px] sm:text-xs mt-1">
+                        <AlertCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span className="break-words">{errors.username}</span>
                       </div>
                     )}
                   </div>
@@ -334,22 +334,22 @@ const AdminProfile = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="password" className="space-y-6 mt-8">
-              <div className="space-y-6 max-w-2xl">
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                    <Lock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    Change Password
+            <TabsContent value="password" className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 sm:gap-2">
+                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span>Change Password</span>
                   </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Ensure your account is secure by using a strong, unique password. Use a combination of letters, numbers, and special characters.
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    Ensure your account is secure by using a strong, unique password.
                   </p>
                 </div>
 
-                <div className="space-y-5">
+                <div className="space-y-3 sm:space-y-4">
                   {/* Old Password */}
                   <div className="space-y-2">
-                    <label htmlFor="oldPassword" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label htmlFor="oldPassword" className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 block">
                       Current Password
                     </label>
                     <div className="relative">
@@ -361,7 +361,7 @@ const AdminProfile = () => {
                         value={passwordData.oldPassword}
                         onChange={handlePasswordChange}
                         required
-                        className={`h-12 border-2 transition-all pr-12 ${
+                        className={`h-10 sm:h-11 border-2 transition-all pr-10 sm:pr-12 text-sm ${
                           errors.oldPassword 
                             ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20' 
                             : 'border-gray-300 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-400/20'
@@ -370,23 +370,23 @@ const AdminProfile = () => {
                       <button
                         type="button"
                         onClick={() => togglePasswordVisibility('old')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         aria-label="Toggle password visibility"
                       >
-                        {showPasswords.old ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPasswords.old ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
                       </button>
                     </div>
                     {errors.oldPassword && (
                       <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>{errors.oldPassword}</span>
+                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                        <span className="break-words">{errors.oldPassword}</span>
                       </p>
                     )}
                   </div>
 
                   {/* New Password */}
                   <div className="space-y-2">
-                    <label htmlFor="newPassword" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label htmlFor="newPassword" className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 block">
                       New Password
                     </label>
                     <div className="relative">
@@ -398,7 +398,7 @@ const AdminProfile = () => {
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange}
                         required
-                        className={`h-12 border-2 transition-all pr-12 ${
+                        className={`h-10 sm:h-11 border-2 transition-all pr-10 sm:pr-12 text-sm ${
                           errors.newPassword 
                             ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20' 
                             : 'border-gray-300 dark:border-gray-700 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:focus:ring-blue-400/20'
@@ -407,21 +407,21 @@ const AdminProfile = () => {
                       <button
                         type="button"
                         onClick={() => togglePasswordVisibility('new')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         aria-label="Toggle password visibility"
                       >
-                        {showPasswords.new ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPasswords.new ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
                       </button>
                     </div>
                     {errors.newPassword && (
                       <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>{errors.newPassword}</span>
+                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                        <span className="break-words">{errors.newPassword}</span>
                       </p>
                     )}
                     {!errors.newPassword && passwordData.newPassword && passwordData.newPassword.length >= 6 && (
                       <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
                         Password strength: Good
                       </p>
                     )}
@@ -429,7 +429,7 @@ const AdminProfile = () => {
 
                   {/* Confirm Password */}
                   <div className="space-y-2">
-                    <label htmlFor="confirmPassword" className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label htmlFor="confirmPassword" className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 block">
                       Confirm New Password
                     </label>
                     <div className="relative">
@@ -441,7 +441,7 @@ const AdminProfile = () => {
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange}
                         required
-                        className={`h-12 border-2 transition-all pr-12 ${
+                        className={`h-10 sm:h-11 border-2 transition-all pr-10 sm:pr-12 text-sm ${
                           errors.confirmPassword 
                             ? 'border-red-300 dark:border-red-700 focus:border-red-500 focus:ring-red-500/20' 
                             : passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword
@@ -452,21 +452,21 @@ const AdminProfile = () => {
                       <button
                         type="button"
                         onClick={() => togglePasswordVisibility('confirm')}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                         aria-label="Toggle password visibility"
                       >
-                        {showPasswords.confirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPasswords.confirm ? <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" /> : <Eye className="h-4 w-4 sm:h-5 sm:w-5" />}
                       </button>
                     </div>
                     {errors.confirmPassword && (
                       <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        <span>{errors.confirmPassword}</span>
+                        <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                        <span className="break-words">{errors.confirmPassword}</span>
                       </p>
                     )}
                     {!errors.confirmPassword && passwordData.confirmPassword && passwordData.newPassword === passwordData.confirmPassword && (
                       <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
+                        <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
                         Passwords match
                       </p>
                     )}
@@ -477,7 +477,8 @@ const AdminProfile = () => {
           </Tabs>
         </CardContent>
 
-        <CardFooter className="flex justify-end items-center px-8 py-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800">
+        {/* Footer */}
+        <CardFooter className="flex justify-end items-center px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800">
           <Button
             onClick={() => {
               if (activeTab === 'username') {
@@ -487,7 +488,7 @@ const AdminProfile = () => {
               }
             }}
             disabled={status === 'loading'}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all px-6 h-11 font-semibold"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-md hover:shadow-lg transition-all px-4 sm:px-6 h-10 sm:h-11 text-xs sm:text-sm font-semibold"
           >
             {status === 'loading' ? (
               <>

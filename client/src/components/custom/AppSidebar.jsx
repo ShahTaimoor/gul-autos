@@ -146,36 +146,38 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="shadow-xl border-r bg-slate-900 text-slate-100">
+    <Sidebar className="border-r border-gray-100 bg-gray-50/50 shadow-lg font-['Inter',sans-serif]">
       {/* Modern Header with User Info */}
-      <SidebarHeader className="p-6 border-b border-slate-800 bg-slate-900">
-       
-        
+      <SidebarHeader className="p-3 border-b border-gray-200/60 bg-white/80 backdrop-blur-sm">
         {/* User Profile Section */}
         {user && (
-          <div className="mt-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
-            <div className="flex items-center gap-3">
-              <Avatar className="w-9 h-9 border border-slate-600">
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback className="bg-slate-700 text-slate-200 text-sm font-semibold">
-                  {user.name?.charAt(0) || 'A'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-slate-100 font-medium text-sm truncate">{user.name || 'Admin'}</p>
-                <p className="text-slate-400 text-xs truncate">{user.email}</p>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <Avatar className="w-8 h-8 border border-gray-300 shadow-sm">
+              <AvatarImage src={user.avatar} />
+              <AvatarFallback className="bg-gray-100 text-gray-700 text-xs font-bold">
+                {user.name?.charAt(0) || 'A'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-900 font-bold text-sm truncate" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.02em', fontWeight: 600 }}>
+                {user.name || 'Admin'}
+              </p>
+              <p className="text-gray-400 text-[11px] truncate mt-0.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                {user.email}
+              </p>
             </div>
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent className="p-4 bg-slate-900">
+      <SidebarContent className="p-2.5 bg-transparent">
         {/* Main Navigation */}
         <SidebarGroup>
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Main Navigation</h3>
-            <SidebarMenu className="space-y-1">
+          <div className="mb-3">
+            <h3 className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-1.5 px-2.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Main Navigation
+            </h3>
+            <SidebarMenu className="space-y-0.5">
               {items.filter(item => item.category === 'main').map((item) => {
                 const isActive = pathname === item.url;
                 const Icon = item.icon;
@@ -184,21 +186,25 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`group relative transition-all duration-200 rounded-lg mb-1 ${
+                      className={`group relative transition-all duration-150 rounded-lg ${
                         isActive
-                          ? "bg-blue-600 text-white shadow-md"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                          ? "bg-white text-blue-600 shadow-md border-l-4 border-blue-600"
+                          : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-3 p-2.5 w-full relative">
-                        <Icon className={`w-5 h-5 transition-colors ${
-                          isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                        <Icon className={`w-4 h-4 transition-all ${
+                          isActive 
+                            ? "text-blue-600 scale-110" 
+                            : "text-gray-400 group-hover:text-gray-700 group-hover:scale-105"
                         }`} />
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.015em' }}>
+                          {item.title}
+                        </span>
                         
                         {/* Badge for Low Stock in main navigation */}
                         {item.showBadge && item.badgeKey === "lowStock" && lowStockCount > 0 && (
-                          <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
+                          <Badge className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 ml-auto border-0 rounded-full min-w-[20px] text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {lowStockCount}
                           </Badge>
                         )}
@@ -211,9 +217,11 @@ export function AppSidebar() {
           </div>
 
           {/* Orders Section */}
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Orders & Users</h3>
-            <SidebarMenu className="space-y-1">
+          <div className="mb-3">
+            <h3 className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-1.5 px-2.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+              Orders & Users
+            </h3>
+            <SidebarMenu className="space-y-0.5">
               {items.filter(item => item.category === 'orders' || item.category === 'users').map((item) => {
                 const isActive = pathname === item.url;
                 const Icon = item.icon;
@@ -222,28 +230,32 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`group relative transition-all duration-200 rounded-lg mb-1 ${
+                      className={`group relative transition-all duration-150 rounded-lg ${
                         isActive
-                          ? "bg-blue-600 text-white shadow-md"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                          ? "bg-white text-blue-600 shadow-md border-l-4 border-blue-600"
+                          : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-3 p-2.5 w-full relative">
-                        <Icon className={`w-5 h-5 transition-colors ${
-                          isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                        <Icon className={`w-4 h-4 transition-all ${
+                          isActive 
+                            ? "text-blue-600 scale-110" 
+                            : "text-gray-400 group-hover:text-gray-700 group-hover:scale-105"
                         }`} />
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.015em' }}>
+                          {item.title}
+                        </span>
                         
                         {/* Badge for Orders */}
                         {item.showBadge && item.badgeKey === "pendingOrders" && pendingOrderCount > 0 && (
-                          <Badge className="bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
+                          <Badge className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 ml-auto border-0 rounded-full min-w-[20px] text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {pendingOrderCount}
                           </Badge>
                         )}
                         
                         {/* Badge for Low Stock */}
                         {item.showBadge && item.badgeKey === "lowStock" && lowStockCount > 0 && (
-                          <Badge className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-2 py-0.5 ml-auto border-0">
+                          <Badge className="bg-orange-500 text-white text-[10px] font-bold px-1.5 py-0.5 ml-auto border-0 rounded-full min-w-[20px] text-center" style={{ fontFamily: "'Inter', sans-serif" }}>
                             {lowStockCount}
                           </Badge>
                         )}
@@ -256,9 +268,11 @@ export function AppSidebar() {
           </div>
 
           {/* External Links */}
-          <div className="mb-6">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">External</h3>
-            <SidebarMenu className="space-y-1">
+          <div className="mb-3">
+            <h3 className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.1em] mb-1.5 px-2.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+              External
+            </h3>
+            <SidebarMenu className="space-y-0.5">
               {items.filter(item => item.category === 'external').map((item) => {
                 const isActive = pathname === item.url;
                 const Icon = item.icon;
@@ -267,17 +281,21 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`group relative transition-all duration-200 rounded-lg mb-1 ${
+                      className={`group relative transition-all duration-150 rounded-lg ${
                         isActive
-                          ? "bg-blue-600 text-white shadow-md"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                          ? "bg-white text-blue-600 shadow-md border-l-4 border-blue-600"
+                          : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-3 p-2.5 w-full relative">
-                        <Icon className={`w-5 h-5 transition-colors ${
-                          isActive ? "text-white" : "text-slate-400 group-hover:text-slate-100"
+                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                        <Icon className={`w-4 h-4 transition-all ${
+                          isActive 
+                            ? "text-blue-600 scale-110" 
+                            : "text-gray-400 group-hover:text-gray-700 group-hover:scale-105"
                         }`} />
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.015em' }}>
+                          {item.title}
+                        </span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -289,35 +307,38 @@ export function AppSidebar() {
       </SidebarContent>
 
       {/* Modern Footer with Enhanced Logout */}
-      <SidebarFooter className="p-4 border-t border-slate-800 bg-slate-900">
-        <div className="space-y-2">
+      <SidebarFooter className="p-2.5 border-t border-gray-200/60 bg-white/80 backdrop-blur-sm">
+        <div className="space-y-1.5">
           {/* Admin Profile Link */}
           <Button
             asChild
             variant="ghost"
-            className="w-full justify-start text-slate-400 hover:text-slate-100 hover:bg-slate-800"
+            className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-sm h-8 rounded-lg transition-all duration-150"
           >
-            <Link to="/admin/profile" className="flex items-center gap-3">
-              <UserCog className="w-4 h-4" />
-              <span className="text-sm">Admin Profile</span>
+            <Link to="/admin/profile" className="flex items-center gap-2.5">
+              <UserCog className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.015em' }}>
+                Admin Profile
+              </span>
             </Link>
           </Button>
           
           {/* Logout Button */}
           <Button
             onClick={onLogout}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium shadow-sm transition-colors duration-200 border-0"
+            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-150 h-8 rounded-lg"
             disabled={loading}
+            style={{ fontFamily: "'Inter', sans-serif" }}
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                <span>Logging out...</span>
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span className="text-xs">Logging out...</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="text-xs">Logout</span>
               </div>
             )}
           </Button>
