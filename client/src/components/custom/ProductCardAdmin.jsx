@@ -114,7 +114,7 @@ const ProductCardAdmin = ({
 
       <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-3 sm:p-4 space-y-2 sm:space-y-3'}`}>
         <div className="space-y-1">
-          <h3 className="font-medium text-xs sm:text-sm text-gray-900 line-clamp-2">
+          <h3 className="font-medium text-xs sm:text-sm text-gray-900">
             {product.title}
           </h3>
           

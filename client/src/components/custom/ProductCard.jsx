@@ -260,7 +260,7 @@ const ProductCard = React.memo(({
           gridType === 'grid3' ? 'w-3/4 sm:w-7/8' : 'w-full'
         }`}
       >
-        <h3 className={`font-semibold leading-snug mb-3 line-clamp-2 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
+        <h3 className={`font-semibold leading-snug mb-3 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
           gridType === 'grid3' ? 'text-sm' : 'text-sm'
         }`}>
           {product.title}
