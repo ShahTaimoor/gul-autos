@@ -909,67 +909,83 @@ const Media = () => {
         {/* Gallery Tab */}
         <TabsContent value="gallery" className="space-y-6">
           {/* Enhanced Search Bar */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-center">
-              {/* Search Input */}
-              <div className="relative flex-1 w-full">
-                <div className="relative flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <Input
-                      type="text"
-                      placeholder="Search products... (e.g., Spoiler 2002)"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      className="pl-10 pr-10 h-10 text-base"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={handleClearSearch}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                  <Button
+          <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              {/* Search Input Row */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+                <div className="relative flex-1 w-full">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 sm:h-5 sm:w-5" />
+                  <Input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="pl-9 sm:pl-10 pr-20 sm:pr-10 h-9 sm:h-10 text-sm sm:text-base"
+                  />
+                  {/* Mobile: Search icon button inside input */}
+                  <button
                     onClick={handleSearch}
                     disabled={searchStatus === 'loading' || !searchQuery.trim()}
-                    className="h-10 px-6 bg-primary hover:bg-primary/90"
+                    className="absolute right-2 sm:hidden top-1/2 transform -translate-y-1/2 p-1.5 text-primary hover:text-primary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {searchStatus === 'loading' ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Searching...
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Search'
+                      <Search className="h-4 w-4" />
                     )}
-                  </Button>
+                  </button>
+                  {/* Clear button - positioned differently on mobile vs desktop */}
+                  {searchQuery && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 right-11 sm:right-3 transition-colors"
+                    >
+                      <X className="h-4 w-4 sm:h-5 sm:w-5" />
+                    </button>
+                  )}
                 </div>
-                {hasSearched && searchQuery && (
-                  <div className="mt-2 text-sm text-gray-600">
-                    {searchStatus === 'loading' ? (
-                      'Searching...'
-                    ) : uniqueSearchResultsCount > 0 ? (
-                      `Found ${uniqueSearchResultsCount} result${uniqueSearchResultsCount !== 1 ? 's' : ''} for "${searchQuery}"`
-                    ) : (
-                      `No results found for "${searchQuery}"`
-                    )}
-                  </div>
-                )}
+                {/* Desktop: Separate search button */}
+                <Button
+                  onClick={handleSearch}
+                  disabled={searchStatus === 'loading' || !searchQuery.trim()}
+                  className="hidden sm:flex h-9 sm:h-10 px-4 sm:px-6 bg-primary hover:bg-primary/90 text-sm sm:text-base whitespace-nowrap items-center justify-center"
+                >
+                  {searchStatus === 'loading' ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
+                      <span className="hidden sm:inline">Searching...</span>
+                      <span className="sm:hidden">Search...</span>
+                    </>
+                  ) : (
+                    'Search'
+                  )}
+                </Button>
               </div>
               
-              {/* Gallery Actions - Export and Share Buttons */}
-              <div className="flex gap-2">
+              {/* Search Results Info */}
+              {hasSearched && searchQuery && (
+                <div className="text-xs sm:text-sm text-gray-600">
+                  {searchStatus === 'loading' ? (
+                    'Searching...'
+                  ) : uniqueSearchResultsCount > 0 ? (
+                    `Found ${uniqueSearchResultsCount} result${uniqueSearchResultsCount !== 1 ? 's' : ''} for "${searchQuery}"`
+                  ) : (
+                    `No results found for "${searchQuery}"`
+                  )}
+                </div>
+              )}
+              
+              {/* Action Buttons Row */}
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={selectMode ? "default" : "outline"}
                   onClick={toggleSelectMode}
-                  className="flex items-center gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <CheckSquare className="h-4 w-4" />
-                  {selectMode ? 'Cancel Select' : 'Select'}
+                  <CheckSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{selectMode ? 'Cancel Select' : 'Select'}</span>
+                  <span className="sm:hidden">{selectMode ? 'Cancel' : 'Select'}</span>
                 </Button>
                 
                 {selectMode && selectedItems.length > 0 && (
@@ -978,27 +994,30 @@ const Media = () => {
                       variant="default"
                       onClick={handleDownloadPDF}
                       disabled={isDownloadingPDF}
-                      className="flex items-center gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white"
+                      className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                     >
                       {isDownloadingPDF ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Generating PDF...
+                          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="hidden sm:inline">Generating PDF...</span>
+                          <span className="sm:hidden">PDF...</span>
                         </>
                       ) : (
                         <>
-                          <Download className="h-4 w-4" />
-                          Download PDF ({selectedItems.length})
+                          <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Download PDF ({selectedItems.length})</span>
+                          <span className="sm:hidden">PDF ({selectedItems.length})</span>
                         </>
                       )}
                     </Button>
                     <Button
                       variant="default"
                       onClick={handleShare}
-                      className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                     >
-                      <Share2 className="h-4 w-4" />
-                      Share ({selectedItems.length})
+                      <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Share ({selectedItems.length})</span>
+                      <span className="sm:hidden">Share ({selectedItems.length})</span>
                     </Button>
                   </>
                 )}
@@ -1006,51 +1025,54 @@ const Media = () => {
                 <Button
                   variant="outline"
                   onClick={() => setShowExportModal(true)}
-                  className="flex items-center gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <FileDown className="h-4 w-4" />
-                  Export
+                  <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>Export</span>
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Results Info */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-600">
-                Showing {filteredProducts.length} product images
-                {mediaLoading && (
-                  <span className="ml-2 text-blue-600 animate-pulse">
-                    Loading images...
-                  </span>
-                )}
-              </p>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Showing {filteredProducts.length} product images
+                  {mediaLoading && (
+                    <span className="ml-2 text-blue-600 animate-pulse">
+                      Loading images...
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Product images from your inventory
+                </p>
+              </div>
               {selectMode && filteredProducts.length > 0 && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:gap-2">
                   <button
                     onClick={handleSelectAllGallery}
-                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-50"
                   >
                     {selectedItems.length === filteredProducts.length ? (
-                      <CheckSquare className="h-4 w-4 text-blue-600" />
+                      <CheckSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
                     ) : (
-                      <Square className="h-4 w-4" />
+                      <Square className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
-                    {selectedItems.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
+                    <span className="whitespace-nowrap">
+                      {selectedItems.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
+                    </span>
                   </button>
                   {selectedItems.length > 0 && (
-                    <span className="text-sm text-blue-600 font-medium">
+                    <span className="text-xs sm:text-sm text-blue-600 font-medium whitespace-nowrap">
                       {selectedItems.length} selected
                     </span>
                   )}
                 </div>
               )}
             </div>
-            
-            <p className="text-xs text-gray-500 mt-1">
-              Product images from your inventory
-            </p>
           </div>
 
           {/* Media Grid - Image Only */}
@@ -1161,20 +1183,21 @@ const Media = () => {
 
         {/* Upload Tab */}
         <TabsContent value="upload" className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Upload Images</h2>
-                <p className="text-gray-600">Upload new images to your media library</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Upload Images</h2>
+                <p className="text-sm sm:text-base text-gray-600">Upload new images to your media library</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant={selectMode ? "default" : "outline"}
                   onClick={toggleSelectMode}
-                  className="flex items-center gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <CheckSquare className="h-4 w-4" />
-                  {selectMode ? 'Cancel Select' : 'Select'}
+                  <CheckSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{selectMode ? 'Cancel Select' : 'Select'}</span>
+                  <span className="sm:hidden">{selectMode ? 'Cancel' : 'Select'}</span>
                 </Button>
 
                 {selectMode && selectedItems.length > 0 && (
@@ -1183,27 +1206,30 @@ const Media = () => {
                       variant="default"
                       onClick={handleDownloadPDF}
                       disabled={isDownloadingPDF}
-                      className="flex items-center gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white"
+                      className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                     >
                       {isDownloadingPDF ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Generating PDF...
+                          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                          <span className="hidden sm:inline">Generating PDF...</span>
+                          <span className="sm:hidden">PDF...</span>
                         </>
                       ) : (
                         <>
-                          <Download className="h-4 w-4" />
-                          Download PDF ({selectedItems.length})
+                          <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Download PDF ({selectedItems.length})</span>
+                          <span className="sm:hidden">PDF ({selectedItems.length})</span>
                         </>
                       )}
                     </Button>
                     <Button
                       variant="default"
                       onClick={handleShare}
-                      className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                      className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                     >
-                      <Share2 className="h-4 w-4" />
-                      Share ({selectedItems.length})
+                      <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Share ({selectedItems.length})</span>
+                      <span className="sm:hidden">Share ({selectedItems.length})</span>
                     </Button>
                   </>
                 )}
@@ -1211,38 +1237,41 @@ const Media = () => {
                 <Button
                   variant="outline"
                   onClick={() => setShowExportModal(true)}
-                  className="flex items-center gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:bg-green-50 hover:border-green-300 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <FileDown className="h-4 w-4" />
-                  Export
+                  <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span>Export</span>
                 </Button>
 
                 <Button
                   variant={deleteMode ? "destructive" : "outline"}
                   onClick={toggleDeleteMode}
-                  className="flex items-center gap-2 transition-all duration-200 hover:bg-red-50 hover:border-red-300"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:bg-red-50 hover:border-red-300 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  {deleteMode ? 'Cancel Delete' : 'Delete Mode'}
+                  <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">{deleteMode ? 'Cancel Delete' : 'Delete Mode'}</span>
+                  <span className="sm:hidden">{deleteMode ? 'Cancel' : 'Delete'}</span>
                 </Button>
 
                 {deleteMode && selectedItems.length > 0 && (
                   <Button
                     variant="destructive"
                     onClick={() => setShowDeleteModal(true)}
-                    className="flex items-center gap-2 transition-all duration-200"
+                    className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    Delete Selected ({selectedItems.length})
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Delete Selected ({selectedItems.length})</span>
+                    <span className="sm:hidden">Delete ({selectedItems.length})</span>
                   </Button>
                 )}
 
                 <Button
                   onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-2 transition-all duration-200 hover:scale-105 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="flex items-center gap-1.5 sm:gap-2 transition-all duration-200 hover:scale-105 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm px-3 sm:px-4 h-8 sm:h-9 flex-shrink-0"
                 >
-                  <Upload className="h-4 w-4" />
-                  Upload Images
+                  <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Upload Images</span>
+                  <span className="sm:hidden">Upload</span>
                 </Button>
               </div>
             </div>
@@ -1282,69 +1311,73 @@ const Media = () => {
 
             {/* Uploaded Media Grid */}
             {filteredUploadedMedia.length > 0 ? (
-              <div className="mt-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Uploaded Images</h3>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-500">
-                      Showing {filteredUploadedMedia.length} of {uploadedMedia.length} images
-                      {uploadSearchTerm && ` for "${uploadSearchTerm}"`}
-                    </span>
-                    {!showAllImages && uploadTotalPages > 1 && (
-                      <span className="text-sm text-gray-500">
-                        Page {uploadCurrentPage} of {uploadTotalPages}
+              <div className="mt-6 sm:mt-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-1 sm:mb-0">Uploaded Images</h3>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 sm:mt-0">
+                      <span className="text-xs sm:text-sm text-gray-500">
+                        Showing {filteredUploadedMedia.length} of {uploadedMedia.length} images
+                        {uploadSearchTerm && ` for "${uploadSearchTerm}"`}
                       </span>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant={showAllImages ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setShowAllImages(!showAllImages);
-                          setUploadCurrentPage(1);
-                        }}
-                        className="text-xs"
-                      >
-                        {showAllImages ? 'Show Paginated' : 'Show All'}
-                      </Button>
-                      {!showAllImages && (
-                        <select
-                          value={uploadPageSize}
-                          onChange={(e) => {
-                            setUploadPageSize(Number(e.target.value));
-                            setUploadCurrentPage(1);
-                          }}
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value={12}>12 per page</option>
-                          <option value={24}>24 per page</option>
-                          <option value={48}>48 per page</option>
-                          <option value={96}>96 per page</option>
-                        </select>
-                      )}
-                      {(selectMode || deleteMode) && filteredUploadedMedia.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={handleSelectAll}
-                            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-                          >
-                            {selectedItems.length === filteredUploadedMedia.length ? (
-                              <CheckSquare className="h-4 w-4 text-blue-600" />
-                            ) : (
-                              <Square className="h-4 w-4" />
-                            )}
-                            {selectedItems.length === filteredUploadedMedia.length ? 'Deselect All' : 'Select All'}
-                          </button>
-                          {selectedItems.length > 0 && (
-                            <span className={`text-sm font-medium ${
-                              selectMode ? 'text-blue-600' : 'text-red-600'
-                            }`}>
-                              {selectedItems.length} selected
-                            </span>
-                          )}
-                        </div>
+                      {!showAllImages && uploadTotalPages > 1 && (
+                        <span className="text-xs sm:text-sm text-gray-500">
+                          Page {uploadCurrentPage} of {uploadTotalPages}
+                        </span>
                       )}
                     </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant={showAllImages ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setShowAllImages(!showAllImages);
+                        setUploadCurrentPage(1);
+                      }}
+                      className="text-xs h-7 sm:h-8 px-2 sm:px-3"
+                    >
+                      {showAllImages ? 'Show Paginated' : 'Show All'}
+                    </Button>
+                    {!showAllImages && (
+                      <select
+                        value={uploadPageSize}
+                        onChange={(e) => {
+                          setUploadPageSize(Number(e.target.value));
+                          setUploadCurrentPage(1);
+                        }}
+                        className="text-xs border border-gray-300 rounded px-2 py-1 h-7 sm:h-8"
+                      >
+                        <option value={12}>12 per page</option>
+                        <option value={24}>24 per page</option>
+                        <option value={48}>48 per page</option>
+                        <option value={96}>96 per page</option>
+                      </select>
+                    )}
+                    {(selectMode || deleteMode) && filteredUploadedMedia.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSelectAll}
+                          className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 hover:text-gray-800 transition-colors px-2 py-1 rounded-md hover:bg-gray-50"
+                        >
+                          {selectedItems.length === filteredUploadedMedia.length ? (
+                            <CheckSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600" />
+                          ) : (
+                            <Square className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          )}
+                          <span className="whitespace-nowrap">
+                            {selectedItems.length === filteredUploadedMedia.length ? 'Deselect All' : 'Select All'}
+                          </span>
+                        </button>
+                        {selectedItems.length > 0 && (
+                          <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
+                            selectMode ? 'text-blue-600' : 'text-red-600'
+                          }`}>
+                            {selectedItems.length} selected
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
