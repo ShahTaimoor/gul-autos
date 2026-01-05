@@ -189,6 +189,15 @@ const ProductCard = React.memo(({
     e.currentTarget.src = '/logo.jpeg';
   }, []);
 
+  // Capitalize first letter of each word
+  const capitalizeTitle = useCallback((title) => {
+    if (!title) return '';
+    return title
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }, []);
+
   const currentQuantity = parseInt(quantity) || 0;
   const isDisabled = currentQuantity <= 0 || isAddingToCart;
 
@@ -263,7 +272,7 @@ const ProductCard = React.memo(({
         <h3 className={`font-semibold leading-snug mb-3 text-gray-900 group-hover:text-primary transition-colors duration-200 ${
           gridType === 'grid3' ? 'text-xs sm:text-sm' : 'text-xs sm:text-sm'
         }`}>
-          {product.title}
+          {capitalizeTitle(product.title)}
         </h3>
         
         <div className="flex-grow" />

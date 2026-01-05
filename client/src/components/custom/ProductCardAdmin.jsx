@@ -33,6 +33,14 @@ const ProductCardAdmin = ({
   onPriceValueChange,
   onStockValueChange
 }) => {
+  // Capitalize first letter of each word
+  const capitalizeTitle = (title) => {
+    if (!title) return '';
+    return title
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
   return (
     <Card 
       className={`group relative overflow-hidden bg-white border border-gray-200 hover:border-gray-300 transition-colors ${
@@ -115,7 +123,7 @@ const ProductCardAdmin = ({
       <div className={`${gridType === 'grid3' ? 'flex-1 space-y-1.5' : 'p-3 sm:p-4 space-y-2 sm:space-y-3'}`}>
         <div className="space-y-1">
           <h3 className="font-medium text-[10px] sm:text-xs text-gray-900">
-            {product.title}
+            {capitalizeTitle(product.title)}
           </h3>
           
           <p className="text-gray-600 text-[10px] sm:text-xs line-clamp-2">
