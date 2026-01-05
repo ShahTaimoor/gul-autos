@@ -9,6 +9,7 @@ import Pagination from '../components/custom/Pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import { useMedia } from '@/hooks/use-media';
 import { imageService } from '@/services/imageService';
+import jsPDF from 'jspdf';
 import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search, Loader2, Share2 } from 'lucide-react';
 
 const Media = () => {
@@ -54,6 +55,7 @@ const Media = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   
   // Separate state for uploaded media display in Upload tab
   const [filteredUploadedMedia, setFilteredUploadedMedia] = useState([]);
@@ -469,6 +471,177 @@ const Media = () => {
     }
   }, [selectedItems, activeTab, filteredProducts, filteredUploadedMedia]);
 
+  // Helper function to convert image URL to base64
+  const getImageBase64 = useCallback(async (imageUrl) => {
+    try {
+      const blob = await imageService.fetchImageBlob(imageUrl, 30000);
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return null;
+    }
+  }, []);
+
+  // Download selected images as PDF with titles
+  const handleDownloadPDF = useCallback(async () => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+
+    setIsDownloadingPDF(true);
+    try {
+      // Get the image data for selected items
+      let imageData = [];
+      
+      if (activeTab === 'gallery') {
+        // For gallery, get product image URLs and titles
+        const selectedProducts = filteredProducts.filter(product => 
+          selectedItems.includes(product._id)
+        );
+        imageData = selectedProducts.map(product => ({
+          url: product.picture?.secure_url || product.image,
+          name: product.title || 'Product'
+        })).filter(item => item.url);
+      } else {
+        // For upload tab, get uploaded media URLs and names
+        const selectedMedia = filteredUploadedMedia.filter(media => 
+          selectedItems.includes(media._id)
+        );
+        imageData = selectedMedia.map(media => ({
+          url: media.url,
+          name: media.name || media.originalName || 'Image'
+        })).filter(item => item.url);
+      }
+
+      if (imageData.length === 0) {
+        alert('No images to download.');
+        setIsDownloadingPDF(false);
+        return;
+      }
+
+      // Create PDF
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 7); // Left and right margins
+      const imageWidth = contentWidth;
+      const imageHeight = 100; // Fixed height for images
+      let yPosition = margin;
+
+      // Process images one by one
+      for (let i = 0; i < imageData.length; i++) {
+        const item = imageData[i];
+        
+        // Add new page if needed (except for first item)
+        if (i > 0 && yPosition + imageHeight + 30 > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+
+        try {
+          // Get image as base64
+          const imageBase64 = await getImageBase64(item.url);
+          
+          if (imageBase64) {
+            // Add title with border, ID number (wrap after 80 characters)
+            const maxCharsPerLine = 80;
+            let titleText = `${i + 1}. ${item.name}`;
+            
+            // Split title into lines if longer than 80 characters
+            const titleLines = [];
+            if (titleText.length > maxCharsPerLine) {
+              let remainingText = titleText;
+              while (remainingText.length > 0) {
+                if (remainingText.length <= maxCharsPerLine) {
+                  titleLines.push(remainingText);
+                  break;
+                }
+                // Find the last space before maxCharsPerLine to break at word boundary
+                let breakPoint = maxCharsPerLine;
+                for (let j = maxCharsPerLine; j > 0; j--) {
+                  if (remainingText[j] === ' ') {
+                    breakPoint = j;
+                    break;
+                  }
+                }
+                titleLines.push(remainingText.substring(0, breakPoint));
+                remainingText = remainingText.substring(breakPoint + 1).trim();
+              }
+            } else {
+              titleLines.push(titleText);
+            }
+            
+            doc.setFontSize(12);
+            
+            // Calculate title dimensions (for multi-line)
+            const titlePadding = 2; // Reduced padding
+            const lineHeight = 7;
+            
+            // Calculate the maximum width needed for all lines
+            let maxLineWidth = 0;
+            titleLines.forEach(line => {
+              const lineWidth = doc.getTextWidth(line);
+              if (lineWidth > maxLineWidth) {
+                maxLineWidth = lineWidth;
+              }
+            });
+            
+            // Add title text with ID number (bold, no border, centered)
+            doc.setFont('helvetica', 'bold'); // Bold font
+            doc.setTextColor(0, 0, 0); // Black color
+            titleLines.forEach((line, lineIndex) => {
+              // Center the text horizontally
+              const textY = yPosition + (lineIndex * lineHeight);
+              const textWidth = doc.getTextWidth(line);
+              const textX = (pageWidth - textWidth) / 2; // Center horizontally
+              doc.text(line, textX, textY);
+            });
+            
+            // Move position below the title text
+            yPosition += (titleLines.length * lineHeight) + 5;
+
+            // Center the image horizontally
+            const imageXPosition = (pageWidth - imageWidth) / 2;
+
+            // Add image below the title (centered)
+            doc.addImage(imageBase64, 'JPEG', imageXPosition, yPosition, imageWidth, imageHeight);
+            
+            // Draw border below the image - full width from margin to page edge
+            doc.setDrawColor(0, 0, 0); // Black border
+            doc.setLineWidth(0.3); // Thicker line for visibility
+            const borderY = yPosition + imageHeight;
+            const borderStartX = margin;
+            const borderEndX = pageWidth - margin; // Full width from left margin to right margin
+            doc.line(borderStartX, borderY, borderEndX, borderY);
+            
+            yPosition += imageHeight + 15; // Add spacing after image
+          }
+        } catch (error) {
+          console.error(`Failed to add image ${item.name}:`, error);
+          // Continue with next image even if one fails
+        }
+      }
+
+      // Save PDF
+      const fileName = `media_images_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsDownloadingPDF(false);
+    }
+  }, [selectedItems, activeTab, filteredProducts, filteredUploadedMedia, getImageBase64]);
+
   // Import functionality
   const handleFileSelect = useCallback((e) => {
     const files = Array.from(e.target.files);
@@ -800,14 +973,34 @@ const Media = () => {
                 </Button>
                 
                 {selectMode && selectedItems.length > 0 && (
-                  <Button
-                    variant="default"
-                    onClick={handleShare}
-                    className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Share ({selectedItems.length})
-                  </Button>
+                  <>
+                    <Button
+                      variant="default"
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloadingPDF}
+                      className="flex items-center gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isDownloadingPDF ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          Download PDF ({selectedItems.length})
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={handleShare}
+                      className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Share ({selectedItems.length})
+                    </Button>
+                  </>
                 )}
 
                 <Button
@@ -985,14 +1178,34 @@ const Media = () => {
                 </Button>
 
                 {selectMode && selectedItems.length > 0 && (
-                  <Button
-                    variant="default"
-                    onClick={handleShare}
-                    className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    Share ({selectedItems.length})
-                  </Button>
+                  <>
+                    <Button
+                      variant="default"
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloadingPDF}
+                      className="flex items-center gap-2 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {isDownloadingPDF ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4" />
+                          Download PDF ({selectedItems.length})
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={handleShare}
+                      className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Share2 className="h-4 w-4" />
+                      Share ({selectedItems.length})
+                    </Button>
+                  </>
                 )}
 
                 <Button

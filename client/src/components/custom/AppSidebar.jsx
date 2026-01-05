@@ -28,6 +28,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "../ui/sidebar";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -109,6 +110,7 @@ export function AppSidebar() {
   const pendingOrderCount = useSelector((state) => state.orders.pendingOrderCount);
   const lowStockCount = useSelector((state) => state.products.lowStockCount);
   const { handleLogout } = useAuth();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   // Fetch orders and low stock count after login
   useEffect(() => {
@@ -192,7 +194,15 @@ export function AppSidebar() {
                           : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                      <Link 
+                        to={item.url} 
+                        className="flex items-center gap-2.5 p-2 w-full relative"
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
                         <Icon className={`w-4 h-4 transition-all ${
                           isActive 
                             ? "text-blue-600 scale-110" 
@@ -236,7 +246,15 @@ export function AppSidebar() {
                           : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                      <Link 
+                        to={item.url} 
+                        className="flex items-center gap-2.5 p-2 w-full relative"
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
                         <Icon className={`w-4 h-4 transition-all ${
                           isActive 
                             ? "text-blue-600 scale-110" 
@@ -287,7 +305,15 @@ export function AppSidebar() {
                           : "text-gray-600 hover:bg-white/80 hover:text-gray-900 hover:shadow-sm"
                       }`}
                     >
-                      <Link to={item.url} className="flex items-center gap-2.5 p-2 w-full relative">
+                      <Link 
+                        to={item.url} 
+                        className="flex items-center gap-2.5 p-2 w-full relative"
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
                         <Icon className={`w-4 h-4 transition-all ${
                           isActive 
                             ? "text-blue-600 scale-110" 
@@ -315,7 +341,15 @@ export function AppSidebar() {
             variant="ghost"
             className="w-full justify-start text-gray-600 hover:text-gray-900 hover:bg-white/80 hover:shadow-sm h-8 rounded-lg transition-all duration-150"
           >
-            <Link to="/admin/profile" className="flex items-center gap-2.5">
+            <Link 
+              to="/admin/profile" 
+              className="flex items-center gap-2.5"
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false);
+                }
+              }}
+            >
               <UserCog className="w-4 h-4 text-gray-400" />
               <span className="text-sm font-semibold" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '-0.015em' }}>
                 Admin Profile
