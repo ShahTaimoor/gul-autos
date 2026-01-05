@@ -5,6 +5,8 @@ const CategoryRepository = require('./implementations/CategoryRepository');
 const CartRepository = require('./implementations/CartRepository');
 const MediaRepository = require('./implementations/MediaRepository');
 const BlacklistedTokenRepository = require('./implementations/BlacklistedTokenRepository');
+const PasswordResetRequestRepository = require('./implementations/PasswordResetRequestRepository');
+const AuditLogRepository = require('./implementations/AuditLogRepository');
 
 module.exports = {
   userRepository: new UserRepository(),
@@ -14,5 +16,7 @@ module.exports = {
   cartRepository: new CartRepository(),
   mediaRepository: new MediaRepository(),
   blacklistedTokenRepository: new BlacklistedTokenRepository(),
+  passwordResetRequestRepository: new PasswordResetRequestRepository(),
+  auditLogRepository: new AuditLogRepository(),
 };
 

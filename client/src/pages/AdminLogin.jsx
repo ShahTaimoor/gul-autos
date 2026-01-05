@@ -3,11 +3,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import OneLoader from '@/components/ui/OneLoader';
-import { Eye, EyeOff, ArrowLeft, Shield } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Shield, Lock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { adminLogin } from '@/redux/slices/auth/authSlice';
 import { useToast } from '@/hooks/use-toast';
+import { userService } from '@/services/userService';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -18,6 +27,9 @@ const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState({ shopName: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordName, setForgotPasswordName] = useState('');
   const [inputValue, setInputValues] = useState({
     shopName: '',
     password: '',
@@ -99,6 +111,28 @@ const AdminLogin = () => {
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword((prev) => !prev);
   }, []);
+
+  const handleForgotPassword = useCallback(async () => {
+    if (!forgotPasswordName.trim()) {
+      toast.error('Please enter your admin shop name');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    try {
+      const result = await userService.requestPasswordReset(forgotPasswordName.trim());
+      if (result.success) {
+        toast.success(result.message || 'Password reset request submitted successfully. Super Admin will be notified.');
+        setShowForgotPassword(false);
+        setForgotPasswordName('');
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit password reset request';
+      toast.error(errorMessage);
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  }, [forgotPasswordName, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
@@ -205,7 +239,74 @@ const AdminLogin = () => {
                 <span>Login as Admin</span>
               )}
             </Button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-primary hover:underline focus:outline-none"
+                disabled={loading}
+              >
+                Forgot Password?
+              </button>
+            </div>
           </form>
+
+          {/* Forgot Password Dialog */}
+          <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5 text-primary" />
+                  Request Password Reset
+                </DialogTitle>
+                <DialogDescription>
+                  Enter your admin shop name to request a password reset. The Super Admin will be notified and will reset your password.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgotPasswordName">Admin Shop Name</Label>
+                  <Input
+                    id="forgotPasswordName"
+                    type="text"
+                    placeholder="Enter your shop name"
+                    value={forgotPasswordName}
+                    onChange={(e) => setForgotPasswordName(e.target.value)}
+                    disabled={forgotPasswordLoading}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordName('');
+                  }}
+                  disabled={forgotPasswordLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleForgotPassword}
+                  disabled={forgotPasswordLoading || !forgotPasswordName.trim()}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {forgotPasswordLoading ? (
+                    <div className="flex items-center gap-2">
+                      <OneLoader size="small" text="" showText={false} />
+                      <span>Submitting...</span>
+                    </div>
+                  ) : (
+                    'Submit Request'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Footer */}
           <div className="text-center pt-4 border-t border-gray-200 space-y-2">

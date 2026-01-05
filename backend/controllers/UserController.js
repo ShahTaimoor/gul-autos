@@ -287,6 +287,131 @@ class UserController {
       next(error);
     }
   }
+
+  async deleteUser(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const currentUserId = req.user.id;
+      const currentUserRole = req.user.role;
+
+      await userService.deleteUser(userId, currentUserId, currentUserRole);
+
+      return res.status(200).json({
+        success: true,
+        message: 'User deleted successfully'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async requestPasswordReset(req, res, next) {
+    try {
+      const { adminName } = req.body;
+      
+      if (!adminName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Admin name is required'
+        });
+      }
+
+      const result = await userService.requestPasswordReset(adminName);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPendingPasswordResetRequests(req, res, next) {
+    try {
+      const currentUserRole = req.user.role;
+
+      if (currentUserRole !== 2) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only Super Admin can view password reset requests'
+        });
+      }
+
+      const requests = await userService.getPendingPasswordResetRequests();
+
+      return res.status(200).json({
+        success: true,
+        requests
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resetAdminPassword(req, res, next) {
+    try {
+      const { requestId } = req.params;
+      const { newPassword } = req.body;
+      const currentUserId = req.user.id;
+      const currentUserRole = req.user.role;
+
+      if (currentUserRole !== 2) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only Super Admin can reset admin passwords'
+        });
+      }
+
+      const ipAddress = req.ip || req.connection.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const result = await userService.resetAdminPassword(
+        requestId,
+        newPassword,
+        currentUserId,
+        ipAddress,
+        userAgent
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAuditLogs(req, res, next) {
+    try {
+      const currentUserRole = req.user.role;
+
+      if (currentUserRole !== 2) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only Super Admin can view audit logs'
+        });
+      }
+
+      const { page = 1, limit = 50, action } = req.query;
+      const filters = {};
+      if (action) {
+        filters.action = action;
+      }
+
+      const options = {
+        limit: parseInt(limit),
+        skip: (parseInt(page) - 1) * parseInt(limit)
+      };
+
+      const result = await userService.getAuditLogs(filters, options);
+
+      return res.status(200).json({
+        success: true,
+        logs: result.logs,
+        total: result.total,
+        page: parseInt(page),
+        limit: parseInt(limit)
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new UserController();

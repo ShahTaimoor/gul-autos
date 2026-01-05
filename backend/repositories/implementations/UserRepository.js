@@ -6,6 +6,8 @@ class UserRepository extends IUserRepository {
   _mergeQuery(query, includeDeleted = false) {
     const mergedQuery = { ...query };
     if (!includeDeleted) {
+      // Filter out deleted users: exclude where isDeleted is true
+      // This works for both false and undefined (field doesn't exist)
       mergedQuery.isDeleted = { $ne: true };
     }
     return mergedQuery;
@@ -31,9 +33,35 @@ class UserRepository extends IUserRepository {
     return await User.findOne(mergedQuery).select('+password');
   }
 
-  async find(query = {}, includeDeleted = false) {
+  async find(query = {}, options = {}, includeDeleted = false) {
+    // Handle backward compatibility: if second param is boolean, it's includeDeleted
+    if (typeof options === 'boolean') {
+      includeDeleted = options;
+      options = {};
+    }
+
+    const {
+      sort = {},
+      skip = 0,
+      limit = null
+    } = options;
+
     const mergedQuery = this._mergeQuery(query, includeDeleted);
-    return await User.find(mergedQuery).select('-password').lean();
+    let queryBuilder = User.find(mergedQuery).select('-password');
+
+    if (Object.keys(sort).length > 0) {
+      queryBuilder = queryBuilder.sort(sort);
+    }
+
+    if (skip > 0) {
+      queryBuilder = queryBuilder.skip(skip);
+    }
+
+    if (limit) {
+      queryBuilder = queryBuilder.limit(limit);
+    }
+
+    return await queryBuilder.lean();
   }
 
   async create(userData) {

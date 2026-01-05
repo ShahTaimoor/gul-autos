@@ -84,6 +84,21 @@ const updateUsernameSchema = Joi.object({
   })
 });
 
+const forgotPasswordSchema = Joi.object({
+  adminName: Joi.string().trim().required().messages({
+    'string.empty': 'Admin name is required',
+    'any.required': 'Admin name is required'
+  })
+});
+
+const resetPasswordSchema = Joi.object({
+  newPassword: Joi.string().min(6).required().messages({
+    'string.min': 'Password must be at least 6 characters long',
+    'string.empty': 'Password is required',
+    'any.required': 'Password is required'
+  })
+});
+
 module.exports = {
   signupOrLoginSchema,
   signupSchema,
@@ -91,6 +106,8 @@ module.exports = {
   updateProfileSchema,
   updateUserRoleSchema,
   changePasswordSchema,
-  updateUsernameSchema
+  updateUsernameSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema
 };
 

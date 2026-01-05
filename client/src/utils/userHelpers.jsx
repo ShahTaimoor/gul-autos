@@ -30,24 +30,96 @@ export const getRoleIcon = (role) => {
 };
 
 /**
- * Filter users by search term and role
+ * Filter users by search term, role, and cities, sorted by role (Super Admin, Admin, Users)
  * @param {Array} users - Array of users
  * @param {string} searchTerm - Search term
  * @param {string} roleFilter - Role filter ('all' or role number as string)
- * @returns {Array} Filtered users
+ * @param {Array} selectedCities - Array of selected city names to filter by
+ * @returns {Array} Filtered and sorted users
  */
-export const filterUsers = (users, searchTerm, roleFilter) => {
-  return users.filter((user) => {
+export const filterUsers = (users, searchTerm, roleFilter, selectedCities = []) => {
+  const filtered = users.filter((user) => {
     const matchesSearch =
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phone?.includes(searchTerm);
 
     const matchesRole = roleFilter === 'all' || user.role.toString() === roleFilter;
 
-    return matchesSearch && matchesRole;
+    // City filter: if cities are selected, user must be in one of them
+    // If no cities selected, show all users (no city filter applied)
+    // Use case-insensitive comparison to match normalized cities
+    const matchesCity = selectedCities.length === 0 || 
+      (user.city && selectedCities.some((selectedCity) => 
+        normalizeCity(user.city) === normalizeCity(selectedCity)
+      ));
+
+    return matchesSearch && matchesRole && matchesCity;
   });
+
+  // Sort by role: Super Admin (2) first, then Admin (1), then Users (0)
+  return filtered.sort((a, b) => {
+    // Higher role number comes first (2 > 1 > 0)
+    return b.role - a.role;
+  });
+};
+
+/**
+ * Capitalize first letter of each word in a string
+ * @param {string} str - String to capitalize
+ * @returns {string} Capitalized string
+ */
+export const capitalizeWords = (str) => {
+  if (!str) return str;
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+/**
+ * Normalize city name for comparison (trim and lowercase)
+ * @param {string} city - City name to normalize
+ * @returns {string} Normalized city name
+ */
+export const normalizeCity = (city) => {
+  return city ? city.trim().toLowerCase() : '';
+};
+
+/**
+ * Get unique cities from users array (case-insensitive, trimmed)
+ * @param {Array} users - Array of users
+ * @returns {Array} Array of unique city names (sorted, with original casing preserved)
+ */
+export const getUniqueCities = (users) => {
+  const cityMap = new Map(); // Use Map to store normalized -> original mapping
+  
+  users.forEach((user) => {
+    if (user.city && user.city.trim() !== '') {
+      const normalized = normalizeCity(user.city);
+      const trimmed = user.city.trim();
+      
+      // If we haven't seen this normalized city, or if the current one is better (properly capitalized)
+      if (!cityMap.has(normalized)) {
+        cityMap.set(normalized, trimmed);
+      } else {
+        // Keep the version that's already properly capitalized if available
+        const existing = cityMap.get(normalized);
+        // Prefer the version that starts with uppercase
+        if (trimmed.charAt(0) === trimmed.charAt(0).toUpperCase() && 
+            existing.charAt(0) !== existing.charAt(0).toUpperCase()) {
+          cityMap.set(normalized, trimmed);
+        }
+      }
+    }
+  });
+  
+  // Convert Map values to array and sort
+  const uniqueCities = Array.from(cityMap.values());
+  return uniqueCities.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 };
 
 /**

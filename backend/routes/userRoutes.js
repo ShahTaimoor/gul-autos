@@ -1,6 +1,6 @@
 const express = require('express');
 const userController = require('../controllers/UserController');
-const { isAuthorized, isAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const { isAuthorized, isAdminOrSuperAdmin, isSuperAdmin } = require('../middleware/authMiddleware');
 const { authLimiter, generalLimiter } = require('../middleware/security');
 const validate = require('../middleware/validate');
 const {
@@ -10,7 +10,9 @@ const {
   updateProfileSchema,
   updateUserRoleSchema,
   changePasswordSchema,
-  updateUsernameSchema
+  updateUsernameSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema
 } = require('../validators/userValidators');
 
 const router = express.Router();
@@ -28,5 +30,12 @@ router.put('/update-profile', isAuthorized, validate(updateProfileSchema), userC
 router.put('/update-user-role/:userId', isAuthorized, validate(updateUserRoleSchema), userController.updateUserRole);
 router.put('/change-password', isAuthorized, validate(changePasswordSchema), userController.changePassword);
 router.put('/update-username', isAuthorized, validate(updateUsernameSchema), userController.updateUsername);
+router.delete('/users/:userId', isAuthorized, isAdminOrSuperAdmin, userController.deleteUser);
+
+// Password reset routes
+router.post('/admin/forgot-password', authLimiter, validate(forgotPasswordSchema), userController.requestPasswordReset);
+router.get('/admin/password-reset-requests', isAuthorized, isSuperAdmin, userController.getPendingPasswordResetRequests);
+router.put('/admin/reset-password/:requestId', isAuthorized, isSuperAdmin, validate(resetPasswordSchema), userController.resetAdminPassword);
+router.get('/admin/audit-logs', isAuthorized, isSuperAdmin, userController.getAuditLogs);
 
 module.exports = router;

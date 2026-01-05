@@ -1,16 +1,43 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Checkbox } from '../components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../components/ui/alert-dialog';
 import OneLoader from '../components/ui/OneLoader';
 import { useUsers } from '@/hooks/use-users';
+import { useToast } from '@/hooks/use-toast';
+import { userService } from '@/services/userService';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
+import { Label } from '../components/ui/label';
+import { Input } from '../components/ui/input';
 import {
   getRoleLabel,
   getRoleIcon,
   filterUsers,
   getUserStats,
   getPageNumbers,
+  getUniqueCities,
+  capitalizeWords,
+  normalizeCity,
 } from '@/utils/userHelpers';
 import {
   RefreshCw,
@@ -26,29 +53,50 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Trash2,
+  AtSign,
+  Lock,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
 const Users = () => {
-  const { users, loading, updatingRoles, fetchUsers, handleRoleChange } = useUsers();
+  const { users, loading, updatingRoles, fetchUsers, handleRoleChange, handleDeleteUser } = useUsers();
   const { user: currentUser } = useSelector((state) => state.auth);
+  const toast = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [selectedCities, setSelectedCities] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [deletingUsers, setDeletingUsers] = useState({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState({});
+  const [passwordResetRequests, setPasswordResetRequests] = useState([]);
+  const [loadingResetRequests, setLoadingResetRequests] = useState(false);
+  const [resetPasswordDialog, setResetPasswordDialog] = useState({ open: false, request: null, newPassword: '' });
 
-  // Filter users based on search term and role filter
+  // Get unique cities from users
+  const availableCities = useMemo(() => getUniqueCities(users), [users]);
+
+  // Filter users based on search term, role filter, and city filter
   const filteredUsers = useMemo(
-    () => filterUsers(users, searchTerm, roleFilter),
-    [users, searchTerm, roleFilter]
+    () => filterUsers(users, searchTerm, roleFilter, selectedCities),
+    [users, searchTerm, roleFilter, selectedCities]
   );
 
   // Reset to first page when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, roleFilter]);
+  }, [searchTerm, roleFilter, selectedCities]);
 
   // Get user statistics
   const userStats = useMemo(() => getUserStats(users), [users]);
+  
+  // Check if there's already a super admin
+  const hasSuperAdmin = useMemo(() => {
+    return users.some((user) => user.role === 2);
+  }, [users]);
 
   // Pagination calculations
   const totalPages = useMemo(
@@ -86,6 +134,83 @@ const Users = () => {
     setCurrentPage(1);
   };
 
+  // Handle city checkbox change
+  const handleCityToggle = (city) => {
+    setSelectedCities((prev) => {
+      if (prev.includes(city)) {
+        return prev.filter((c) => c !== city);
+      } else {
+        return [...prev, city];
+      }
+    });
+  };
+
+  // Handle select all cities
+  const handleSelectAllCities = () => {
+    if (selectedCities.length === availableCities.length) {
+      setSelectedCities([]);
+    } else {
+      setSelectedCities([...availableCities]);
+    }
+  };
+
+  // Fetch password reset requests (Super Admin only)
+  const fetchPasswordResetRequests = useCallback(async () => {
+    if (currentUser?.role !== 2) return;
+    
+    setLoadingResetRequests(true);
+    try {
+      const result = await userService.getPendingPasswordResetRequests();
+      if (result.success) {
+        setPasswordResetRequests(result.requests || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch password reset requests:', error);
+    } finally {
+      setLoadingResetRequests(false);
+    }
+  }, [currentUser?.role]);
+
+  // Reset admin password
+  const handleResetAdminPassword = useCallback(async () => {
+    if (!resetPasswordDialog.request || !resetPasswordDialog.newPassword) {
+      toast.error('Please enter a new password');
+      return;
+    }
+
+    if (resetPasswordDialog.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      const result = await userService.resetAdminPassword(
+        resetPasswordDialog.request._id,
+        resetPasswordDialog.newPassword
+      );
+      
+      if (result.success) {
+        toast.success(`Password reset successfully for ${result.admin.name}`);
+        setResetPasswordDialog({ open: false, request: null, newPassword: '' });
+        await fetchPasswordResetRequests();
+        await fetchUsers(); // Refresh users list
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to reset password';
+      toast.error(errorMessage);
+    }
+  }, [resetPasswordDialog, fetchPasswordResetRequests, fetchUsers, toast]);
+
+  // Fetch reset requests on mount and when user changes
+  useEffect(() => {
+    if (currentUser?.role === 2) {
+      fetchPasswordResetRequests();
+      // Refresh every 30 seconds to check for new requests
+      const interval = setInterval(fetchPasswordResetRequests, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [currentUser?.role, fetchPasswordResetRequests]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -99,6 +224,57 @@ const Users = () => {
   return (
     <div className="min-h-screen bg-gray-50 px-2 py-4 md:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
+        {/* Password Reset Requests Section (Super Admin Only) */}
+        {currentUser?.role === 2 && passwordResetRequests.length > 0 && (
+          <div className="bg-amber-50 border-l-4 border-amber-400 rounded-lg shadow-sm p-4 mb-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Lock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-amber-900 mb-1">
+                    Pending Password Reset Requests ({passwordResetRequests.length})
+                  </h3>
+                  <p className="text-xs text-amber-700 mb-3">
+                    Admin users have requested password resets. Please review and reset their passwords.
+                  </p>
+                  <div className="space-y-2">
+                    {passwordResetRequests.slice(0, 3).map((request) => (
+                      <div key={request._id} className="flex items-center justify-between bg-white rounded-md p-2 border border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm font-medium text-gray-900">{request.requestedBy}</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(request.requestedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => setResetPasswordDialog({ open: true, request, newPassword: '' })}
+                          className="h-7 text-xs bg-amber-600 hover:bg-amber-700"
+                        >
+                          Reset Password
+                        </Button>
+                      </div>
+                    ))}
+                    {passwordResetRequests.length > 3 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {/* Scroll to requests section or show all */}}
+                        className="w-full text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                      >
+                        View All ({passwordResetRequests.length} requests)
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -222,6 +398,42 @@ const Users = () => {
                 </Select>
               </div>
             </div>
+            {/* City Filter Checkboxes */}
+            {availableCities.length > 0 && (
+              <div className="border-t border-gray-200 pt-3 sm:pt-4">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-1.5 sm:gap-2">
+                    <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
+                    Filter by City
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSelectAllCities}
+                    className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                  >
+                    {selectedCities.length === availableCities.length ? 'Deselect All' : 'Select All'}
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 sm:gap-3 max-h-32 sm:max-h-40 overflow-y-auto">
+                  {availableCities.map((city) => (
+                    <label
+                      key={city}
+                      className="flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedCities.includes(city)}
+                        onCheckedChange={() => handleCityToggle(city)}
+                      />
+                      <span className="text-xs sm:text-sm text-gray-700">{capitalizeWords(city)}</span>
+                      <span className="text-xs text-gray-500">
+                        ({users.filter((u) => u.city && u.city.trim().toLowerCase() === city.trim().toLowerCase()).length})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -260,7 +472,7 @@ const Users = () => {
                       className="hover:bg-gray-50 transition-colors duration-150"
                     >
                       <td className="py-2 px-1 sm:py-3 sm:px-2 md:py-4 md:px-6 text-[10px] sm:text-xs md:text-sm font-medium text-gray-500 whitespace-nowrap">
-                        {index + 1}
+                        {startIndex + index + 1}
                       </td>
                       <td className="py-2 px-1 sm:py-3 sm:px-2 md:py-4 md:px-6">
                         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3">
@@ -269,7 +481,12 @@ const Users = () => {
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold text-[10px] sm:text-xs md:text-sm text-gray-900 capitalize truncate">{user.name}</div>
-                            <div className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 truncate">ID: {user._id.slice(-6)}</div>
+                            {user.username && (
+                              <div className="flex items-center gap-1 text-[9px] sm:text-[10px] md:text-xs text-gray-500 truncate">
+                                <AtSign className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                                <span className="truncate">{user.username}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -278,7 +495,7 @@ const Users = () => {
                           {user.city && (
                             <div className="flex items-center gap-0.5 sm:gap-1 min-w-0">
                               <Building2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 text-gray-400 flex-shrink-0" />
-                              <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-gray-600 break-all">{user.city}</span>
+                              <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-gray-600 break-all">{capitalizeWords(user.city)}</span>
                             </div>
                           )}
                           {user.phone && (
@@ -339,16 +556,86 @@ const Users = () => {
                                         Admin
                                       </div>
                                     </SelectItem>
-                                    <SelectItem value="2">
-                                      <div className="flex items-center gap-2">
-                                        <Crown className="h-3.5 w-3.5" />
-                                        Super Admin
-                                      </div>
-                                    </SelectItem>
+                                    {/* Only show Super Admin option if there's no existing super admin, or if this user is already the super admin */}
+                                    {/* Only show Super Admin option if there's no existing super admin */}
+                                    {!hasSuperAdmin && (
+                                      <SelectItem value="2">
+                                        <div className="flex items-center gap-2">
+                                          <Crown className="h-3.5 w-3.5" />
+                                          Super Admin
+                                        </div>
+                                      </SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                                 {isUpdating && (
                                   <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                                )}
+                                {/* Delete button - show for regular users and admins (but not super admins or own account) */}
+                                {user.role !== 2 && !isCurrentUser && (
+                                  <AlertDialog 
+                                    open={deleteDialogOpen[user._id] || false}
+                                    onOpenChange={(open) => {
+                                      setDeleteDialogOpen((prev) => ({ ...prev, [user._id]: open }));
+                                      if (!open) {
+                                        setDeletingUsers((prev) => ({ ...prev, [user._id]: false }));
+                                      }
+                                    }}
+                                  >
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 sm:h-8 md:h-9 w-7 sm:w-8 md:w-9 p-0 border-red-300 hover:bg-red-50 hover:border-red-400 text-red-600"
+                                        disabled={deletingUsers[user._id]}
+                                      >
+                                        {deletingUsers[user._id] ? (
+                                          <div className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                          <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                                        )}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent className="mx-4 sm:mx-0">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-lg sm:text-xl">Delete User</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-sm sm:text-base">
+                                          Are you sure you want to delete <strong>{user.name}</strong>? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+                                        <AlertDialogCancel 
+                                          className="w-full sm:w-auto"
+                                          disabled={deletingUsers[user._id]}
+                                        >
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={async () => {
+                                            setDeletingUsers((prev) => ({ ...prev, [user._id]: true }));
+                                            try {
+                                              await handleDeleteUser(user._id);
+                                              toast.success(`User ${user.name} deleted successfully`);
+                                              setDeleteDialogOpen((prev) => ({ ...prev, [user._id]: false }));
+                                              // Adjust page if needed after deletion
+                                              if (filteredUsers.length <= startIndex + 1 && currentPage > 1) {
+                                                setCurrentPage(currentPage - 1);
+                                              }
+                                            } catch (error) {
+                                              const errorMessage = error.response?.data?.message || error.message || 'Failed to delete user';
+                                              toast.error(errorMessage);
+                                            } finally {
+                                              setDeletingUsers((prev) => ({ ...prev, [user._id]: false }));
+                                            }
+                                          }}
+                                          className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                                          disabled={deletingUsers[user._id]}
+                                        >
+                                          {deletingUsers[user._id] ? 'Deleting...' : 'Delete'}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 )}
                               </div>
                             )
@@ -453,6 +740,57 @@ const Users = () => {
           </div>
         )}
       </div>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordDialog.open} onOpenChange={(open) => {
+        if (!open) {
+          setResetPasswordDialog({ open: false, request: null, newPassword: '' });
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-primary" />
+              Reset Admin Password
+            </DialogTitle>
+            <DialogDescription>
+              Set a new password for <strong>{resetPasswordDialog.request?.requestedBy}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="Enter new password (min 6 characters)"
+                value={resetPasswordDialog.newPassword}
+                onChange={(e) => setResetPasswordDialog(prev => ({ ...prev, newPassword: e.target.value }))}
+                className="w-full"
+                minLength={6}
+              />
+              <p className="text-xs text-gray-500">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setResetPasswordDialog({ open: false, request: null, newPassword: '' })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetAdminPassword}
+              disabled={!resetPasswordDialog.newPassword || resetPasswordDialog.newPassword.length < 6}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

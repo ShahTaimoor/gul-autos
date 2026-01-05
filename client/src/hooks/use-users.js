@@ -20,7 +20,12 @@ export const useUsers = () => {
     setLoading(true);
     try {
       const data = await userService.getAllUsers();
-      setUsers(data);
+      // Safety filter: remove any users with isDeleted flag (frontend safety check)
+      // Also filter out null/undefined users
+      const activeUsers = Array.isArray(data) 
+        ? data.filter((user) => user && user._id && user.isDeleted !== true) 
+        : [];
+      setUsers(activeUsers);
     } catch (error) {
       // Error handled silently - user will see empty state
     } finally {
@@ -55,6 +60,48 @@ export const useUsers = () => {
     }
   }, [dispatch]);
 
+  /**
+   * Delete user
+   * @param {string} userId - User ID
+   */
+  const handleDeleteUser = useCallback(async (userId) => {
+    // Store the current users list in case we need to restore
+    let previousUsers = [];
+    
+    // Optimistically remove user from state immediately for instant UI update
+    setUsers((prevUsers) => {
+      previousUsers = [...prevUsers];
+      return prevUsers.filter((user) => user._id !== userId);
+    });
+
+    try {
+      const result = await userService.deleteUser(userId);
+      if (!result.success) {
+        // Restore previous state if delete failed
+        setUsers(previousUsers);
+        throw new Error('Delete operation failed');
+      }
+      
+      // Don't refetch on success - trust the optimistic update
+      // The user is already removed from state, and backend will filter on next natural fetch
+      // This prevents race conditions and ensures immediate UI update
+    } catch (error) {
+      // If error occurred, restore the user and refetch to get correct state
+      setUsers(previousUsers);
+      try {
+        const data = await userService.getAllUsers();
+        // Safety filter: remove any deleted users
+        const activeUsers = Array.isArray(data) 
+          ? data.filter((user) => !user.isDeleted && user._id !== userId) 
+          : [];
+        setUsers(activeUsers);
+      } catch (fetchError) {
+        console.error('Failed to refetch users after delete error:', fetchError);
+      }
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -65,6 +112,7 @@ export const useUsers = () => {
     updatingRoles,
     fetchUsers,
     handleRoleChange,
+    handleDeleteUser,
   };
 };
 

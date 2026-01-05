@@ -1,7 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { userRepository, blacklistedTokenRepository } = require('../repositories');
+const { userRepository, blacklistedTokenRepository, passwordResetRequestRepository, auditLogRepository } = require('../repositories');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../errors');
+const logger = require('../utils/logger');
 
 class UserService {
   async signupOrLogin(shopName, password, phone, address, city, username, rememberMe) {
@@ -214,11 +215,14 @@ class UserService {
     const limitNum = Math.max(1, Math.min(parseInt(limit) || 50, 100)); // Max 100 per page
     const skip = (pageNum - 1) * limitNum;
 
-    const users = await userRepository.find({}, { skip, limit: limitNum });
+    // Explicitly exclude deleted users (includeDeleted = false by default, but being explicit)
+    const users = await userRepository.find({}, { skip, limit: limitNum }, false);
+    // Filter out any deleted users as a safety measure (shouldn't be needed, but extra safety)
+    const activeUsers = users.filter(user => !user.isDeleted);
     const total = await userRepository.countDocuments({});
 
     return {
-      users,
+      users: activeUsers,
       total,
       page: pageNum,
       limit: limitNum,
@@ -252,6 +256,14 @@ class UserService {
 
     if (currentUserId === userId && currentUserRole === 2) {
       throw new ForbiddenError('Super admin cannot change their own role');
+    }
+
+    // Prevent creating more than one super admin
+    if (parseInt(role) === 2) {
+      const existingSuperAdmin = await userRepository.findOne({ role: 2 });
+      if (existingSuperAdmin && existingSuperAdmin._id.toString() !== userId) {
+        throw new ForbiddenError('Only one super admin is allowed. There is already a super admin in the system.');
+      }
     }
 
     const updatedUser = await userRepository.updateById(userId, { role: parseInt(role) });
@@ -304,6 +316,37 @@ class UserService {
     return this._sanitizeUser(updatedUser);
   }
 
+  async deleteUser(userId, currentUserId, currentUserRole) {
+    // Check if user exists (including deleted users) to avoid "not found" error
+    const user = await userRepository.findById(userId, true); // includeDeleted = true
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // If user is already deleted, return success (idempotent operation)
+    if (user.isDeleted) {
+      return { success: true, message: 'User already deleted' };
+    }
+
+    // Prevent deleting own account
+    if (currentUserId === userId) {
+      throw new ForbiddenError('You cannot delete your own account');
+    }
+
+    // Only super admin can delete users
+    if (currentUserRole !== 2) {
+      throw new ForbiddenError('Only super admin can delete users');
+    }
+
+    // Prevent deleting other super admins (only super admin can delete, but not other super admins)
+    if (user.role === 2) {
+      throw new ForbiddenError('Cannot delete super admin accounts');
+    }
+
+    await userRepository.deleteById(userId);
+    return { success: true };
+  }
+
   generateTokens(user, rememberMe = false) {
     // Admin users (role 1 or 2) get 1 day token expiration
     // Regular users get 365 days
@@ -340,6 +383,153 @@ class UserService {
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
         maxAge: refreshCookieMaxAge,
       }
+    };
+  }
+
+  async requestPasswordReset(adminName) {
+    // Only admins (role 1) can request password reset
+    const admin = await userRepository.findOne({ name: adminName.trim() });
+    
+    if (!admin) {
+      throw new NotFoundError('Admin not found');
+    }
+
+    if (admin.role !== 1) {
+      throw new ForbiddenError('Only admin users can request password reset');
+    }
+
+    // Check if there's already a pending request
+    const existingRequest = await passwordResetRequestRepository.findOne({
+      userId: admin._id,
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      throw new BadRequestError('A password reset request is already pending. Please wait for Super Admin to process it.');
+    }
+
+    // Create password reset request
+    const resetRequest = await passwordResetRequestRepository.create({
+      userId: admin._id,
+      requestedBy: admin.name,
+      status: 'pending'
+    });
+
+    // Notify Super Admin (find super admin)
+    const superAdmin = await userRepository.findOne({ role: 2 });
+    
+    if (superAdmin) {
+      // Log the request
+      logger.info('Password reset requested', {
+        adminId: admin._id,
+        adminName: admin.name,
+        superAdminId: superAdmin._id,
+        requestId: resetRequest._id
+      });
+
+      // In a real application, you would send an email notification here
+      // For now, we'll just log it and the Super Admin can see it in the dashboard
+    }
+
+    return {
+      success: true,
+      message: 'Password reset request submitted. Super Admin will be notified.',
+      requestId: resetRequest._id
+    };
+  }
+
+  async getPendingPasswordResetRequests() {
+    const requests = await passwordResetRequestRepository.find({
+      status: 'pending',
+      isDeleted: { $ne: true }
+    });
+
+    return requests;
+  }
+
+  async resetAdminPassword(requestId, newPassword, superAdminId, ipAddress, userAgent) {
+    // Validate password
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestError('Password must be at least 6 characters long');
+    }
+
+    // Get the reset request
+    const resetRequest = await passwordResetRequestRepository.findById(requestId);
+    if (!resetRequest) {
+      throw new NotFoundError('Password reset request not found');
+    }
+
+    if (resetRequest.status !== 'pending') {
+      throw new BadRequestError('This password reset request has already been processed');
+    }
+
+    // Get the admin user
+    const admin = await userRepository.findById(resetRequest.userId);
+    if (!admin) {
+      throw new NotFoundError('Admin user not found');
+    }
+
+    if (admin.role !== 1) {
+      throw new ForbiddenError('Can only reset passwords for admin users');
+    }
+
+    // Get super admin
+    const superAdmin = await userRepository.findById(superAdminId);
+    if (!superAdmin || superAdmin.role !== 2) {
+      throw new ForbiddenError('Only Super Admin can reset admin passwords');
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update admin password
+    await userRepository.updateById(admin._id, { password: hashedPassword });
+
+    // Update reset request status
+    await passwordResetRequestRepository.updateById(requestId, {
+      status: 'completed',
+      completedAt: new Date(),
+      completedBy: superAdminId
+    });
+
+    // Create audit log
+    await auditLogRepository.create({
+      action: 'password_reset',
+      performedBy: superAdminId,
+      targetUser: admin._id,
+      details: {
+        requestId: requestId,
+        adminName: admin.name,
+        superAdminName: superAdmin.name
+      },
+      ipAddress,
+      userAgent
+    });
+
+    logger.info('Admin password reset completed', {
+      adminId: admin._id,
+      adminName: admin.name,
+      superAdminId: superAdminId,
+      requestId: requestId
+    });
+
+    return {
+      success: true,
+      message: 'Admin password has been reset successfully',
+      admin: {
+        id: admin._id,
+        name: admin.name
+      }
+    };
+  }
+
+  async getAuditLogs(filters = {}, options = {}) {
+    const logs = await auditLogRepository.find(filters, options);
+    const total = await auditLogRepository.countDocuments(filters);
+    
+    return {
+      logs,
+      total
     };
   }
 
