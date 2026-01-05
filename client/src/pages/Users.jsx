@@ -5,6 +5,15 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -68,6 +77,7 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [selectedCities, setSelectedCities] = useState([]);
+  const [citySearchTerm, setCitySearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deletingUsers, setDeletingUsers] = useState({});
@@ -78,6 +88,15 @@ const Users = () => {
 
   // Get unique cities from users
   const availableCities = useMemo(() => getUniqueCities(users), [users]);
+  
+  // Filter cities based on search term
+  const filteredCities = useMemo(() => {
+    if (!citySearchTerm.trim()) return availableCities;
+    const searchLower = citySearchTerm.toLowerCase().trim();
+    return availableCities.filter((city) =>
+      city.toLowerCase().includes(searchLower)
+    );
+  }, [availableCities, citySearchTerm]);
 
   // Filter users based on search term, role filter, and city filter
   const filteredUsers = useMemo(
@@ -398,40 +417,106 @@ const Users = () => {
                 </Select>
               </div>
             </div>
-            {/* City Filter Checkboxes */}
+            {/* City Filter Dropdown */}
             {availableCities.length > 0 && (
               <div className="border-t border-gray-200 pt-3 sm:pt-4">
-                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                <div className="flex items-center justify-between">
                   <label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-1.5 sm:gap-2">
                     <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
                     Filter by City
                   </label>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSelectAllCities}
-                    className="h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
-                  >
-                    {selectedCities.length === availableCities.length ? 'Deselect All' : 'Select All'}
-                  </Button>
+                  <DropdownMenu onOpenChange={(open) => {
+                    if (!open) {
+                      setCitySearchTerm('');
+                    }
+                  }}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 sm:h-10 text-xs sm:text-sm border-gray-300 hover:bg-gray-50"
+                      >
+                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        {selectedCities.length === 0
+                          ? 'Select Cities'
+                          : selectedCities.length === availableCities.length
+                          ? 'All Cities'
+                          : `${selectedCities.length} Selected`}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 max-h-80 overflow-y-auto" align="end">
+                      <DropdownMenuLabel>Select Cities</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {/* Search Input */}
+                      <div className="px-2 py-1.5">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                          <Input
+                            type="text"
+                            placeholder="Search cities..."
+                            value={citySearchTerm}
+                            onChange={(e) => setCitySearchTerm(e.target.value)}
+                            className="h-8 pl-8 pr-2 text-xs border-gray-300 focus:ring-2 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleSelectAllCities();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {selectedCities.length === availableCities.length ? 'Deselect All' : 'Select All'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      {filteredCities.length > 0 ? (
+                        filteredCities.map((city) => {
+                          const cityCount = users.filter(
+                            (u) => u.city && u.city.trim().toLowerCase() === city.trim().toLowerCase()
+                          ).length;
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={city}
+                              checked={selectedCities.includes(city)}
+                              onCheckedChange={() => handleCityToggle(city)}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="flex-1">{capitalizeWords(city)}</span>
+                              <span className="text-xs text-gray-500 ml-2">({cityCount})</span>
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })
+                      ) : (
+                        <div className="px-2 py-4 text-center text-xs text-gray-500">
+                          No cities found
+                        </div>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <div className="flex flex-wrap gap-2 sm:gap-3 max-h-32 sm:max-h-40 overflow-y-auto">
-                  {availableCities.map((city) => (
-                    <label
-                      key={city}
-                      className="flex items-center gap-1.5 sm:gap-2 cursor-pointer hover:bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md transition-colors"
-                    >
-                      <Checkbox
-                        checked={selectedCities.includes(city)}
-                        onCheckedChange={() => handleCityToggle(city)}
-                      />
-                      <span className="text-xs sm:text-sm text-gray-700">{capitalizeWords(city)}</span>
-                      <span className="text-xs text-gray-500">
-                        ({users.filter((u) => u.city && u.city.trim().toLowerCase() === city.trim().toLowerCase()).length})
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                {selectedCities.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
+                    {selectedCities.map((city) => (
+                      <Badge
+                        key={city}
+                        variant="secondary"
+                        className="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-200"
+                      >
+                        {capitalizeWords(city)}
+                        <button
+                          onClick={() => handleCityToggle(city)}
+                          className="ml-1.5 hover:bg-blue-100 rounded-full p-0.5"
+                        >
+                          <XCircle className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
