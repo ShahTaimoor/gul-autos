@@ -9,7 +9,7 @@ import Pagination from '../components/custom/Pagination';
 import { usePagination } from '@/hooks/use-pagination';
 import { useMedia } from '@/hooks/use-media';
 import { imageService } from '@/services/imageService';
-import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search, Loader2 } from 'lucide-react';
+import { Eye, Download, Filter, FileDown, Plus, X, Upload, Trash2, CheckSquare, Square, Image, Upload as UploadIcon, Search, Loader2, Share2 } from 'lucide-react';
 
 const Media = () => {
   const dispatch = useDispatch();
@@ -53,6 +53,7 @@ const Media = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
   
   // Separate state for uploaded media display in Upload tab
   const [filteredUploadedMedia, setFilteredUploadedMedia] = useState([]);
@@ -230,6 +231,13 @@ const Media = () => {
     }
   }, [activeTab]);
 
+  // Reset selection when switching modes
+  useEffect(() => {
+    if (!selectMode && !deleteMode) {
+      setSelectedItems([]);
+    }
+  }, [selectMode, deleteMode]);
+
   // Delete functionality
   const handleDeleteSingle = useCallback(async (itemId) => {
     const result = await deleteMedia(itemId);
@@ -269,12 +277,197 @@ const Media = () => {
     }
   }, [selectedItems.length, filteredUploadedMedia]);
 
+  const handleSelectAllGallery = useCallback(() => {
+    if (selectedItems.length === filteredProducts.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(filteredProducts.map(item => item._id));
+    }
+  }, [selectedItems.length, filteredProducts]);
+
   const toggleDeleteMode = useCallback(() => {
     setDeleteMode(prev => !prev);
     if (deleteMode) {
       setSelectedItems([]);
     }
   }, [deleteMode]);
+
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode(prev => !prev);
+    if (selectMode) {
+      setSelectedItems([]);
+    }
+  }, [selectMode]);
+
+  const handleShare = useCallback(async () => {
+    if (selectedItems.length === 0) {
+      return;
+    }
+
+    // Get the URLs and names of selected items
+    let imageData = [];
+    
+    if (activeTab === 'gallery') {
+      // For gallery, get product image URLs
+      const selectedProducts = filteredProducts.filter(product => 
+        selectedItems.includes(product._id)
+      );
+      imageData = selectedProducts.map(product => ({
+        url: product.picture?.secure_url || product.image,
+        name: product.title || 'product'
+      })).filter(item => item.url);
+    } else {
+      // For upload tab, get uploaded media URLs
+      const selectedMedia = filteredUploadedMedia.filter(media => 
+        selectedItems.includes(media._id)
+      );
+      imageData = selectedMedia.map(media => ({
+        url: media.url,
+        name: media.name || 'image'
+      })).filter(item => item.url);
+    }
+
+    if (imageData.length === 0) {
+      return;
+    }
+
+    try {
+      // Fetch all images as blobs
+      const imageFiles = await Promise.all(
+        imageData.map(async (item, index) => {
+          try {
+            const blob = await imageService.fetchImageBlob(item.url, 30000);
+            // Ensure we have a valid MIME type
+            let mimeType = blob.type || 'image/jpeg';
+            if (!mimeType.startsWith('image/')) {
+              mimeType = 'image/jpeg';
+            }
+            
+            // Convert blob to File object with proper MIME type
+            const fileName = `${item.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${index + 1}.${mimeType.split('/')[1] || 'jpg'}`;
+            const file = new File([blob], fileName, { 
+              type: mimeType,
+              lastModified: Date.now()
+            });
+            
+            return file;
+          } catch (error) {
+            console.error(`Failed to fetch image ${item.url}:`, error);
+            return null;
+          }
+        })
+      );
+
+      // Filter out any failed fetches
+      const validFiles = imageFiles.filter(file => file !== null);
+
+      if (validFiles.length === 0) {
+        alert('Failed to load images for sharing. Please try again.');
+        return;
+      }
+
+      // Use Web Share API with files (works on mobile and desktop if app is installed)
+      // On Windows, try sharing files directly - sometimes canShare check is too strict
+      if (navigator.share) {
+        // First, try to share files directly (Windows Share dialog should show WhatsApp if installed)
+        try {
+          // Limit files to 10 for better compatibility with Windows Share
+          const filesToShare = validFiles.slice(0, 10);
+          
+          // Ensure files are valid File objects
+          console.log('Attempting to share files:', filesToShare.length, 'files');
+          console.log('File types:', filesToShare.map(f => ({ name: f.name, type: f.type, size: f.size })));
+          
+          // Try sharing with files - Windows Share API should show all available apps including WhatsApp
+          // Note: WhatsApp must be installed from Microsoft Store and registered as a share target
+          await navigator.share({
+            files: filesToShare,
+            title: `Sharing ${filesToShare.length} image${filesToShare.length > 1 ? 's' : ''}`,
+          });
+          return;
+        } catch (error) {
+          // User cancelled - don't show error
+          if (error.name === 'AbortError') {
+            return;
+          }
+          
+          console.error('Share error:', error);
+          console.log('Error details:', {
+            name: error.name,
+            message: error.message,
+            canShare: navigator.canShare ? navigator.canShare({ files: validFiles }) : 'not supported'
+          });
+          
+          // If sharing files failed, check if canShare says it's not supported
+          const canShareFiles = navigator.canShare && navigator.canShare({ files: validFiles });
+          
+          if (!canShareFiles) {
+            // Try sharing text with links as fallback
+            try {
+              const linksText = imageData.map(item => item.url).join('\n');
+              await navigator.share({
+                title: `Sharing ${validFiles.length} image${validFiles.length > 1 ? 's' : ''}`,
+                text: linksText,
+              });
+              return;
+            } catch (textError) {
+              if (textError.name === 'AbortError') {
+                return;
+              }
+              console.error('Error sharing text:', textError);
+            }
+          }
+        }
+      } else {
+        console.log('Web Share API not available');
+      }
+
+      // Fallback: For desktop/WhatsApp Web, download images and open WhatsApp
+      // Since WhatsApp Web doesn't support file sharing via URL, we'll download
+      // the images and open WhatsApp Web so user can manually attach them
+      try {
+        // Create a ZIP file with all images
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+        
+        validFiles.forEach((file) => {
+          zip.file(file.name, file);
+        });
+
+        const zipBlob = await zip.generateAsync({ 
+          type: 'blob',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 6 }
+        });
+        
+        const url = URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `images_to_share_${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Wait a bit for download to start, then open WhatsApp
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          // Open WhatsApp Web
+          window.open('https://web.whatsapp.com', '_blank');
+          alert(`Images downloaded as ZIP file. Please extract and attach them in WhatsApp.\n\nSelected ${validFiles.length} image${validFiles.length > 1 ? 's' : ''}.`);
+        }, 500);
+      } catch (zipError) {
+        // If ZIP fails, just open WhatsApp with links
+        const linksText = imageData.map(item => item.url).join('\n');
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(linksText)}`;
+        window.open(whatsappUrl, '_blank');
+        alert('Note: Sharing links instead of images. For image files, please use the share dialog on mobile devices.');
+      }
+      
+    } catch (error) {
+      console.error('Error in share process:', error);
+      alert('Failed to share images. Please try again.');
+    }
+  }, [selectedItems, activeTab, filteredProducts, filteredUploadedMedia]);
 
   // Import functionality
   const handleFileSelect = useCallback((e) => {
@@ -595,8 +788,28 @@ const Media = () => {
                 )}
               </div>
               
-              {/* Gallery Actions - Export Button */}
+              {/* Gallery Actions - Export and Share Buttons */}
               <div className="flex gap-2">
+                <Button
+                  variant={selectMode ? "default" : "outline"}
+                  onClick={toggleSelectMode}
+                  className="flex items-center gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  {selectMode ? 'Cancel Select' : 'Select'}
+                </Button>
+                
+                {selectMode && selectedItems.length > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={handleShare}
+                    className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share ({selectedItems.length})
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   onClick={() => setShowExportModal(true)}
@@ -620,6 +833,26 @@ const Media = () => {
                   </span>
                 )}
               </p>
+              {selectMode && filteredProducts.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSelectAllGallery}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    {selectedItems.length === filteredProducts.length ? (
+                      <CheckSquare className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                    {selectedItems.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                  {selectedItems.length > 0 && (
+                    <span className="text-sm text-blue-600 font-medium">
+                      {selectedItems.length} selected
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             
             <p className="text-xs text-gray-500 mt-1">
@@ -635,10 +868,32 @@ const Media = () => {
                   key={product._id || `product-${index}`} 
                   className="relative group transition-all duration-300 hover:scale-105"
                 >
+                  {/* Selection Checkbox */}
+                  {selectMode && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectItem(product._id);
+                        }}
+                        className="bg-white/90 hover:bg-white rounded-full p-1 shadow-md transition-all"
+                      >
+                        {selectedItems.includes(product._id) ? (
+                          <CheckSquare className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <Square className="h-4 w-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Product Image Only */}
                   <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-lg transition-transform duration-300 hover:scale-105 cursor-pointer w-full"
-                  onClick={() => handlePreviewImage(product.picture?.secure_url || product.image)}
+                  onClick={() => {
+                    if (!selectMode) {
+                      handlePreviewImage(product.picture?.secure_url || product.image);
+                    }
+                  }}
                   >
                     <LazyImage
                       src={product.picture?.secure_url || product.image}
@@ -656,32 +911,33 @@ const Media = () => {
                     </div>
 
                     {/* Hover overlay with actions */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePreviewImage(product.picture?.secure_url || product.image);
-                        }}
-                        className="bg-white/90 hover:bg-white text-black"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownloadImage(product.picture?.secure_url || product.image, product.title || 'product');
-                        }}
-                        className="bg-white/90 hover:bg-white text-black"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-
-                    </div>
+                    {!selectMode && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePreviewImage(product.picture?.secure_url || product.image);
+                          }}
+                          className="bg-white/90 hover:bg-white text-black"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadImage(product.picture?.secure_url || product.image, product.title || 'product');
+                          }}
+                          className="bg-white/90 hover:bg-white text-black"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -719,6 +975,26 @@ const Media = () => {
                 <p className="text-gray-600">Upload new images to your media library</p>
               </div>
               <div className="flex gap-2">
+                <Button
+                  variant={selectMode ? "default" : "outline"}
+                  onClick={toggleSelectMode}
+                  className="flex items-center gap-2 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  {selectMode ? 'Cancel Select' : 'Select'}
+                </Button>
+
+                {selectMode && selectedItems.length > 0 && (
+                  <Button
+                    variant="default"
+                    onClick={handleShare}
+                    className="flex items-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Share ({selectedItems.length})
+                  </Button>
+                )}
+
                 <Button
                   variant="outline"
                   onClick={() => setShowExportModal(true)}
@@ -833,7 +1109,7 @@ const Media = () => {
                           <option value={96}>96 per page</option>
                         </select>
                       )}
-                      {deleteMode && filteredUploadedMedia.length > 0 && (
+                      {(selectMode || deleteMode) && filteredUploadedMedia.length > 0 && (
                         <div className="flex items-center gap-2">
                           <button
                             onClick={handleSelectAll}
@@ -847,7 +1123,9 @@ const Media = () => {
                             {selectedItems.length === filteredUploadedMedia.length ? 'Deselect All' : 'Select All'}
                           </button>
                           {selectedItems.length > 0 && (
-                            <span className="text-sm text-red-600 font-medium">
+                            <span className={`text-sm font-medium ${
+                              selectMode ? 'text-blue-600' : 'text-red-600'
+                            }`}>
                               {selectedItems.length} selected
                             </span>
                           )}
@@ -860,7 +1138,7 @@ const Media = () => {
                   {filteredUploadedMedia.map((media, index) => (
                     <div key={media._id || `media-${index}`} className="relative group">
                       {/* Selection Checkbox */}
-                      {deleteMode && (
+                      {(selectMode || deleteMode) && (
                         <div className="absolute top-2 right-2 z-10">
                           <button
                             onClick={(e) => {
@@ -879,7 +1157,11 @@ const Media = () => {
                       )}
 
                       <div className="aspect-square bg-gray-50 overflow-hidden rounded-lg cursor-pointer"
-                           onClick={() => handlePreviewImage(media.url)}>
+                           onClick={() => {
+                             if (!selectMode && !deleteMode) {
+                               handlePreviewImage(media.url);
+                             }
+                           }}>
                         <LazyImage
                           src={media.url}
                           alt={media.name || 'Uploaded Image'}
@@ -893,46 +1175,48 @@ const Media = () => {
                         </div>
                         
                         {/* Hover overlay with actions */}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePreviewImage(media.url);
-                            }}
-                            className="bg-white/90 hover:bg-white text-black"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadImage(media.url, media.name || 'uploaded-image');
-                            }}
-                            className="bg-white/90 hover:bg-white text-black"
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                        {!selectMode && !deleteMode && (
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePreviewImage(media.url);
+                              }}
+                              className="bg-white/90 hover:bg-white text-black"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDownloadImage(media.url, media.name || 'uploaded-image');
+                              }}
+                              className="bg-white/90 hover:bg-white text-black"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
 
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm('Are you sure you want to delete this uploaded image?')) {
-                                handleDeleteSingle(media._id);
-                              }
-                            }}
-                            className="bg-red-500/90 hover:bg-red-500 text-white"
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm('Are you sure you want to delete this uploaded image?')) {
+                                  handleDeleteSingle(media._id);
+                                }
+                              }}
+                              className="bg-red-500/90 hover:bg-red-500 text-white"
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
