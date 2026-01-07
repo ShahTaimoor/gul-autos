@@ -19,9 +19,11 @@ export const categorySchema = z.object({
         return file.size <= 5 * 1024 * 1024; // 5MB max
       }, 'Image must be less than 5MB'),
       z.string().url('Invalid image URL'),
-      z.string().length(0) // Empty string allowed
+      z.string().length(0), // Empty string allowed
+      z.null() // Allow null for updates when no new image is selected
     ])
-    .optional(),
+    .optional()
+    .nullable(),
   active: z.boolean().optional().default(true),
   position: z
     .number()

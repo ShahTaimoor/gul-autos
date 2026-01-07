@@ -96,7 +96,12 @@ class CategoryService {
     }
 
     if (active !== undefined) {
-      updateFields.active = active === 'true' || active === true;
+      // Handle both string and boolean values from FormData
+      if (typeof active === 'string') {
+        updateFields.active = active === 'true' || active === '1';
+      } else {
+        updateFields.active = Boolean(active);
+      }
     }
 
     const currentCategory = await categoryRepository.findOne({ slug });
@@ -117,6 +122,11 @@ class CategoryService {
     const updatedCategory = await categoryRepository.updateOne({ slug }, updateFields);
 
     await this.normalizePositions();
+
+    // Ensure image field is set for frontend compatibility
+    if (updatedCategory) {
+      updatedCategory.image = updatedCategory.picture?.secure_url || null;
+    }
 
     return updatedCategory;
   }

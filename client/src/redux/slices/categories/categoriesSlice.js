@@ -109,14 +109,25 @@ const categoriesSlice = createSlice({
             .addCase(updateCategory.fulfilled, (state, action) => {
                 state.status = 'succeeded';
 
-
-                const updatedCategory = action.payload.data;
-
-                // Update the category in the array instead of replacing the whole list
-                state.categories = state.categories.map((prod) =>
-                    prod._id === updatedCategory._id ? updatedCategory : prod
-                );
-
+                const updatedCategory = action.payload?.data;
+                
+                if (updatedCategory && updatedCategory._id) {
+                    // Update the category in the array instead of replacing the whole list
+                    const categoryIndex = state.categories.findIndex(
+                        (cat) => cat._id === updatedCategory._id || cat.slug === updatedCategory.slug
+                    );
+                    
+                    if (categoryIndex !== -1) {
+                        // Ensure image field is set from picture.secure_url if needed
+                        if (updatedCategory.picture?.secure_url && !updatedCategory.image) {
+                            updatedCategory.image = updatedCategory.picture.secure_url;
+                        }
+                        state.categories[categoryIndex] = { ...state.categories[categoryIndex], ...updatedCategory };
+                    } else {
+                        // If not found, add it (shouldn't happen, but just in case)
+                        state.categories.push(updatedCategory);
+                    }
+                }
             })
             .addCase(updateCategory.rejected, (state, action) => { state.status = 'failed'; state.error = action.payload; })
             .addCase(toggleCategoryActive.pending, (state) => { state.status = 'loading'; })

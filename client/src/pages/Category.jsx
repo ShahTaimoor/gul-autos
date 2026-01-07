@@ -138,8 +138,12 @@ const Category = () => {
     });
     
     if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast.error(firstError.message);
+      const firstError = result.error?.issues?.[0] || result.error?.errors?.[0];
+      if (firstError) {
+        toast.error(firstError.message || 'Validation error');
+      } else {
+        toast.error('Validation failed. Please check your input.');
+      }
       return;
     }
 
@@ -169,34 +173,58 @@ const Category = () => {
   };
 
   const updateExistingCategory = async () => {
-    // Validate with Zod
+    // Basic validation - check if name exists
+    if (!editingCategory.name || editingCategory.name.trim() === '') {
+      toast.error('Category name is required');
+      return;
+    }
+
+    // Validate with Zod - only validate name, picture is optional for updates
     const { categorySchema } = await import('@/schemas/categorySchemas');
-    const result = categorySchema.safeParse({
-      name: editingCategory.name,
-      picture: editingCategory.picture
-    });
+    
+    // Prepare validation data - handle picture properly
+    // If picture is null or not a File, don't include it in validation (it's optional for updates)
+    const validationData = {
+      name: editingCategory.name.trim(),
+    };
+    
+    // Only validate picture if it's a File (new upload)
+    if (editingCategory.picture instanceof File) {
+      validationData.picture = editingCategory.picture;
+    }
+    
+    const result = categorySchema.safeParse(validationData);
     
     if (!result.success) {
-      const firstError = result.error.errors[0];
-      toast.error(firstError.message);
+      const firstError = result.error?.issues?.[0] || result.error?.errors?.[0];
+      if (firstError) {
+        toast.error(firstError.message || 'Validation error');
+      } else {
+        toast.error('Validation failed. Please check your input.');
+      }
       return;
     }
 
     setLoading(true);
     const updateData = {
-      name: editingCategory.name,
+      name: editingCategory.name.trim(),
       slug: editingCategory.slug,
-      picture: editingCategory.picture,
     };
+    
+    // Only include picture if it's a File (new upload)
+    // If null/undefined, backend will keep existing picture
+    if (editingCategory.picture instanceof File) {
+      updateData.picture = editingCategory.picture;
+    }
     
     // Add position if it's provided
     if (editingCategory.position !== undefined && editingCategory.position !== '') {
       updateData.position = parseInt(editingCategory.position);
     }
     
-    // Add active status if it's provided
+    // Add active status if it's provided - ensure it's a boolean
     if (editingCategory.active !== undefined) {
-      updateData.active = editingCategory.active;
+      updateData.active = Boolean(editingCategory.active);
     }
 
     dispatch(updateCategory(updateData))
@@ -207,7 +235,10 @@ const Category = () => {
           setEditingCategory(null);
           setInputValues({ name: '', picture: null });
           setIsDialogOpen(false);
-          dispatch(AllCategory(''));
+          // Refresh categories list after a short delay to ensure backend update is complete
+          setTimeout(() => {
+            dispatch(AllCategory(''));
+          }, 100);
           toast.success('Category updated successfully!');
         }
       })
@@ -263,7 +294,12 @@ const Category = () => {
   };
 
   const startEditing = (category) => {
-    setEditingCategory({ ...category, picture: null });
+    // Store the existing image URL for preview
+    setEditingCategory({ 
+      ...category, 
+      picture: null, // New file upload (null means no new file selected)
+      existingImage: category.image || category.picture?.secure_url || null // Keep existing image URL for preview
+    });
     setIsDialogOpen(true);
   };
 
@@ -548,13 +584,17 @@ const Category = () => {
                 </div>
 
                 {/* Image preview */}
-                {(inputValues.picture || editingCategory?.picture) && (
+                {(inputValues.picture || editingCategory?.picture || editingCategory?.existingImage) && (
                   <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-start gap-4">
                       <img
-                        src={URL.createObjectURL(
-                          editingCategory?.picture || inputValues.picture
-                        )}
+                        src={
+                          editingCategory?.picture instanceof File
+                            ? URL.createObjectURL(editingCategory.picture)
+                            : inputValues.picture instanceof File
+                            ? URL.createObjectURL(inputValues.picture)
+                            : editingCategory?.existingImage || inputValues.picture || '/placeholder-image.png'
+                        }
                         alt="Image Preview"
                         className="w-20 h-20 object-cover rounded-lg border border-gray-200 shadow-sm"
                         crossOrigin="anonymous"
@@ -567,12 +607,16 @@ const Category = () => {
                       />
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-900">Selected Image</h4>
+                          <h4 className="text-sm font-medium text-gray-900">
+                            {editingCategory?.picture instanceof File || inputValues.picture instanceof File
+                              ? 'Selected Image'
+                              : 'Current Image'}
+                          </h4>
                           <button
                             type="button"
                             onClick={() => {
                               if (editingCategory) {
-                                setEditingCategory({ ...editingCategory, picture: null });
+                                setEditingCategory({ ...editingCategory, picture: null, existingImage: null });
                               } else {
                                 setInputValues((v) => ({ ...v, picture: null }));
                               }
@@ -584,18 +628,26 @@ const Category = () => {
                           </button>
                         </div>
                         <div className="text-sm text-gray-500 space-y-1">
-                          <p className="truncate">
-                            <span className="font-medium">Name:</span>{' '}
-                            {(editingCategory?.picture || inputValues.picture)?.name}
-                          </p>
-                          <p>
-                            <span className="font-medium">Size:</span>{' '}
-                            {((editingCategory?.picture || inputValues.picture)?.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                          <p>
-                            <span className="font-medium">Type:</span>{' '}
-                            {(editingCategory?.picture || inputValues.picture)?.type?.split('/')[1]?.toUpperCase()}
-                          </p>
+                          {(editingCategory?.picture instanceof File || inputValues.picture instanceof File) ? (
+                            <>
+                              <p className="truncate">
+                                <span className="font-medium">Name:</span>{' '}
+                                {(editingCategory?.picture || inputValues.picture)?.name}
+                              </p>
+                              <p>
+                                <span className="font-medium">Size:</span>{' '}
+                                {((editingCategory?.picture || inputValues.picture)?.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                              <p>
+                                <span className="font-medium">Type:</span>{' '}
+                                {(editingCategory?.picture || inputValues.picture)?.type?.split('/')[1]?.toUpperCase()}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">
+                              Current category image. Select a new file to replace it.
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
