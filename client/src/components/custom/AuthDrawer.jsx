@@ -250,20 +250,24 @@ const AuthDrawer = () => {
                 />
               </div>
 
-              {/* Phone Field - Optional */}
+              {/* Phone Field - Required */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="phone" className="text-sm font-semibold text-gray-900">
-                  Phone Number
+                  Phone Number <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="phone"
                   type="tel"
                   name="phone"
-                  placeholder="Enter your phone number (optional)"
+                  placeholder="Enter your phone number (11 digits)"
                   value={inputValue.phone}
                   onChange={handleChange}
                   disabled={loading}
                   autoComplete="tel"
+                  maxLength={11}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  required
                   className="h-12 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>

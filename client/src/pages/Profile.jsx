@@ -158,6 +158,9 @@ const Profile = () => {
                       value={formData.phone}
                       onChange={handleChange}
                       required
+                      maxLength={11}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       className="peer w-full border border-gray-300 rounded-md px-3 pt-4 pb-2 text-sm bg-white
         focus:outline-none focus:ring-2 focus:ring-[#FED700] focus:border-[#FED700]"
                     />
@@ -168,7 +171,7 @@ const Profile = () => {
         peer-placeholder-shown:text-sm peer-placeholder-shown:text-muted-foreground 
         peer-placeholder-shown:top-3 peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-[#FED700]"
                     >
-                      Phone Number
+                      Phone Number <span className="text-red-500">*</span>
                     </label>
                   </div>
 

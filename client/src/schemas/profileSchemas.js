@@ -16,11 +16,12 @@ export const profileSchema = z.object({
     .trim(),
   phone: z
     .string()
-    .optional()
+    .min(1, 'Phone number is required')
     .refine((val) => {
-      if (!val || val.trim() === '') return true; // Optional
-      return /^[\d\s\-\+\(\)]+$/.test(val) && val.replace(/\D/g, '').length >= 10;
-    }, 'Phone number must be valid (at least 10 digits)'),
+      if (!val || val.trim() === '') return false; // Required
+      const digitsOnly = val.replace(/\D/g, '');
+      return /^[\d\s\-\+\(\)]+$/.test(val) && digitsOnly.length === 11;
+    }, 'Phone number must be exactly 11 digits'),
   address: z
     .string()
     .max(500, 'Address must be less than 500 characters')

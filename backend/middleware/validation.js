@@ -40,9 +40,19 @@ const userValidation = {
       .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
     
     body('phone')
-      .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid phone number'),
+      .notEmpty()
+      .withMessage('Phone number is required')
+      .custom((value) => {
+        if (!value || value.trim() === '') {
+          throw new Error('Phone number is required');
+        }
+        const digitsOnly = value.replace(/\D/g, '');
+        if (digitsOnly.length !== 11) {
+          throw new Error('Phone number must be exactly 11 digits');
+        }
+        return /^[\d\s\-\+\(\)]+$/.test(value);
+      })
+      .withMessage('Phone number must be exactly 11 digits'),
     
     body('username')
       .optional()
@@ -88,9 +98,19 @@ const userValidation = {
       .withMessage('Name can only contain letters and spaces'),
     
     body('phone')
-      .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid phone number'),
+      .notEmpty()
+      .withMessage('Phone number is required')
+      .custom((value) => {
+        if (!value || value.trim() === '') {
+          throw new Error('Phone number is required');
+        }
+        const digitsOnly = value.replace(/\D/g, '');
+        if (digitsOnly.length !== 11) {
+          throw new Error('Phone number must be exactly 11 digits');
+        }
+        return /^[\d\s\-\+\(\)]+$/.test(value);
+      })
+      .withMessage('Phone number must be exactly 11 digits'),
     
     body('username')
       .optional()

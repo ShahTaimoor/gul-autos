@@ -31,12 +31,12 @@ export const signupSchema = z.object({
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   phone: z
     .string()
-    .optional()
+    .min(1, 'Phone number is required')
     .refine((val) => {
-      if (!val || val.trim() === '') return true; // Optional
-      // Basic phone validation (allows various formats)
-      return /^[\d\s\-\+\(\)]+$/.test(val) && val.replace(/\D/g, '').length >= 10;
-    }, 'Phone number must be valid (at least 10 digits)'),
+      if (!val || val.trim() === '') return false; // Required
+      const digitsOnly = val.replace(/\D/g, '');
+      return /^[\d\s\-\+\(\)]+$/.test(val) && digitsOnly.length === 11;
+    }, 'Phone number must be exactly 11 digits'),
   address: z
     .string()
     .max(500, 'Address must be less than 500 characters')
@@ -66,7 +66,15 @@ export const authSchema = z.object({
     .max(100, 'Password must be less than 100 characters'),
   phone: z
     .string()
-    .optional(),
+    .optional()
+    .refine((val) => {
+      // If phone is provided (signup), it must be exactly 11 digits
+      if (val && val.trim() !== '') {
+        const digitsOnly = val.replace(/\D/g, '');
+        return /^[\d\s\-\+\(\)]+$/.test(val) && digitsOnly.length === 11;
+      }
+      return true; // Optional for login
+    }, 'Phone number must be exactly 11 digits'),
   address: z
     .string()
     .max(500, 'Address must be less than 500 characters')
@@ -83,13 +91,28 @@ export const authSchema = z.object({
   // If phone, address, city, or username is provided, it's a signup
   const isSignup = !!(data.phone?.trim() || data.address?.trim() || data.city?.trim() || data.username?.trim());
   if (isSignup) {
-    // For signup, validate password strength
+    // For signup, phone is required
+    if (!data.phone || data.phone.trim() === '') {
+      return false;
+    }
+    // Validate password strength
     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(data.password);
   }
   return true;
 }, {
   message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   path: ['password']
+}).refine((data) => {
+  // If it's a signup, phone must be exactly 11 digits
+  const isSignup = !!(data.phone?.trim() || data.address?.trim() || data.city?.trim() || data.username?.trim());
+  if (isSignup && data.phone) {
+    const digitsOnly = data.phone.replace(/\D/g, '');
+    return digitsOnly.length === 11;
+  }
+  return true;
+}, {
+  message: 'Phone number must be exactly 11 digits',
+  path: ['phone']
 });
 
 

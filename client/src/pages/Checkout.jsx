@@ -261,7 +261,7 @@ const Checkout = ({ closeModal }) => {
                         <div className="space-y-2">
                           <label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium text-gray-700">
                             <Phone className="w-4 h-4 text-gray-500" />
-                            Phone Number
+                            Phone Number <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="tel"
@@ -270,9 +270,11 @@ const Checkout = ({ closeModal }) => {
                             value={formData.phone}
                             onChange={handleChange}
                             required
-                            inputMode="tel"
+                            inputMode="numeric"
+                            maxLength={11}
+                            pattern="[0-9]*"
                             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm sm:text-base touch-manipulation bg-white"
-                            placeholder="Enter your phone number"
+                            placeholder="Enter your phone number (11 digits)"
                           />
                         </div>
                         <div className="space-y-2">
