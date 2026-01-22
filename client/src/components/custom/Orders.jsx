@@ -53,7 +53,8 @@ import {
   BarChart3,
   Search,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Image as ImageIcon
 } from 'lucide-react';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -82,6 +83,16 @@ function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Helper function to calculate order total from products (using current prices)
+function calculateOrderTotal(order) {
+  if (!order || !order.products) return 0;
+  return order.products.reduce((sum, p) => {
+    const price = p.id?.price || 0;
+    const quantity = p.quantity || 0;
+    return sum + (price * quantity);
+  }, 0);
+}
+
 const Orders = () => {
   const dispatch = useDispatch();
   const { orders, status, error } = useSelector((state) => state.orders);
@@ -102,6 +113,8 @@ const Orders = () => {
   const totalItems = useSelector((state) => state.orders.totalItems) || 0;
   const clickTimer = useRef(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState({ current: 0, total: 0 });
+  const [imagesInvoiceLoading, setImagesInvoiceLoading] = useState(false);
 
   // Use pagination hook to eliminate pagination duplication
   const pagination = usePagination({
@@ -308,21 +321,299 @@ Phone: ${order.phone}
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(details)}`;
   };
 
+  const handleDownloadImagesInvoice = async (order) => {
+    setImagesInvoiceLoading(true);
+    try {
+      const products = order.products;
+      const BATCH_SIZE = 3; // Process 3 images at a time to prevent browser freeze
+      
+      // Prepare table data with images as base64 (no prices)
+      const tableRows = [];
+      
+      // Process images in batches
+      for (let i = 0; i < products.length; i += BATCH_SIZE) {
+        const batch = products.slice(i, i + BATCH_SIZE);
+        
+        // Process each image in the batch sequentially
+        for (let j = 0; j < batch.length; j++) {
+          const product = batch[j];
+          const imgUrl = product.id?.picture?.secure_url || product.id?.image || "/placeholder-product.jpg";
+          let imgData = "";
+          
+          try {
+            const blob = await imageService.fetchImageBlob(imgUrl, 60000);
+            // Resize image to reduce memory usage
+            imgData = await resizeImageForPDF(blob, 200, 200);
+          } catch (error) {
+            console.warn(`Error processing image for product ${product.id?.title || 'unknown'}:`, error);
+            imgData = ""; // fallback if image fails
+          }
+          
+          // Add product row WITHOUT price
+          tableRows.push([
+            { content: "", img: imgData }, // image cell
+            product.id?.title || "",
+            product.quantity || "",
+            // NO PRICE COLUMN
+          ]);
+          
+          // Yield to browser after each image
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        
+        // Delay between batches
+        if (i + BATCH_SIZE < products.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      // Get shop information from order
+      const customerInfo = order.userId || {};
+      const shopName = customerInfo.name || 'Shop Name';
+      const username = customerInfo.username || 'N/A';
+      const city = order.city || 'N/A';
+      const address = order.address || 'N/A';
+      const phone = order.phone ? String(order.phone) : 'N/A';
+
+      // Create PDF with professional design
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+
+      // Color scheme - TCS Red Theme
+      const primaryColor = [220, 38, 38]; // Red-600 (#DC2626)
+      const darkGray = [51, 51, 51];
+      const mediumGray = [100, 100, 100];
+      const lightGray = [250, 250, 250];
+      const borderGray = [220, 220, 220];
+      const accentGray = [245, 245, 245];
+
+      const orderDate = new Date(order.createdAt);
+      const orderId = order._id.slice(-8).toUpperCase();
+
+      // Start content from top
+      let yPos = 15;
+
+      // Shop Information Section
+      const infoBoxPadding = 8;
+      const addressLines = doc.splitTextToSize(address, contentWidth - 60);
+      const addressHeight = addressLines.length > 1 ? (addressLines.length * 6.5) : 6.5;
+      const infoBoxHeight = 21 + 13 + addressHeight + 3;
+      
+      doc.setFillColor(...lightGray);
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.5);
+      doc.rect(margin, yPos, contentWidth, infoBoxHeight, 'FD');
+      
+      doc.setFillColor(...primaryColor);
+      doc.rect(margin, yPos, 4, infoBoxHeight, 'F');
+      
+      let currentY = yPos + infoBoxPadding;
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.text('SHOP INFORMATION', margin + 10, currentY);
+      
+      currentY += 5;
+      doc.setDrawColor(...borderGray);
+      doc.setLineWidth(0.3);
+      doc.line(margin + 10, currentY, pageWidth - margin - 10, currentY);
+      
+      currentY += 8;
+      doc.setFontSize(9.5);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      
+      const leftCol = margin + 10;
+      const rightCol = pageWidth / 2 + 5;
+      const lineHeight = 6.5;
+      const labelWidth = 35;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Shop Name:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(shopName, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Username:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(username, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Phone:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(phone, leftCol + labelWidth, currentY);
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('City:', rightCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(city, rightCol + 30, currentY);
+      currentY += lineHeight;
+      
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...mediumGray);
+      doc.text('Address:', leftCol, currentY);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(...darkGray);
+      doc.text(addressLines, leftCol + labelWidth, currentY);
+      
+      yPos += infoBoxHeight + 10;
+
+      // Product Table WITH images but WITHOUT prices
+      doc.setFontSize(13);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(...primaryColor);
+      doc.text('ORDER ITEMS', margin, yPos - 3);
+      yPos += 5;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [[
+          { content: "IMAGE", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+          { content: "PRODUCT NAME", styles: { fillColor: primaryColor, textColor: 255, fontSize: 10 } },
+          { content: "QTY", styles: { halign: 'center', fillColor: primaryColor, textColor: 255, fontSize: 10 } }
+          // NO PRICE COLUMN
+        ]],
+        body: tableRows,
+        theme: "striped",
+        // Prevent rows from being split across pages
+        rowPageBreak: 'avoid',
+        // Check if row will fit before drawing
+        didParseCell: function (data) {
+          // Ensure minimum cell height for image rows
+          if (data.row.index >= 0 && data.column.index === 0) {
+            data.cell.minCellHeight = 50; // Minimum height to fit image
+          }
+        },
+        // Draw image in cell
+        didDrawCell: function (data) {
+          if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
+            doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 3, data.cell.y + 3, 40, 40);
+          }
+        },
+        columnStyles: {
+          0: { cellWidth: 42 }, // Image column
+          1: { cellWidth: 120 }, // Product Name column (wider since no price)
+          2: { cellWidth: 25, halign: "center" }, // Quantity column
+          // NO PRICE COLUMN
+        },
+        styles: { 
+          valign: "middle", 
+          fontSize: 9.5, 
+          cellPadding: 5, 
+          textColor: [0,0,0], 
+          halign: "left",
+          lineColor: borderGray,
+          lineWidth: 0.3
+        },
+        headStyles: { 
+          fillColor: primaryColor, 
+          textColor: [255,255,255], 
+          fontStyle: 'bold', 
+          fontSize: 10,
+          halign: "left" 
+        },
+        bodyStyles: { 
+          minCellHeight: 50, // Increased to ensure image fits
+          halign: "left",
+          fillColor: [255, 255, 255]
+        },
+        margin: { left: margin, right: margin },
+        alternateRowStyles: {
+          fillColor: [255, 255, 255]
+        }
+      });
+
+      // Footer
+      const tableFinalY = doc.lastAutoTable.finalY || yPos + 60;
+      const footerY = pageHeight - 25;
+      
+      if (tableFinalY < footerY) {
+        doc.setDrawColor(...borderGray);
+        doc.setLineWidth(0.5);
+        doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+        
+        doc.setFontSize(8);
+        doc.setTextColor(...mediumGray);
+        doc.setFont(undefined, 'normal');
+        const generatedDate = new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        doc.text(
+          `Generated on ${generatedDate}`,
+          pageWidth / 2,
+          footerY + 3,
+          { align: 'center' }
+        );
+        
+        doc.setFontSize(9);
+        doc.setTextColor(...primaryColor);
+        doc.setFont(undefined, 'bold');
+        doc.text(
+          'Thank you for your order!',
+          pageWidth / 2,
+          footerY + 10,
+          { align: 'center' }
+        );
+      }
+
+      // Download PDF
+      const sanitizedShopName = shopName.replace(/[^a-z0-9]/gi, '_').substring(0, 30);
+      const fileName = `${sanitizedShopName}-Images-Invoice-${orderId}.pdf`;
+      doc.save(fileName);
+      
+      toast.success(`Downloaded images invoice with ${products.length} products!`);
+    } catch (error) {
+      console.error('Error downloading images invoice:', error);
+      toast.error('Failed to download images invoice. Please try again.');
+    } finally {
+      setImagesInvoiceLoading(false);
+    }
+  };
+
   const handlePdfClick = async (order) => {
     setPdfLoading(true);
-    await handleSharePDF(order, { download: true });
-    setPdfLoading(false);
+    try {
+      await handleSharePDF(order, { download: true });
+      toast.success(`PDF downloaded successfully with ${order.products.length} products!`);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to download PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
+      setPdfProgress({ current: 0, total: 0 });
+    }
   };
 
   const handleDownloadInvoice = async (order) => {
     setPdfLoading(true);
     try {
       // 1. Prepare table data WITHOUT images
-      const tableRows = order.products.map((p) => [
-        p.id?.title || "",
-        p.quantity || "",
-        p.id?.price ? `Rs. ${p.id.price.toLocaleString()}` : "Rs. 0",
-      ]);
+      const tableRows = order.products.map((p) => {
+        const unitPrice = p.id?.price || 0;
+        const quantity = p.quantity || 0;
+        const totalPrice = unitPrice * quantity;
+        return [
+          p.id?.title || "",
+          quantity,
+          totalPrice > 0 ? `Rs. ${totalPrice.toLocaleString()}` : "Rs. 0",
+        ];
+      });
 
       // 2. Get shop information from order (customer who placed the order)
       const customerInfo = order.userId || {};
@@ -486,6 +777,13 @@ Phone: ${order.phone}
       doc.setFillColor(...primaryColor);
       doc.rect(margin, yPos, 4, summaryHeight, 'F');
       
+      // Calculate total from products (using current prices shown in table)
+      const calculatedTotal = order.products.reduce((sum, p) => {
+        const price = p.id?.price || 0;
+        const quantity = p.quantity || 0;
+        return sum + (price * quantity);
+      }, 0);
+      
       yPos += 8;
       doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
@@ -493,7 +791,7 @@ Phone: ${order.phone}
       doc.text('Total Amount:', margin + 10, yPos);
       doc.setFontSize(16);
       doc.setTextColor(...primaryColor);
-      doc.text(`Rs. ${order.amount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+      doc.text(`Rs. ${calculatedTotal.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
 
       // Footer
       const finalY = yPos + summaryHeight;
@@ -543,25 +841,116 @@ Phone: ${order.phone}
     }
   };
 
+  // Helper function to resize image before converting to base64 to reduce memory usage
+  const resizeImageForPDF = async (blob, maxWidth = 200, maxHeight = 200) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Calculate new dimensions
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((resizedBlob) => {
+          if (resizedBlob) {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(resizedBlob);
+          } else {
+            reject(new Error('Failed to resize image'));
+          }
+        }, 'image/jpeg', 0.8); // 80% quality
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image'));
+      };
+      
+      img.src = url;
+    });
+  };
+
   const handleSharePDF = async (order, { download = false } = {}) => {
-    // 1. Prepare table data with images as base64
-    const tableRows = await Promise.all(
-      order.products.map(async (p) => {
+    // 1. Prepare table data with images as base64 - Process in smaller batches to prevent browser freeze
+    const BATCH_SIZE = 3; // Process only 3 images at a time to prevent browser freeze
+    const products = order.products;
+    const tableRows = [];
+    
+    // Initialize progress
+    setPdfProgress({ current: 0, total: products.length });
+    
+    // Process images in smaller batches with delays to allow browser to breathe
+    for (let i = 0; i < products.length; i += BATCH_SIZE) {
+      const batch = products.slice(i, i + BATCH_SIZE);
+      
+      // Process each image in the batch sequentially to avoid overwhelming the browser
+      for (let j = 0; j < batch.length; j++) {
+        const p = batch[j];
         const imgUrl = p.id?.picture?.secure_url || "/placeholder-product.jpg";
         let imgData = "";
+        
         try {
-          imgData = await getImageBase64(imgUrl);
-        } catch {
+          // Fetch image with timeout
+          const blob = await imageService.fetchImageBlob(imgUrl, 60000);
+          
+          // Resize image to reduce memory usage before converting to base64
+          imgData = await resizeImageForPDF(blob, 200, 200);
+        } catch (error) {
+          console.warn(`Error processing image for product ${p.id?.title || 'unknown'}:`, error);
           imgData = ""; // fallback if image fails
         }
-        return [
+        
+        // Calculate total price (price × quantity)
+        const unitPrice = p.id?.price || 0;
+        const quantity = p.quantity || 0;
+        const totalPrice = unitPrice * quantity;
+        
+        // Add product to table rows
+        tableRows.push([
           { content: "", img: imgData }, // image cell
           p.id?.title || "",
-          p.quantity || "",
-          p.id?.price ? `Rs. ${p.id.price.toLocaleString()}` : "Rs. 0",
-        ];
-      })
-    );
+          quantity,
+          totalPrice > 0 ? `Rs. ${totalPrice.toLocaleString()}` : "Rs. 0",
+        ]);
+        
+        // Update progress after each image
+        const processed = i + j + 1;
+        setPdfProgress({ current: processed, total: products.length });
+        
+        // Yield to browser after each image to prevent freezing
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+      
+      // Longer delay between batches to allow browser to process UI updates
+      if (i + BATCH_SIZE < products.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+    
+    // Reset progress
+    setPdfProgress({ current: 0, total: 0 });
 
     // 2. Get shop information from order (customer who placed the order)
     // Use order.userId which contains the customer's information
@@ -707,6 +1096,16 @@ Phone: ${order.phone}
       ]],
       body: tableRows,
       theme: "striped",
+      // Prevent rows from being split across pages
+      rowPageBreak: 'avoid',
+      // Check if row will fit before drawing
+      didParseCell: function (data) {
+        // Ensure minimum cell height for image rows
+        if (data.row.index >= 0 && data.column.index === 0) {
+          data.cell.minCellHeight = 50; // Minimum height to fit image
+        }
+      },
+      // Draw image in cell
       didDrawCell: function (data) {
         if (data.column.index === 0 && data.cell.raw && data.cell.raw.img) {
           doc.addImage(data.cell.raw.img, "JPEG", data.cell.x + 3, data.cell.y + 3, 40, 40);
@@ -735,7 +1134,7 @@ Phone: ${order.phone}
         halign: "left" 
       },
       bodyStyles: { 
-        minCellHeight: 46, 
+        minCellHeight: 50, // Increased to ensure image fits
         halign: "left",
         fillColor: [255, 255, 255]
       },
@@ -759,6 +1158,13 @@ Phone: ${order.phone}
     doc.setFillColor(...primaryColor);
     doc.rect(margin, yPos, 4, summaryHeight, 'F');
     
+    // Calculate total from products (using current prices shown in table)
+    const calculatedTotal = order.products.reduce((sum, p) => {
+      const price = p.id?.price || 0;
+      const quantity = p.quantity || 0;
+      return sum + (price * quantity);
+    }, 0);
+    
     yPos += 8;
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
@@ -766,7 +1172,7 @@ Phone: ${order.phone}
     doc.text('Total Amount:', margin + 10, yPos);
     doc.setFontSize(16);
     doc.setTextColor(...primaryColor);
-    doc.text(`Rs. ${order.amount.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
+    doc.text(`Rs. ${calculatedTotal.toLocaleString()}`, pageWidth - margin - 10, yPos, { align: 'right' });
 
     // Professional Footer
     const finalY = yPos + summaryHeight;
@@ -813,28 +1219,37 @@ Phone: ${order.phone}
     const fileName = `${sanitizedShopName}-Order-${order._id.slice(-6)}.pdf`;
 
     // 6. Share or download PDF
-    const pdfBlob = doc.output("blob");
-    const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+    try {
+      const pdfBlob = doc.output("blob");
+      const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
-    if (!download && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-      try {
-        await navigator.share({
-          title: `Order Details`,
-          text: "Order details attached as PDF.",
-          files: [pdfFile],
-        });
-        return;
-      } catch (err) {
-        // fallback to download
+      if (!download && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({
+            title: `Order Details`,
+            text: "Order details attached as PDF.",
+            files: [pdfFile],
+          });
+          return;
+        } catch (err) {
+          // fallback to download
+        }
       }
+      // Always download if double click or share not supported
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+      throw error;
+    } finally {
+      // Reset progress
+      setPdfProgress({ current: 0, total: 0 });
     }
-    // Always download if double click or share not supported
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   // Calculate stats
@@ -928,47 +1343,47 @@ Phone: ${order.phone}
             </div>
 
             {/* Bottom Row: Search and Filter Inputs */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
-              {/* Shop Name Search */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="shopNameSearch" className="text-xs font-medium text-gray-700">
-                  Shop Name
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-                  <Input
-                    id="shopNameSearch"
-                    type="text"
-                    placeholder="Search shop..."
-                    value={shopNameSearch}
-                    onChange={(e) => setShopNameSearch(e.target.value)}
-                    className="w-full sm:w-48 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+            <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 items-start lg:items-end">
+              {/* Left side: Filter inputs */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4 flex-1 w-full lg:w-auto">
+                {/* Shop Name Search */}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="shopNameSearch" className="text-xs font-medium text-gray-700">
+                    Shop Name
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+                    <Input
+                      id="shopNameSearch"
+                      type="text"
+                      placeholder="Search shop..."
+                      value={shopNameSearch}
+                      onChange={(e) => setShopNameSearch(e.target.value)}
+                      className="w-full pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Mobile Search */}
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mobileSearch" className="text-xs font-medium text-gray-700">
-                  Mobile
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
-                  <Input
-                    id="mobileSearch"
-                    type="text"
-                    placeholder="Search mobile..."
-                    value={mobileSearch}
-                    onChange={(e) => setMobileSearch(e.target.value)}
-                    className="w-full sm:w-48 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                {/* Mobile Search */}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="mobileSearch" className="text-xs font-medium text-gray-700">
+                    Mobile
+                  </Label>
+                  <div className="relative">
+                    <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+                    <Input
+                      id="mobileSearch"
+                      type="text"
+                      placeholder="Search mobile..."
+                      value={mobileSearch}
+                      onChange={(e) => setMobileSearch(e.target.value)}
+                      className="w-full pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              {/* Date Range - From and To in one row */}
-              <div className="flex flex-row gap-2 col-span-2 sm:col-span-2 lg:col-span-1">
                 {/* From Date */}
-                <div className="flex flex-col gap-1.5 flex-1">
+                <div className="flex flex-col gap-1.5">
                   <Label htmlFor="fromDate" className="text-xs font-medium text-gray-700">
                     From Date
                   </Label>
@@ -980,13 +1395,13 @@ Phone: ${order.phone}
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
                       max={today}
-                      className="w-full sm:w-40 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
 
                 {/* To Date */}
-                <div className="flex flex-col gap-1.5 flex-1">
+                <div className="flex flex-col gap-1.5">
                   <Label htmlFor="toDate" className="text-xs font-medium text-gray-700">
                     To Date
                   </Label>
@@ -999,14 +1414,32 @@ Phone: ${order.phone}
                       onChange={(e) => setToDate(e.target.value)}
                       min={fromDate}
                       max={today}
-                      className="w-full sm:w-40 pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-8 sm:pl-9 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
+
+                {/* Per Page */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-xs font-medium text-gray-700">
+                    Per Page
+                  </Label>
+                  <Select value={limit.toString()} onValueChange={handleLimitChange}>
+                    <SelectTrigger className="w-full h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12</SelectItem>
+                      <SelectItem value="24">24</SelectItem>
+                      <SelectItem value="36">36</SelectItem>
+                      <SelectItem value="48">48</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              {/* View Toggle, Items Per Page and Bulk Actions */}
-              <div className="flex flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+              {/* Right side: View Toggle and Bulk Actions */}
+              <div className="flex flex-row items-end gap-2 sm:gap-3 w-full lg:w-auto">
                 {/* View Toggle */}
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-xs font-medium text-gray-700 opacity-0">
@@ -1036,27 +1469,9 @@ Phone: ${order.phone}
                   </div>
                 </div>
 
-                {/* Items Per Page */}
-                <div className="flex flex-col gap-1.5 flex-1">
-                  <Label className="text-xs font-medium text-gray-700">
-                    Per Page
-                  </Label>
-                  <Select value={limit.toString()} onValueChange={handleLimitChange}>
-                    <SelectTrigger className="w-full sm:w-20 h-9 sm:h-10 text-xs sm:text-sm border-gray-300 rounded-lg">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="12">12</SelectItem>
-                      <SelectItem value="24">24</SelectItem>
-                      <SelectItem value="36">36</SelectItem>
-                      <SelectItem value="48">48</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 {/* Bulk Actions Button */}
                 {filteredOrders.length > 0 && (
-                  <div className="flex flex-col gap-1.5 flex-1">
+                  <div className="flex flex-col gap-1.5">
                     <Label className="text-xs font-medium text-gray-700 opacity-0">
                       Actions
                     </Label>
@@ -1064,7 +1479,7 @@ Phone: ${order.phone}
                       <DropdownMenuTrigger asChild>
                         <Button 
                           variant="destructive" 
-                          className="gap-1.5 sm:gap-2 bg-red-600 hover:bg-red-700 h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-xs sm:text-sm w-full"
+                          className="gap-1.5 sm:gap-2 bg-red-600 hover:bg-red-700 h-9 sm:h-10 px-3 sm:px-4 rounded-lg text-xs sm:text-sm whitespace-nowrap"
                         >
                           <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           <span className="hidden sm:inline">Bulk Actions</span>
@@ -1156,7 +1571,7 @@ Phone: ${order.phone}
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
                       <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide font-semibold">Amount</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-900 truncate">Rs. {order.amount.toLocaleString()}</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-900 truncate">Rs. {calculateOrderTotal(order).toLocaleString()}</p>
                       </div>
                       <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-100">
                         <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-wide font-semibold">Items</p>
@@ -1301,15 +1716,26 @@ Phone: ${order.phone}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuLabel>Download</DropdownMenuLabel>
                                     <DropdownMenuItem 
+                                      onClick={() => handleDownloadImagesInvoice(selectedOrder)}
+                                      disabled={imagesInvoiceLoading || pdfLoading}
+                                    >
+                                      <ImageIcon className="mr-2 h-4 w-4 text-gray-500" />
+                                      {imagesInvoiceLoading ? 'Generating...' : 'Download Images Invoice (no price)'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
                                       onClick={() => handlePdfClick(selectedOrder)}
-                                      disabled={pdfLoading}
+                                      disabled={pdfLoading || imagesInvoiceLoading}
                                     >
                                       <FileDown className="mr-2 h-4 w-4 text-gray-500" />
-                                      {pdfLoading ? 'Generating...' : 'Download PDF (with images)'}
+                                      {pdfLoading 
+                                        ? (pdfProgress.total > 0 
+                                            ? `Processing ${pdfProgress.current}/${pdfProgress.total} products...` 
+                                            : 'Generating PDF...')
+                                        : 'Download PDF (with images)'}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleDownloadInvoice(selectedOrder)}
-                                      disabled={pdfLoading}
+                                      disabled={pdfLoading || imagesInvoiceLoading}
                                     >
                                       <FileDown className="mr-2 h-4 w-4 text-gray-500" />
                                       {pdfLoading ? 'Generating...' : 'Download Invoice (no images)'}
@@ -1319,7 +1745,7 @@ Phone: ${order.phone}
                               </div>
 
                               <OrderData
-                                price={selectedOrder.amount}
+                                price={calculateOrderTotal(selectedOrder)}
                                 address={selectedOrder.address}
                                 phone={selectedOrder.phone}
                                 city={selectedOrder.city}
@@ -1412,7 +1838,7 @@ Phone: ${order.phone}
                           </div>
                         </TableCell>
                         <TableCell className="font-bold text-gray-900 text-xs sm:text-sm">
-                          <span className="truncate block">Rs. {order.amount.toLocaleString()}</span>
+                          <span className="truncate block">Rs. {calculateOrderTotal(order).toLocaleString()}</span>
                         </TableCell>
                         <TableCell>
                           <Badge className={`${statusColors[order.status]} border font-medium text-[10px] sm:text-xs`}>
