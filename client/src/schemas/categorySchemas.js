@@ -9,9 +9,9 @@ export const categorySchema = z.object({
     .max(100, 'Category name must be less than 100 characters')
     .trim()
     .refine((val) => {
-      // Check for valid category name (no special characters except spaces and hyphens)
-      return /^[a-zA-Z0-9\s-]+$/.test(val);
-    }, 'Category name can only contain letters, numbers, spaces, and hyphens'),
+      // Check for valid category name (letters, numbers, spaces, hyphens, and common special chars)
+      return /^[a-zA-Z0-9\s\-\&'(),./]+$/.test(val);
+    }, 'Category name can only contain letters, numbers, spaces, hyphens, and special characters (&, \', ., ,, (, ), /)'),
   picture: z
     .union([
       z.instanceof(File).refine((file) => {
