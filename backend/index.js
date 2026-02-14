@@ -10,6 +10,8 @@ const mediaRoutes = require('./routes/mediaRoutes');
 const cookieParser = require('cookie-parser')
 const { notFound, errorHandler } = require('./middleware/errorHandler')
 const cartRoutes = require('./routes/cartRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
 
 // Security middleware
 const {
@@ -124,6 +126,8 @@ app.use('/api', orderRoutes);
 app.use('/api', categoryRoute);
 app.use('/api', mediaRoutes);
 app.use('/api', cartRoutes);
+app.use('/api', attendanceRoutes);
+app.use('/api', employeeRoutes);
 
 
 // Test Route

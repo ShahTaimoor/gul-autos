@@ -2,6 +2,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import { fetchOrdersAdmin, fetchPendingOrderCount, updateOrderStatus } from "@/redux/slices/order/orderSlice";
 import { fetchLowStockCount } from "@/redux/slices/products/productSlice";
+import attendanceService from "@/services/attendanceService";
 import { useAuth } from "@/hooks/use-auth";
 import {
   FilePlus2Icon,
@@ -18,6 +19,7 @@ import {
   Bell,
   ChevronRight,
   AlertTriangle,
+  CalendarCheck,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +66,20 @@ const items = [
     url: "/admin/dashboard/media", 
     icon: ImageIcon, 
     description: "Manage Assets",
+    category: "main"
+  },
+  { 
+    title: "Attendance", 
+    url: "/admin/dashboard/attendance", 
+    icon: CalendarCheck, 
+    description: "Employee Attendance",
+    category: "main"
+  },
+  { 
+    title: "Top Performers", 
+    url: "/admin/dashboard/attendance-performance", 
+    icon: ChartBar, 
+    description: "Attendance Stats",
     category: "main"
   },
   { 

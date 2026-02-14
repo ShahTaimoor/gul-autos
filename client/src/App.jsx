@@ -33,6 +33,8 @@ const LowStock = lazy(() => import('./components/custom/LowStock'));
 const UpdateProduct = lazy(() => import('./components/custom/UpdateProduct'));
 const Orders = lazy(() => import('./components/custom/Orders'));
 const Media = lazy(() => import('./pages/Media'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const AttendancePerformance = lazy(() => import('./pages/AttendancePerformance'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 
 const App = () => {
@@ -197,6 +199,26 @@ const App = () => {
         <ProtectedRoute>
           <AdminLayout>
             <Media />
+          </AdminLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/dashboard/attendance',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <Attendance />
+          </AdminLayout>
+        </ProtectedRoute>
+      ),
+    },
+    {
+      path: '/admin/dashboard/attendance-performance',
+      element: (
+        <ProtectedRoute>
+          <AdminLayout>
+            <AttendancePerformance />
           </AdminLayout>
         </ProtectedRoute>
       ),
