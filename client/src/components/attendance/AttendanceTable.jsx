@@ -1,23 +1,45 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Save, Trash2 } from 'lucide-react';
+import { Plus, Save, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import attendanceService from '../../services/attendanceService';
 
 const AttendanceTable = ({ onSaveSuccess, employees = [] }) => {
+  const user = useSelector((state) => state.auth.user);
+  const isSuperAdmin = user?.role === 2;
+
+  const today = new Date().toISOString().split('T')[0];
+  const [selectedDate, setSelectedDate] = useState(today);
   const [rows, setRows] = useState([
-    { employeeName: '', date: new Date().toISOString().split('T')[0], time: '09:00', status: 'Present', notes: '' }
+    { employeeName: '', date: today, time: '09:00', status: 'Present', notes: '' }
   ]);
   const [loading, setLoading] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
+
+  // Navigate date by offset days (super admin only)
+  const changeDate = (offsetDays) => {
+    const current = new Date(selectedDate);
+    current.setDate(current.getDate() + offsetDays);
+    const newDate = current.toISOString().split('T')[0];
+    // Don't allow future dates
+    if (newDate > today) return;
+    setSelectedDate(newDate);
+    setRows((prev) => prev.map((row) => ({ ...row, date: newDate })));
+  };
+
+  const handleDateChange = (newDate) => {
+    if (newDate > today) return;
+    setSelectedDate(newDate);
+    setRows((prev) => prev.map((row) => ({ ...row, date: newDate })));
+  };
 
   const addRow = () => {
     setRows([
       ...rows,
-      { employeeName: '', date: today, time: '09:00', status: 'Present', notes: '' }
+      { employeeName: '', date: selectedDate, time: '09:00', status: 'Present', notes: '' }
     ]);
   };
 
@@ -59,9 +81,42 @@ const AttendanceTable = ({ onSaveSuccess, employees = [] }) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h3 className="text-xl font-semibold">Attendance Entry</h3>
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Date navigator — super admin only */}
+          {isSuperAdmin && (
+            <div className="flex items-center gap-1 border rounded-md px-2 py-1 bg-white shadow-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => changeDate(-1)}
+                title="Previous Day"
+              >
+                <ChevronLeft size={16} />
+              </Button>
+              <Input
+                type="date"
+                value={selectedDate}
+                max={today}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="border-0 shadow-none w-36 text-center focus-visible:ring-0"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => changeDate(1)}
+                disabled={selectedDate >= today}
+                title="Next Day"
+              >
+                <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
+
           <Button onClick={addRow} variant="outline" className="flex items-center gap-2">
             <Plus size={16} /> Add Row
           </Button>
@@ -117,11 +172,10 @@ const AttendanceTable = ({ onSaveSuccess, employees = [] }) => {
                     type="date"
                     value={row.date}
                     max={today}
-                    min={today}
-                    onChange={(e) => handleInputChange(index, 'date', e.target.value)}
+                    readOnly={!isSuperAdmin}
+                    onChange={(e) => isSuperAdmin && handleInputChange(index, 'date', e.target.value)}
                     className="border-transparent hover:border-gray-300 focus:border-primary"
-                    readOnly
-                    title="Attendance can only be marked for today"
+                    title={isSuperAdmin ? 'Select attendance date' : 'Attendance can only be marked for today'}
                   />
                 </TableCell>
                 <TableCell>
